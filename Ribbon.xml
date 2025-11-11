@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="OnRibbonLoad">
+    <ribbon>
+        <tabs>
+            <tab id="tabTeXShift" label="TeXShift">
+                <group id="grpConvertTools" label="转换工具">
+                    <button id="btnConvert"
+                            label="一键转换"
+                            size="large"
+                            onAction="OnConvertButtonClick"
+                            imageMso="HappyFace" />
+                </group>
+            </tab>
+        </tabs>
+    </ribbon>
+</customUI>
