@@ -31,7 +31,7 @@
 
 *   **语言:** C# (.NET Framework)
 *   **框架:** OneNote COM Add-in
-*   **IDE:** Visual Studio 2022
+*   **IDE:** Visual Studio 2026
 
 ## 项目状态 🚀
 
