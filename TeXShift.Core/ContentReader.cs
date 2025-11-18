@@ -100,49 +100,74 @@ namespace TeXShift.Core
             string extractedText = sb.ToString().TrimEnd('\r', '\n');
             string objectId = outlineContainer.Attribute("objectID")?.Value;
 
-            return new ReadResult
+            var result = new ReadResult
             {
                 IsSuccess = true,
                 Mode = DetectionMode.Cursor,
                 ExtractedText = extractedText,
                 PageId = pageId,
-                TargetObjectId = objectId,
                 OriginalXmlNode = outlineContainer
             };
+            if (objectId != null)
+            {
+                result.TargetObjectIds.Add(objectId);
+            }
+            return result;
         }
 
         private ReadResult HandleSelectionMode(System.Collections.Generic.List<XElement> selectedNodes, XNamespace ns, string pageId)
         {
             var sb = new StringBuilder();
-            foreach (var node in selectedNodes.Where(n => n.Name == ns + "T"))
+            XElement previousParentOE = null;
+
+            var textNodes = selectedNodes.Where(n => n.Name == ns + "T").ToList();
+
+            foreach (var node in textNodes)
             {
+                var currentParentOE = node.Ancestors(ns + "OE").FirstOrDefault();
+
+                if (previousParentOE != null && currentParentOE != previousParentOE)
+                {
+                    sb.Append('\n');
+                }
+
                 sb.Append(node.Value);
+                previousParentOE = currentParentOE;
             }
 
             string extractedText = sb.ToString();
             if (string.IsNullOrEmpty(extractedText))
             {
-                 return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = "成功定位到选区，但未能提取出有效文本内容。" };
+                return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = "成功定位到选区，但未能提取出有效文本内容。" };
             }
 
-            // Find the common parent OE or Outline node
-            var firstTextNode = selectedNodes.FirstOrDefault(n => n.Name == ns + "T");
-            var parentOE = firstTextNode?.Ancestors(ns + "OE").FirstOrDefault();
-            var parentOutline = firstTextNode?.Ancestors(ns + "Outline").FirstOrDefault();
+            // Find all unique parent OE nodes involved in the selection
+            var parentOEs = textNodes
+                .Select(n => n.Ancestors(ns + "OE").FirstOrDefault())
+                .Where(oe => oe != null)
+                .Distinct()
+                .ToList();
 
-            // Use OE for selection mode, fallback to Outline
-            var targetNode = parentOE ?? parentOutline;
-            string objectId = targetNode?.Attribute("objectID")?.Value;
-
-            return new ReadResult
+            var result = new ReadResult
             {
                 IsSuccess = true,
                 Mode = DetectionMode.Selection,
                 ExtractedText = extractedText,
                 PageId = pageId,
-                TargetObjectId = objectId,
-                OriginalXmlNode = targetNode
+                OriginalXmlNode = parentOEs.FirstOrDefault(), // For attribute preservation
+                OriginalXmlNodes = parentOEs.Cast<XElement>().ToList()
             };
+
+            foreach (var oe in parentOEs)
+            {
+                string objectId = oe.Attribute("objectID")?.Value;
+                if (objectId != null)
+                {
+                    result.TargetObjectIds.Add(objectId);
+                }
+            }
+
+            return result;
         }
     }
 }

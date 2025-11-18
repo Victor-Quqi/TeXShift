@@ -214,7 +214,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                     $"选中内容的XML已保存至：\n{fullPath}\n\n" +
                     $"模式: {result.ModeAsString()}\n" +
                     $"节点类型: {result.OriginalXmlNode.Name.LocalName}\n" +
-                    $"ObjectID: {result.TargetObjectId}",
+                    $"ObjectIDs: {string.Join(", ", result.TargetObjectIds)}",
                     "调试工具 - 保存成功",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);

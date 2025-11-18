@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Xml.Linq;
 
 namespace TeXShift.Core
@@ -41,14 +42,22 @@ namespace TeXShift.Core
         public string PageId { get; set; }
 
         /// <summary>
-        /// The ObjectID of the node to be replaced (Outline in Cursor mode, OE in Selection mode).
+        /// The ObjectIDs of the nodes to be replaced.
+        /// In Cursor mode, this will contain one Outline ID.
+        /// In Selection mode, this can contain multiple OE IDs for multi-line selections.
         /// </summary>
-        public string TargetObjectId { get; set; }
+        public List<string> TargetObjectIds { get; set; } = new List<string>();
 
         /// <summary>
-        /// The original XML node (used for preserving attributes during replacement).
+        /// The primary original XML node (used for preserving attributes during replacement).
+        /// In multi-line selection, this is typically the first selected node.
         /// </summary>
         public XElement OriginalXmlNode { get; set; }
+
+        /// <summary>
+        /// All original XML nodes involved in the selection.
+        /// </summary>
+        public List<XElement> OriginalXmlNodes { get; set; } = new List<XElement>();
 
         public string ModeAsString()
         {

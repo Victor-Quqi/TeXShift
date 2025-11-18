@@ -44,8 +44,8 @@ namespace TeXShift.Core
                 throw new ArgumentNullException(nameof(newOutlineXml));
             if (string.IsNullOrEmpty(readResult.PageId))
                 throw new ArgumentException("PageId is required", nameof(readResult));
-            if (string.IsNullOrEmpty(readResult.TargetObjectId))
-                throw new ArgumentException("TargetObjectId is required", nameof(readResult));
+            if (!readResult.TargetObjectIds.Any())
+                throw new ArgumentException("TargetObjectIds is required", nameof(readResult));
 
             // Get current page XML
             string pageXml;
@@ -54,21 +54,53 @@ namespace TeXShift.Core
             var doc = XDocument.Parse(pageXml);
             var ns = doc.Root.Name.Namespace;
 
-            // Find the target node to replace
-            var targetNode = FindNodeByObjectId(doc, readResult.TargetObjectId, ns);
-            if (targetNode == null)
+            // Find all target nodes to be removed/replaced
+            var targetNodes = readResult.TargetObjectIds
+                .Select(id => FindNodeByObjectId(doc, id, ns))
+                .Where(node => node != null)
+                .ToList();
+
+            if (!targetNodes.Any())
             {
-                throw new InvalidOperationException($"Cannot find target node with ObjectID: {readResult.TargetObjectId}");
+                throw new InvalidOperationException($"Cannot find any target nodes with ObjectIDs: {string.Join(", ", readResult.TargetObjectIds)}");
             }
 
-            // Preserve important attributes from original node
-            PreserveAttributes(newOutlineXml, targetNode);
+            var firstTargetNode = targetNodes.First();
 
-            // Set the objectID to match the target
-            newOutlineXml.SetAttributeValue("objectID", readResult.TargetObjectId);
+            // Smart replacement logic
+            bool isNewContentOutline = newOutlineXml.Name.LocalName == "Outline";
 
-            // Replace the node
-            targetNode.ReplaceWith(newOutlineXml);
+            if (readResult.Mode == DetectionMode.Cursor)
+            {
+                // Case 1: Cursor mode, replacing a whole Outline.
+                PreserveAttributes(newOutlineXml, firstTargetNode);
+                newOutlineXml.SetAttributeValue("objectID", readResult.TargetObjectIds.First());
+                firstTargetNode.ReplaceWith(newOutlineXml);
+            }
+            else // Selection mode
+            {
+                // In selection mode, we always replace OEs.
+                var newOEChildren = isNewContentOutline
+                    ? newOutlineXml.Descendants(ns + "OE").ToList()
+                    : new System.Collections.Generic.List<XElement> { newOutlineXml };
+
+                // Replace the first OE with all the new content
+                if (newOEChildren.Any())
+                {
+                    firstTargetNode.ReplaceWith(newOEChildren);
+                }
+                else
+                {
+                    // If new content is empty, just remove the first node
+                    firstTargetNode.Remove();
+                }
+
+                // Remove all other old OEs involved in the multi-line selection
+                foreach (var nodeToRemove in targetNodes.Skip(1))
+                {
+                    nodeToRemove.Remove();
+                }
+            }
 
             // Update the page content
             string updatedXml = doc.ToString();
