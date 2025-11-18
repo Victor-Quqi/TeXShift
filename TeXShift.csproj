@@ -109,6 +109,7 @@
     <Compile Include="TeXShift.Core\Markdown\Handlers\CodeBlockHandler.cs" />
     <Compile Include="TeXShift.Core\Markdown\Handlers\FallbackHandler.cs" />
     <Compile Include="TeXShift.Core\Markdown\Handlers\HeadingHandler.cs" />
+    <Compile Include="TeXShift.Core\Markdown\Handlers\HorizontalRuleHandler.cs" />
     <Compile Include="TeXShift.Core\Markdown\Handlers\IBlockHandler.cs" />
     <Compile Include="TeXShift.Core\Markdown\Handlers\ListHandler.cs" />
     <Compile Include="TeXShift.Core\Markdown\Handlers\ParagraphHandler.cs" />

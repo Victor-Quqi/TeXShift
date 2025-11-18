@@ -49,6 +49,30 @@ namespace TeXShift.Core
                 PaddingCount = paddingCount;
             }
         }
+
+        public enum HorizontalRuleMode
+        {
+            Character,
+            Image
+        }
+
+        public class HorizontalRuleConfig
+        {
+            public HorizontalRuleMode Mode { get; set; }
+            public string Color { get; set; }
+            public int CharacterLength { get; set; }
+            public char Character { get; set; }
+            public int InitialImageWidth { get; set; }
+
+            public HorizontalRuleConfig(HorizontalRuleMode mode, string color, int charLength, char character, int initialImageWidth)
+            {
+                Mode = mode;
+                Color = color;
+                CharacterLength = charLength;
+                Character = character;
+                InitialImageWidth = initialImageWidth;
+            }
+        }
  
         // Default spacing configurations
         private static readonly Dictionary<string, SpacingConfig> DefaultSpacing = new Dictionary<string, SpacingConfig>
@@ -78,6 +102,9 @@ namespace TeXShift.Core
        // Default style for inline code
        private static readonly InlineCodeConfig DefaultInlineCodeStyle = new InlineCodeConfig("Consolas", "#F1F1F1", "&nbsp;", 1); // Default: 1 non-breaking space
 
+       // Default style for horizontal rule
+       private static readonly HorizontalRuleConfig DefaultHorizontalRuleStyle = new HorizontalRuleConfig(HorizontalRuleMode.Image, "#888888", 90, '─', 2325);
+
        // Default indent configurations for nested content, matching onemark for consistency.
        private static readonly Dictionary<int, double> DefaultIndents = new Dictionary<int, double>
         {
@@ -91,6 +118,7 @@ namespace TeXShift.Core
         private Dictionary<string, FontConfig> _customFonts;
         private Dictionary<int, double> _customIndents;
         private InlineCodeConfig _customInlineCodeStyle;
+        private HorizontalRuleConfig _customHorizontalRuleStyle;
  
         public IReadOnlyDictionary<int, double> Indents => _customIndents;
  
@@ -100,6 +128,7 @@ namespace TeXShift.Core
             _customFonts = new Dictionary<string, FontConfig>(DefaultFonts);
             _customIndents = new Dictionary<int, double>(DefaultIndents);
             _customInlineCodeStyle = DefaultInlineCodeStyle;
+            _customHorizontalRuleStyle = DefaultHorizontalRuleStyle;
         }
 
         /// <summary>
@@ -155,6 +184,14 @@ namespace TeXShift.Core
         {
             return _customInlineCodeStyle;
         }
+
+        /// <summary>
+        /// Gets style configuration for horizontal rules.
+        /// </summary>
+        public HorizontalRuleConfig GetHorizontalRuleStyle()
+        {
+            return _customHorizontalRuleStyle;
+        }
  
         /// <summary>
         /// Allows customization of spacing for a specific element type.
@@ -188,6 +225,14 @@ namespace TeXShift.Core
         {
             _customInlineCodeStyle = new InlineCodeConfig(fontFamily, backgroundColor, paddingChar, paddingCount);
         }
+
+        /// <summary>
+        /// Allows customization of style for horizontal rules.
+        /// </summary>
+        public void SetHorizontalRuleStyle(HorizontalRuleMode mode, string color, int charLength, char character, int initialImageWidth)
+        {
+            _customHorizontalRuleStyle = new HorizontalRuleConfig(mode, color, charLength, character, initialImageWidth);
+        }
  
         /// <summary>
         /// Resets all spacing and font configurations to default values.
@@ -198,6 +243,7 @@ namespace TeXShift.Core
             _customFonts = new Dictionary<string, FontConfig>(DefaultFonts);
             _customIndents = new Dictionary<int, double>(DefaultIndents);
             _customInlineCodeStyle = DefaultInlineCodeStyle;
+            _customHorizontalRuleStyle = DefaultHorizontalRuleStyle;
         }
     }
 }

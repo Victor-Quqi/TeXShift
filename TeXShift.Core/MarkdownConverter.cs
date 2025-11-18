@@ -43,6 +43,7 @@ namespace TeXShift.Core
                 { typeof(ParagraphBlock), new ParagraphHandler() },
                 { typeof(ListBlock), new ListHandler() },
                 { typeof(CodeBlock), new CodeBlockHandler() },
+                { typeof(ThematicBreakBlock), new HorizontalRuleHandler() },
                 // Add new handlers here, e.g., { typeof(TableBlock), new TableHandler() }
             };
         }
