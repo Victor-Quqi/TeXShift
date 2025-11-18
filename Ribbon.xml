@@ -10,6 +10,13 @@
                             onAction="OnConvertButtonClick"
                             imageMso="HappyFace" />
                 </group>
+                <group id="grpDebugTools" label="调试工具">
+                    <button id="btnDebugXml"
+                            label="查看XML"
+                            size="large"
+                            onAction="OnDebugXmlButtonClick"
+                            imageMso="FileOpen" />
+                </group>
             </tab>
         </tabs>
     </ribbon>

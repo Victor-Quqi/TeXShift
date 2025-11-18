@@ -290,6 +290,7 @@ __pycache__/
 
 misc/
 DebugLogs/
+DebugOutput/
 .claude/
 AGENTS.md
 CLAUDE.md
