@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using Markdig;
 using Markdig.Syntax;
@@ -11,22 +12,33 @@ namespace TeXShift.Core
     /// <summary>
     /// Converts Markdown text to OneNote XML format.
     /// </summary>
-    public class MarkdownConverter
+    public class MarkdownConverter : IMarkdownConverter
     {
         private readonly XNamespace _ns = "http://schemas.microsoft.com/office/onenote/2013/onenote";
         private readonly MarkdownPipeline _pipeline;
         private readonly OneNoteStyleConfig _styleConfig;
 
-        public MarkdownConverter() : this(new OneNoteStyleConfig())
+        /// <summary>
+        /// Creates a new MarkdownConverter with default configuration.
+        /// Note: For better performance, use the ServiceContainer which caches the pipeline.
+        /// </summary>
+        public MarkdownConverter() : this(new OneNoteStyleConfig(), null)
         {
         }
 
-        public MarkdownConverter(OneNoteStyleConfig styleConfig)
+        /// <summary>
+        /// Creates a new MarkdownConverter with specified configuration and pipeline.
+        /// </summary>
+        /// <param name="styleConfig">Style configuration for OneNote elements.</param>
+        /// <param name="pipeline">Optional shared MarkdownPipeline instance. If null, creates a new one.</param>
+        public MarkdownConverter(OneNoteStyleConfig styleConfig, MarkdownPipeline pipeline = null)
         {
-            _pipeline = new MarkdownPipelineBuilder()
+            _styleConfig = styleConfig ?? throw new ArgumentNullException(nameof(styleConfig));
+
+            // Use provided pipeline or create new one
+            _pipeline = pipeline ?? new MarkdownPipelineBuilder()
                 .UseAdvancedExtensions()
                 .Build();
-            _styleConfig = styleConfig;
         }
 
         /// <summary>
@@ -40,9 +52,24 @@ namespace TeXShift.Core
         }
 
         /// <summary>
-        /// Converts Markdown text to a OneNote Outline XML element.
+        /// Asynchronously converts Markdown text to a OneNote Outline XML element.
         /// </summary>
-        public XElement ConvertToOneNoteXml(string markdown)
+        public async Task<XElement> ConvertToOneNoteXmlAsync(string markdown)
+        {
+            if (string.IsNullOrWhiteSpace(markdown))
+            {
+                return CreateEmptyOutline();
+            }
+
+            // Wrap CPU-intensive Markdown parsing in Task.Run to avoid blocking UI
+            return await Task.Run(() => ConvertToOneNoteXml(markdown)).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Converts Markdown text to a OneNote Outline XML element.
+        /// (Synchronous version - kept for internal use)
+        /// </summary>
+        private XElement ConvertToOneNoteXml(string markdown)
         {
             if (string.IsNullOrWhiteSpace(markdown))
             {
@@ -185,10 +212,18 @@ namespace TeXShift.Core
             // Apply spacing based on heading level
             ApplySpacing(oe, _styleConfig.GetHeadingSpacing(heading.Level));
 
-            // Convert inline content to HTML and wrap in bold span
+            // Get font configuration for this heading level
+            var fontConfig = _styleConfig.GetHeadingFont(heading.Level);
+
+            // Convert inline content to HTML and apply font styles
             var htmlContent = ConvertInlinesToHtml(heading.Inline);
-            var boldHeading = $"<span style='font-weight:bold'>{htmlContent}</span>";
-            oe.Add(new XElement(_ns + "T", new XCData(boldHeading)));
+            var styleAttributes = $"font-size:{fontConfig.FontSize}pt";
+            if (fontConfig.IsBold)
+            {
+                styleAttributes += ";font-weight:bold";
+            }
+            var styledHeading = $"<span style='{styleAttributes}'>{htmlContent}</span>";
+            oe.Add(new XElement(_ns + "T", new XCData(styledHeading)));
 
             return oe;
         }

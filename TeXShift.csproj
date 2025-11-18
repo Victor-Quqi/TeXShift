@@ -102,9 +102,13 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TeXShift.Core\ContentReader.cs" />
     <Compile Include="TeXShift.Core\ContentWriter.cs" />
+    <Compile Include="TeXShift.Core\IContentReader.cs" />
+    <Compile Include="TeXShift.Core\IContentWriter.cs" />
+    <Compile Include="TeXShift.Core\IMarkdownConverter.cs" />
     <Compile Include="TeXShift.Core\MarkdownConverter.cs" />
     <Compile Include="TeXShift.Core\OneNoteStyleConfig.cs" />
     <Compile Include="TeXShift.Core\ReadResult.cs" />
+    <Compile Include="TeXShift.Core\ServiceContainer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

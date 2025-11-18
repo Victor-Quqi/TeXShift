@@ -21,6 +21,18 @@ namespace TeXShift.Core
             }
         }
 
+        public class FontConfig
+        {
+            public double FontSize { get; set; }
+            public bool IsBold { get; set; }
+
+            public FontConfig(double fontSize, bool isBold = true)
+            {
+                FontSize = fontSize;
+                IsBold = isBold;
+            }
+        }
+
         // Default spacing configurations
         private static readonly Dictionary<string, SpacingConfig> DefaultSpacing = new Dictionary<string, SpacingConfig>
         {
@@ -35,11 +47,24 @@ namespace TeXShift.Core
             { "code", new SpacingConfig(5.5, 5.5, 16.0) }
         };
 
+        // Default font size configurations for headings
+        private static readonly Dictionary<string, FontConfig> DefaultFonts = new Dictionary<string, FontConfig>
+        {
+            { "h1", new FontConfig(22.0, true) },    // 一级标题：22pt 粗体
+            { "h2", new FontConfig(20.0, true) },    // 二级标题：20pt 粗体
+            { "h3", new FontConfig(18.0, true) },    // 三级标题：18pt 粗体
+            { "h4", new FontConfig(16.0, true) },    // 四级标题：16pt 粗体
+            { "h5", new FontConfig(14.0, true) },    // 五级标题：14pt 粗体
+            { "h6", new FontConfig(11.0, true) }     // 六级标题：11pt 粗体
+        };
+
         private Dictionary<string, SpacingConfig> _customSpacing;
+        private Dictionary<string, FontConfig> _customFonts;
 
         public OneNoteStyleConfig()
         {
             _customSpacing = new Dictionary<string, SpacingConfig>(DefaultSpacing);
+            _customFonts = new Dictionary<string, FontConfig>(DefaultFonts);
         }
 
         /// <summary>
@@ -51,6 +76,17 @@ namespace TeXShift.Core
             return _customSpacing.ContainsKey(key)
                 ? _customSpacing[key]
                 : _customSpacing["h6"]; // Fallback to h6 for levels > 6
+        }
+
+        /// <summary>
+        /// Gets font configuration for a heading level (1-6).
+        /// </summary>
+        public FontConfig GetHeadingFont(int level)
+        {
+            string key = $"h{level}";
+            return _customFonts.ContainsKey(key)
+                ? _customFonts[key]
+                : _customFonts["h6"]; // Fallback to h6 for levels > 6
         }
 
         /// <summary>
@@ -86,11 +122,21 @@ namespace TeXShift.Core
         }
 
         /// <summary>
-        /// Resets all spacing to default values.
+        /// Allows customization of font for a specific heading level.
+        /// </summary>
+        public void SetHeadingFont(int level, double fontSize, bool isBold = true)
+        {
+            string key = $"h{level}";
+            _customFonts[key] = new FontConfig(fontSize, isBold);
+        }
+
+        /// <summary>
+        /// Resets all spacing and font configurations to default values.
         /// </summary>
         public void ResetToDefaults()
         {
             _customSpacing = new Dictionary<string, SpacingConfig>(DefaultSpacing);
+            _customFonts = new Dictionary<string, FontConfig>(DefaultFonts);
         }
     }
 }

@@ -3,12 +3,13 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Extensibility;
 using Microsoft.Office.Core;
 using TeXShift.Core;
 using OneNote = Microsoft.Office.Interop.OneNote;
- 
+
  namespace TeXShift
  {
      /// <summary>
@@ -21,6 +22,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
      {
          private OneNote.Application _oneNoteApp;
          private IRibbonUI ribbon;
+         private ServiceContainer _serviceContainer;
  
          /// <summary>
          /// Called when the add-in is connected to OneNote.
@@ -28,6 +30,9 @@ using OneNote = Microsoft.Office.Interop.OneNote;
          public void OnConnection(object Application, ext_ConnectMode ConnectMode, object AddInInst, ref Array custom)
          {
              _oneNoteApp = (OneNote.Application)Application;
+
+             // Initialize dependency injection container
+             _serviceContainer = new ServiceContainer();
          }
  
          /// <summary>
@@ -35,6 +40,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
          /// </summary>
          public void OnDisconnection(ext_DisconnectMode RemoveMode, ref Array custom)
          {
+             _serviceContainer = null;
              _oneNoteApp = null;
              GC.Collect();
              GC.WaitForPendingFinalizers();
@@ -74,7 +80,11 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             this.ribbon = ribbonUI;
         }
 
-        public void OnConvertButtonClick(IRibbonControl control)
+        /// <summary>
+        /// Ribbon button click handler for conversion.
+        /// Uses async void pattern for event handlers.
+        /// </summary>
+        public async void OnConvertButtonClick(IRibbonControl control)
         {
             string debugFolder = null;
             string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -84,9 +94,9 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                 // Prepare debug output folder
                 debugFolder = PrepareDebugFolder();
 
-                // Step 1: Read content from OneNote
-                var reader = new ContentReader(_oneNoteApp);
-                var readResult = reader.ExtractContent();
+                // Step 1: Read content from OneNote (async - non-blocking)
+                var reader = _serviceContainer.CreateContentReader(_oneNoteApp);
+                var readResult = await reader.ExtractContentAsync();
 
                 if (!readResult.IsSuccess)
                 {
@@ -94,34 +104,38 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                     return;
                 }
 
-                // Save input Markdown
+                // Save input Markdown (async file I/O)
                 string inputFile = Path.Combine(debugFolder, $"01_Input_Markdown_{timestamp}.md");
-                File.WriteAllText(inputFile, readResult.ExtractedText, Encoding.UTF8);
+                await Task.Run(() => File.WriteAllText(inputFile, readResult.ExtractedText, Encoding.UTF8));
 
-                // Save original XML node
+                // Save original XML node (async file I/O)
                 if (readResult.OriginalXmlNode != null)
                 {
                     string originalXmlFile = Path.Combine(debugFolder, $"02_Original_XML_{timestamp}.xml");
-                    File.WriteAllText(originalXmlFile, readResult.OriginalXmlNode.ToString(), Encoding.UTF8);
+                    await Task.Run(() => File.WriteAllText(originalXmlFile, readResult.OriginalXmlNode.ToString(), Encoding.UTF8));
                 }
 
-                // Step 2: Convert Markdown to OneNote XML
-                var converter = new MarkdownConverter();
-                var oneNoteXml = converter.ConvertToOneNoteXml(readResult.ExtractedText);
+                // Step 2: Convert Markdown to OneNote XML (async - non-blocking)
+                var converter = _serviceContainer.CreateMarkdownConverter();
+                var oneNoteXml = await converter.ConvertToOneNoteXmlAsync(readResult.ExtractedText);
 
-                // Save converted XML
+                // Save converted XML (async file I/O)
                 string convertedXmlFile = Path.Combine(debugFolder, $"03_Converted_XML_{timestamp}.xml");
-                File.WriteAllText(convertedXmlFile, oneNoteXml.ToString(), Encoding.UTF8);
+                await Task.Run(() => File.WriteAllText(convertedXmlFile, oneNoteXml.ToString(), Encoding.UTF8));
 
-                // Step 3: Write back to OneNote
-                var writer = new ContentWriter(_oneNoteApp);
-                writer.ReplaceContent(readResult, oneNoteXml);
+                // Step 3: Write back to OneNote (async - non-blocking)
+                var writer = _serviceContainer.CreateContentWriter(_oneNoteApp);
+                await writer.ReplaceContentAsync(readResult, oneNoteXml);
 
-                // Save final page XML (after update)
-                string finalPageXml;
-                _oneNoteApp.GetPageContent(readResult.PageId, out finalPageXml, OneNote.PageInfo.piAll);
+                // Save final page XML (async)
+                string finalPageXml = await Task.Run(() =>
+                {
+                    string xml;
+                    _oneNoteApp.GetPageContent(readResult.PageId, out xml, OneNote.PageInfo.piAll);
+                    return xml;
+                });
                 string finalXmlFile = Path.Combine(debugFolder, $"04_Final_Page_XML_{timestamp}.xml");
-                File.WriteAllText(finalXmlFile, FormatXml(finalPageXml), Encoding.UTF8);
+                await Task.Run(() => File.WriteAllText(finalXmlFile, FormatXml(finalPageXml), Encoding.UTF8));
 
                 // Success message with debug info
                 MessageBox.Show(
@@ -136,15 +150,15 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             }
             catch (Exception ex)
             {
-                // Save error log
+                // Save error log (fire-and-forget async)
                 if (debugFolder != null)
                 {
                     try
                     {
                         string errorLogFile = Path.Combine(debugFolder, $"ERROR_{timestamp}.txt");
-                        File.WriteAllText(errorLogFile,
+                        await Task.Run(() => File.WriteAllText(errorLogFile,
                             $"转换失败\n\n时间: {DateTime.Now}\n\n错误消息:\n{ex.Message}\n\n堆栈跟踪:\n{ex.StackTrace}",
-                            Encoding.UTF8);
+                            Encoding.UTF8));
                     }
                     catch { }
                 }
@@ -161,13 +175,13 @@ using OneNote = Microsoft.Office.Interop.OneNote;
         /// <summary>
         /// Debug button: Shows and saves the selected content's XML structure only.
         /// </summary>
-        public void OnDebugSelectionXmlButtonClick(IRibbonControl control)
+        public async void OnDebugSelectionXmlButtonClick(IRibbonControl control)
         {
             try
             {
-                // Use ContentReader to get selected content
-                var reader = new ContentReader(_oneNoteApp);
-                var result = reader.ExtractContent();
+                // Use ContentReader to get selected content (async)
+                var reader = _serviceContainer.CreateContentReader(_oneNoteApp);
+                var result = await reader.ExtractContentAsync();
 
                 if (!result.IsSuccess)
                 {
@@ -184,12 +198,12 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                 // Format XML for better readability
                 string formattedXml = FormatXml(result.OriginalXmlNode.ToString());
 
-                // Save to file
+                // Save to file (async)
                 string debugFolder = PrepareDebugFolder();
                 string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string filename = $"Selection_XML_{timestamp}.xml";
                 string fullPath = Path.Combine(debugFolder, filename);
-                File.WriteAllText(fullPath, formattedXml, Encoding.UTF8);
+                await Task.Run(() => File.WriteAllText(fullPath, formattedXml, Encoding.UTF8));
 
                 // Show in dialog
                 string caption = $"选中内容 XML 结构 - {result.ModeAsString()} (已保存至: {filename})";
@@ -214,20 +228,27 @@ using OneNote = Microsoft.Office.Interop.OneNote;
         /// <summary>
         /// Debug button: Shows and saves the raw OneNote XML structure for entire page.
         /// </summary>
-        public void OnDebugXmlButtonClick(IRibbonControl control)
+        public async void OnDebugXmlButtonClick(IRibbonControl control)
         {
             try
             {
-                string pageId = _oneNoteApp.Windows.CurrentWindow?.CurrentPageId;
+                // Get page ID and XML content (async)
+                var (pageId, xmlContent) = await Task.Run(() =>
+                {
+                    string id = _oneNoteApp.Windows.CurrentWindow?.CurrentPageId;
+                    if (string.IsNullOrEmpty(id))
+                        return (null, null);
+
+                    string xml;
+                    _oneNoteApp.GetPageContent(id, out xml, OneNote.PageInfo.piAll);
+                    return (id, xml);
+                });
+
                 if (string.IsNullOrEmpty(pageId))
                 {
                     MessageBox.Show("无法获取当前页面ID。", "调试工具", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
-
-                // Get full page XML
-                string xmlContent;
-                _oneNoteApp.GetPageContent(pageId, out xmlContent, OneNote.PageInfo.piAll);
 
                 if (string.IsNullOrEmpty(xmlContent))
                 {
@@ -238,8 +259,8 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                 // Format XML for better readability
                 string formattedXml = FormatXml(xmlContent);
 
-                // Save to file
-                string savedPath = SaveDebugXml(formattedXml);
+                // Save to file (async)
+                string savedPath = await SaveDebugXmlAsync(formattedXml);
 
                 // Show in dialog
                 string caption = $"OneNote XML 结构 (已保存至: {Path.GetFileName(savedPath)})";
@@ -276,37 +297,40 @@ using OneNote = Microsoft.Office.Interop.OneNote;
         }
 
         /// <summary>
-        /// Saves debug XML to DebugOutput folder with timestamp.
+        /// Asynchronously saves debug XML to DebugOutput folder with timestamp.
         /// </summary>
-        private string SaveDebugXml(string xml)
+        private async Task<string> SaveDebugXmlAsync(string xml)
         {
-            // Find project root directory (where .sln file is located)
-            string assemblyLocation = Assembly.GetExecutingAssembly().Location;
-            string currentDir = Path.GetDirectoryName(assemblyLocation);
-            string projectRoot = FindProjectRoot(currentDir);
-
-            if (projectRoot == null)
+            return await Task.Run(() =>
             {
-                // Fallback to assembly location if project root not found
-                projectRoot = currentDir;
-            }
+                // Find project root directory (where .sln file is located)
+                string assemblyLocation = Assembly.GetExecutingAssembly().Location;
+                string currentDir = Path.GetDirectoryName(assemblyLocation);
+                string projectRoot = FindProjectRoot(currentDir);
 
-            string debugFolder = Path.Combine(projectRoot, "DebugOutput");
+                if (projectRoot == null)
+                {
+                    // Fallback to assembly location if project root not found
+                    projectRoot = currentDir;
+                }
 
-            if (!Directory.Exists(debugFolder))
-            {
-                Directory.CreateDirectory(debugFolder);
-            }
+                string debugFolder = Path.Combine(projectRoot, "DebugOutput");
 
-            // Generate filename with timestamp
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            string filename = $"OneNote_XML_{timestamp}.xml";
-            string fullPath = Path.Combine(debugFolder, filename);
+                if (!Directory.Exists(debugFolder))
+                {
+                    Directory.CreateDirectory(debugFolder);
+                }
 
-            // Save file
-            File.WriteAllText(fullPath, xml, Encoding.UTF8);
+                // Generate filename with timestamp
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string filename = $"OneNote_XML_{timestamp}.xml";
+                string fullPath = Path.Combine(debugFolder, filename);
 
-            return fullPath;
+                // Save file
+                File.WriteAllText(fullPath, xml, Encoding.UTF8);
+
+                return fullPath;
+            });
         }
 
         /// <summary>
