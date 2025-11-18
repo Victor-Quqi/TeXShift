@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using OneNote = Microsoft.Office.Interop.OneNote;
 
@@ -8,7 +9,7 @@ namespace TeXShift.Core
     /// <summary>
     /// Handles reading and parsing content from a OneNote page.
     /// </summary>
-    public class ContentReader
+    public class ContentReader : IContentReader
     {
         private readonly OneNote.Application _oneNoteApp;
 
@@ -18,9 +19,20 @@ namespace TeXShift.Core
         }
 
         /// <summary>
-        /// Extracts text content based on the user's current selection or cursor position.
+        /// Asynchronously extracts text content based on the user's current selection or cursor position.
         /// </summary>
-        public ReadResult ExtractContent()
+        public async Task<ReadResult> ExtractContentAsync()
+        {
+            // Wrap COM calls in Task.Run to avoid blocking UI thread
+            // OneNote COM objects must be accessed on STA thread
+            return await Task.Run(() => ExtractContent()).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Extracts text content based on the user's current selection or cursor position.
+        /// (Synchronous version - kept for internal use)
+        /// </summary>
+        private ReadResult ExtractContent()
         {
             string pageId = _oneNoteApp.Windows.CurrentWindow?.CurrentPageId;
             if (string.IsNullOrEmpty(pageId))

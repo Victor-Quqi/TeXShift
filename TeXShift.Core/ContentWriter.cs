@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using OneNote = Microsoft.Office.Interop.OneNote;
 
@@ -8,7 +9,7 @@ namespace TeXShift.Core
     /// <summary>
     /// Handles writing converted content back to OneNote pages.
     /// </summary>
-    public class ContentWriter
+    public class ContentWriter : IContentWriter
     {
         private readonly OneNote.Application _oneNoteApp;
         private readonly XNamespace _ns = "http://schemas.microsoft.com/office/onenote/2013/onenote";
@@ -19,11 +20,23 @@ namespace TeXShift.Core
         }
 
         /// <summary>
-        /// Replaces content in OneNote based on the read result and converted XML.
+        /// Asynchronously replaces content in OneNote based on the read result and converted XML.
         /// </summary>
         /// <param name="readResult">The original read result containing metadata</param>
         /// <param name="newOutlineXml">The new Outline XML element to insert</param>
-        public void ReplaceContent(ReadResult readResult, XElement newOutlineXml)
+        public async Task ReplaceContentAsync(ReadResult readResult, XElement newOutlineXml)
+        {
+            // Wrap COM calls in Task.Run to avoid blocking UI thread
+            await Task.Run(() => ReplaceContent(readResult, newOutlineXml)).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Replaces content in OneNote based on the read result and converted XML.
+        /// (Synchronous version - kept for internal use)
+        /// </summary>
+        /// <param name="readResult">The original read result containing metadata</param>
+        /// <param name="newOutlineXml">The new Outline XML element to insert</param>
+        private void ReplaceContent(ReadResult readResult, XElement newOutlineXml)
         {
             if (readResult == null)
                 throw new ArgumentNullException(nameof(readResult));
