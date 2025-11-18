@@ -21,7 +21,8 @@ namespace TeXShift.Core
 
             _markdownPipeline = new Lazy<MarkdownPipeline>(() =>
                 new MarkdownPipelineBuilder()
-                    .UseAdvancedExtensions()
+                    .UseAdvancedExtensions() // Includes most common extensions
+                    .UseListExtras()         // Add-on for more flexible list parsing (e.g., different indentations)
                     .Build()
             );
         }

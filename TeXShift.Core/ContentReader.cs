@@ -103,13 +103,10 @@ namespace TeXShift.Core
             }
 
             var sb = new StringBuilder();
-            foreach (var oeNode in outlineContainer.Descendants(ns + "OE"))
+            var rootChildren = outlineContainer.Element(ns + "OEChildren");
+            if (rootChildren != null)
             {
-                foreach (var textNode in oeNode.Elements(ns + "T"))
-                {
-                    sb.Append(textNode.Value);
-                }
-                sb.AppendLine();
+                ProcessOEChildren(rootChildren, ns, sb, 0);
             }
 
             string extractedText = sb.ToString().TrimEnd('\r', '\n');
@@ -144,16 +141,15 @@ namespace TeXShift.Core
                 return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = "成功定位到选区，但未能找到有效的文本容器。" };
             }
 
+            // In SelectionMode, we must reconstruct the hierarchical relationship from the flat list of selected OEs.
+            // The key insight is that a node's parent will also be in the list if it was part of the selection.
             var sb = new StringBuilder();
-            for (int i = 0; i < parentOEs.Count; i++)
-            {
-                var oe = parentOEs[i];
-                // Concatenate the text from all <T> elements within the current <OE>.
-                var oeText = string.Concat(oe.Elements(ns + "T").Select(t => t.Value));
-                sb.Append(oeText);
+            var topLevelOEs = parentOEs.Where(oe => oe.Parent?.Parent != null && !parentOEs.Contains(oe.Parent.Parent)).ToList();
 
-                // Add a newline between content from different OE elements.
-                if (i < parentOEs.Count - 1)
+            for (int i = 0; i < topLevelOEs.Count; i++)
+            {
+                ProcessOE(topLevelOEs[i], ns, sb, 0);
+                if (i < topLevelOEs.Count - 1)
                 {
                     sb.AppendLine();
                 }
@@ -186,6 +182,38 @@ namespace TeXShift.Core
 
             return result;
         }
+
+        /// <summary>
+        /// Recursively processes an OEChildren element, building a string with Markdown-compliant indentation.
+        /// </summary>
+        private void ProcessOEChildren(XElement oeChildren, XNamespace ns, StringBuilder sb, int indentLevel)
+        {
+            foreach (var oe in oeChildren.Elements(ns + "OE"))
+            {
+                ProcessOE(oe, ns, sb, indentLevel);
+            }
+        }
+
+        /// <summary>
+        /// Processes a single OE element, appends its text, and recursively handles its children.
+        /// </summary>
+        private void ProcessOE(XElement oe, XNamespace ns, StringBuilder sb, int indentLevel)
+        {
+            // Append indentation: Use 4 spaces per level for robust Markdown parsing.
+            sb.Append(new string(' ', indentLevel * 4));
+
+            // Append text content from all <T> elements within this <OE>.
+            var oeText = string.Concat(oe.Elements(ns + "T").Select(t => t.Value));
+            sb.AppendLine(oeText);
+
+            // If there's a nested OEChildren, process it recursively.
+            var nestedChildren = oe.Element(ns + "OEChildren");
+            if (nestedChildren != null)
+            {
+                ProcessOEChildren(nestedChildren, ns, sb, indentLevel + 1);
+            }
+        }
+
 
         /// <summary>
         /// Safely releases a COM object.
