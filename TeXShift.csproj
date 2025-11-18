@@ -63,9 +63,6 @@
       <HintPath>packages\Interop.Microsoft.Office.Interop.OneNote.1.1.0.2\lib\net40\Interop.Microsoft.Office.Interop.OneNote.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
-    <Reference Include="Markdig, Version=0.43.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Markdig.0.43.0\lib\net462\Markdig.dll</HintPath>
-    </Reference>
     <Reference Include="Markdig.Signed, Version=0.43.0.0, Culture=neutral, PublicKeyToken=870da25a133885f8, processorArchitecture=MSIL">
       <HintPath>packages\Markdig.Signed.0.43.0\lib\net462\Markdig.Signed.dll</HintPath>
     </Reference>

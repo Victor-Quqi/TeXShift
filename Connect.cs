@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Runtime.InteropServices;
-using Extensibility;
-using Microsoft.Office.Core;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Forms;
+using Extensibility;
+using Microsoft.Office.Core;
 using TeXShift.Core;
 using OneNote = Microsoft.Office.Interop.OneNote;
  
@@ -93,6 +94,126 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             {
                 MessageBox.Show("插件发生未知错误：\n" + ex.ToString(), "插件异常", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        /// <summary>
+        /// Debug button: Shows and saves the raw OneNote XML structure for current selection.
+        /// </summary>
+        public void OnDebugXmlButtonClick(IRibbonControl control)
+        {
+            try
+            {
+                string pageId = _oneNoteApp.Windows.CurrentWindow?.CurrentPageId;
+                if (string.IsNullOrEmpty(pageId))
+                {
+                    MessageBox.Show("无法获取当前页面ID。", "调试工具", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Get full page XML
+                string xmlContent;
+                _oneNoteApp.GetPageContent(pageId, out xmlContent, OneNote.PageInfo.piAll);
+
+                if (string.IsNullOrEmpty(xmlContent))
+                {
+                    MessageBox.Show("获取页面XML失败。", "调试工具", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Format XML for better readability
+                string formattedXml = FormatXml(xmlContent);
+
+                // Save to file
+                string savedPath = SaveDebugXml(formattedXml);
+
+                // Show in dialog
+                string caption = $"OneNote XML 结构 (已保存至: {Path.GetFileName(savedPath)})";
+                ShowTextInScrollableMessageBox(formattedXml, caption);
+
+                // Show success message
+                MessageBox.Show(
+                    $"XML已保存至：\n{savedPath}\n\n文件大小: {new FileInfo(savedPath).Length / 1024.0:F2} KB",
+                    "调试工具 - 保存成功",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("调试功能发生错误：\n" + ex.ToString(), "调试工具异常", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Formats XML string with proper indentation for readability.
+        /// </summary>
+        private string FormatXml(string xml)
+        {
+            try
+            {
+                var doc = System.Xml.Linq.XDocument.Parse(xml);
+                return doc.ToString();
+            }
+            catch
+            {
+                // If parsing fails, return original
+                return xml;
+            }
+        }
+
+        /// <summary>
+        /// Saves debug XML to DebugOutput folder with timestamp.
+        /// </summary>
+        private string SaveDebugXml(string xml)
+        {
+            // Find project root directory (where .sln file is located)
+            string assemblyLocation = Assembly.GetExecutingAssembly().Location;
+            string currentDir = Path.GetDirectoryName(assemblyLocation);
+            string projectRoot = FindProjectRoot(currentDir);
+
+            if (projectRoot == null)
+            {
+                // Fallback to assembly location if project root not found
+                projectRoot = currentDir;
+            }
+
+            string debugFolder = Path.Combine(projectRoot, "DebugOutput");
+
+            if (!Directory.Exists(debugFolder))
+            {
+                Directory.CreateDirectory(debugFolder);
+            }
+
+            // Generate filename with timestamp
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string filename = $"OneNote_XML_{timestamp}.xml";
+            string fullPath = Path.Combine(debugFolder, filename);
+
+            // Save file
+            File.WriteAllText(fullPath, xml, Encoding.UTF8);
+
+            return fullPath;
+        }
+
+        /// <summary>
+        /// Finds the project root directory by looking for .sln file.
+        /// </summary>
+        private string FindProjectRoot(string startPath)
+        {
+            DirectoryInfo dir = new DirectoryInfo(startPath);
+
+            while (dir != null)
+            {
+                // Check if this directory contains a .sln file
+                if (dir.GetFiles("*.sln").Length > 0)
+                {
+                    return dir.FullName;
+                }
+
+                // Move up to parent directory
+                dir = dir.Parent;
+            }
+
+            return null;
         }
 
         /// <summary>
