@@ -132,22 +132,31 @@ namespace TeXShift.Core
 
         private ReadResult HandleSelectionMode(System.Collections.Generic.List<XElement> selectedNodes, XNamespace ns, string pageId)
         {
-            var sb = new StringBuilder();
-            XElement previousParentOE = null;
+            // Find all unique parent OE nodes that are either selected themselves or contain selected children.
+            var parentOEs = selectedNodes
+                .Select(n => n.Name == ns + "OE" ? n : n.Ancestors(ns + "OE").FirstOrDefault())
+                .Where(oe => oe != null)
+                .Distinct()
+                .ToList();
 
-            var textNodes = selectedNodes.Where(n => n.Name == ns + "T").ToList();
-
-            foreach (var node in textNodes)
+            if (!parentOEs.Any())
             {
-                var currentParentOE = node.Ancestors(ns + "OE").FirstOrDefault();
+                return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = "成功定位到选区，但未能找到有效的文本容器。" };
+            }
 
-                if (previousParentOE != null && currentParentOE != previousParentOE)
+            var sb = new StringBuilder();
+            for (int i = 0; i < parentOEs.Count; i++)
+            {
+                var oe = parentOEs[i];
+                // Concatenate the text from all <T> elements within the current <OE>.
+                var oeText = string.Concat(oe.Elements(ns + "T").Select(t => t.Value));
+                sb.Append(oeText);
+
+                // Add a newline between content from different OE elements.
+                if (i < parentOEs.Count - 1)
                 {
-                    sb.Append('\n');
+                    sb.AppendLine();
                 }
-
-                sb.Append(node.Value);
-                previousParentOE = currentParentOE;
             }
 
             string extractedText = sb.ToString();
@@ -155,13 +164,6 @@ namespace TeXShift.Core
             {
                 return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = "成功定位到选区，但未能提取出有效文本内容。" };
             }
-
-            // Find all unique parent OE nodes involved in the selection
-            var parentOEs = textNodes
-                .Select(n => n.Ancestors(ns + "OE").FirstOrDefault())
-                .Where(oe => oe != null)
-                .Distinct()
-                .ToList();
 
             var result = new ReadResult
             {
