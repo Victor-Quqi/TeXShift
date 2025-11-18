@@ -106,9 +106,17 @@
     <Compile Include="TeXShift.Core\IContentWriter.cs" />
     <Compile Include="TeXShift.Core\IMarkdownConverter.cs" />
     <Compile Include="TeXShift.Core\MarkdownConverter.cs" />
+    <Compile Include="TeXShift.Core\Markdown\Handlers\CodeBlockHandler.cs" />
+    <Compile Include="TeXShift.Core\Markdown\Handlers\FallbackHandler.cs" />
+    <Compile Include="TeXShift.Core\Markdown\Handlers\HeadingHandler.cs" />
+    <Compile Include="TeXShift.Core\Markdown\Handlers\IBlockHandler.cs" />
+    <Compile Include="TeXShift.Core\Markdown\Handlers\ListHandler.cs" />
+    <Compile Include="TeXShift.Core\Markdown\Handlers\ParagraphHandler.cs" />
+    <Compile Include="TeXShift.Core\Markdown\IMarkdownConverterContext.cs" />
     <Compile Include="TeXShift.Core\OneNoteStyleConfig.cs" />
     <Compile Include="TeXShift.Core\ReadResult.cs" />
     <Compile Include="TeXShift.Core\ServiceContainer.cs" />
+    <Compile Include="TeXShift.Core\Utils\HtmlEscaper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

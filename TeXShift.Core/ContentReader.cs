@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -34,21 +35,35 @@ namespace TeXShift.Core
         /// </summary>
         private ReadResult ExtractContent()
         {
-            string pageId = _oneNoteApp.Windows.CurrentWindow?.CurrentPageId;
-            if (string.IsNullOrEmpty(pageId))
+            OneNote.Windows windows = null;
+            OneNote.Window window = null;
+            try
             {
-                return new ReadResult { IsSuccess = false, ErrorMessage = "无法获取当前页面的ID。" };
+                windows = _oneNoteApp.Windows;
+                window = windows.CurrentWindow;
+                string pageId = window?.CurrentPageId;
+
+                if (string.IsNullOrEmpty(pageId))
+                {
+                    return new ReadResult { IsSuccess = false, ErrorMessage = "无法获取当前页面的ID。" };
+                }
+
+                string xmlContent;
+                _oneNoteApp.GetPageContent(pageId, out xmlContent, OneNote.PageInfo.piAll);
+
+                if (string.IsNullOrEmpty(xmlContent))
+                {
+                    return new ReadResult { IsSuccess = false, ErrorMessage = "获取页面内容失败。" };
+                }
+
+                return ParseXmlContent(xmlContent, pageId);
             }
-
-            string xmlContent;
-            _oneNoteApp.GetPageContent(pageId, out xmlContent, OneNote.PageInfo.piAll);
-
-            if (string.IsNullOrEmpty(xmlContent))
+            finally
             {
-                return new ReadResult { IsSuccess = false, ErrorMessage = "获取页面内容失败。" };
+                // Release COM objects in the reverse order of creation.
+                SafeReleaseComObject(window);
+                SafeReleaseComObject(windows);
             }
-
-            return ParseXmlContent(xmlContent, pageId);
         }
 
         private ReadResult ParseXmlContent(string xmlContent, string pageId)
@@ -66,8 +81,8 @@ namespace TeXShift.Core
             }
 
             bool isCursorMode = deepestSelectedNodes.Count == 1 &&
-                                deepestSelectedNodes.First().Name == ns + "T" &&
-                                string.IsNullOrEmpty(deepestSelectedNodes.First().Value);
+                                  deepestSelectedNodes.First().Name == ns + "T" &&
+                                  string.IsNullOrEmpty(deepestSelectedNodes.First().Value);
 
             if (isCursorMode)
             {
@@ -168,6 +183,24 @@ namespace TeXShift.Core
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Safely releases a COM object.
+        /// </summary>
+        private void SafeReleaseComObject(object obj)
+        {
+            if (obj != null)
+            {
+                try
+                {
+                    Marshal.ReleaseComObject(obj);
+                }
+                catch
+                {
+                    // Ignore exceptions, object might already be released.
+                }
+            }
         }
     }
 }

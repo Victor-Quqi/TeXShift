@@ -1,394 +1,204 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using TeXShift.Core.Markdown;
+using TeXShift.Core.Markdown.Handlers;
+using TeXShift.Core.Utils;
 
 namespace TeXShift.Core
 {
     /// <summary>
-    /// Converts Markdown text to OneNote XML format.
+    /// Converts Markdown text to OneNote XML format by dispatching to specialized block handlers.
+    /// This class acts as a coordinator, parsing the Markdown and delegating the conversion
+    /// of each block type to a registered handler.
     /// </summary>
-    public class MarkdownConverter : IMarkdownConverter
+    public class MarkdownConverter : IMarkdownConverter, IMarkdownConverterContext
     {
-        private readonly XNamespace _ns = "http://schemas.microsoft.com/office/onenote/2013/onenote";
+        private readonly Dictionary<Type, IBlockHandler> _blockHandlers;
+        private readonly FallbackHandler _fallbackHandler = new FallbackHandler();
         private readonly MarkdownPipeline _pipeline;
-        private readonly OneNoteStyleConfig _styleConfig;
 
-        /// <summary>
-        /// Creates a new MarkdownConverter with default configuration.
-        /// Note: For better performance, use the ServiceContainer which caches the pipeline.
-        /// </summary>
-        public MarkdownConverter() : this(new OneNoteStyleConfig(), null)
+        private static readonly Regex SpanLangRegex = new Regex(@"<span\s+lang=[^>]+>(.*?)</span>", RegexOptions.Compiled | RegexOptions.Singleline);
+
+        // Explicit implementation of IMarkdownConverterContext properties
+        public XNamespace OneNoteNamespace { get; } = "http://schemas.microsoft.com/office/onenote/2013/onenote";
+        public OneNoteStyleConfig StyleConfig { get; }
+
+        public MarkdownConverter(OneNoteStyleConfig styleConfig, MarkdownPipeline pipeline)
         {
+            StyleConfig = styleConfig ?? throw new ArgumentNullException(nameof(styleConfig));
+            _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
+
+            // Register all the specialized handlers for each block type.
+            _blockHandlers = new Dictionary<Type, IBlockHandler>
+            {
+                { typeof(HeadingBlock), new HeadingHandler() },
+                { typeof(ParagraphBlock), new ParagraphHandler() },
+                { typeof(ListBlock), new ListHandler() },
+                { typeof(CodeBlock), new CodeBlockHandler() },
+                // Add new handlers here, e.g., { typeof(TableBlock), new TableHandler() }
+            };
         }
 
-        /// <summary>
-        /// Creates a new MarkdownConverter with specified configuration and pipeline.
-        /// </summary>
-        /// <param name="styleConfig">Style configuration for OneNote elements.</param>
-        /// <param name="pipeline">Optional shared MarkdownPipeline instance. If null, creates a new one.</param>
-        public MarkdownConverter(OneNoteStyleConfig styleConfig, MarkdownPipeline pipeline = null)
-        {
-            _styleConfig = styleConfig ?? throw new ArgumentNullException(nameof(styleConfig));
-
-            // Use provided pipeline or create new one
-            _pipeline = pipeline ?? new MarkdownPipelineBuilder()
-                .UseAdvancedExtensions()
-                .Build();
-        }
-
-        /// <summary>
-        /// Applies spacing attributes to an OE element.
-        /// </summary>
-        private void ApplySpacing(XElement oe, OneNoteStyleConfig.SpacingConfig spacing)
-        {
-            oe.Add(new XAttribute("spaceBefore", spacing.SpaceBefore.ToString("F1")));
-            oe.Add(new XAttribute("spaceAfter", spacing.SpaceAfter.ToString("F1")));
-            oe.Add(new XAttribute("spaceBetween", spacing.SpaceBetween.ToString("F1")));
-        }
-
-        /// <summary>
-        /// Asynchronously converts Markdown text to a OneNote Outline XML element.
-        /// </summary>
         public async Task<XElement> ConvertToOneNoteXmlAsync(string markdown)
         {
             if (string.IsNullOrWhiteSpace(markdown))
             {
                 return CreateEmptyOutline();
             }
-
-            // Wrap CPU-intensive Markdown parsing in Task.Run to avoid blocking UI
             return await Task.Run(() => ConvertToOneNoteXml(markdown)).ConfigureAwait(false);
         }
 
-        /// <summary>
-        /// Converts Markdown text to a OneNote Outline XML element.
-        /// (Synchronous version - kept for internal use)
-        /// </summary>
         private XElement ConvertToOneNoteXml(string markdown)
         {
-            if (string.IsNullOrWhiteSpace(markdown))
+            var sanitizedMarkdown = SanitizeText(markdown);
+            var document = Markdig.Markdown.Parse(sanitizedMarkdown, _pipeline);
+            var outline = new XElement(OneNoteNamespace + "Outline");
+
+            // Add the Indents element to control layout and prevent default margins.
+            var indentsElement = new XElement(OneNoteNamespace + "Indents");
+            foreach (var indent in StyleConfig.Indents)
             {
-                return CreateEmptyOutline();
+                indentsElement.Add(new XElement(OneNoteNamespace + "Indent",
+                    new XAttribute("level", indent.Key.ToString()),
+                    new XAttribute("indent", indent.Value.ToString("F1"))));
             }
+            outline.Add(indentsElement);
 
-            var document = Markdown.Parse(markdown, _pipeline);
-            var outline = new XElement(_ns + "Outline");
-            var oeChildren = new XElement(_ns + "OEChildren");
+            var oeChildren = new XElement(OneNoteNamespace + "OEChildren");
 
-            XElement currentHeading = null;
-            XElement currentOEChildren = null;
+            // Final, correct logic:
+            // 1. Process all blocks into a flat list of XElements.
+            // 2. Post-process to handle a specific OneNote rendering quirk:
+            //    If a ListBlock follows a HeadingBlock, it MUST be nested to avoid default indentation on the Heading.
+            //    Other blocks (like Paragraphs) should remain at the top level.
 
-            foreach (var block in document)
+            var blocks = document.ToList();
+            var elements = new List<XElement>();
+            XElement lastHeadingElement = null;
+
+            for (int i = 0; i < blocks.Count; i++)
             {
-                // Skip internal blocks
-                if (block is Markdig.Syntax.LinkReferenceDefinitionGroup)
-                {
-                    continue;
-                }
+                var block = blocks[i];
+                if (block is LinkReferenceDefinitionGroup) continue;
 
-                if (block is HeadingBlock heading)
-                {
-                    // Close previous heading's children if any
-                    if (currentHeading != null && currentOEChildren != null && currentOEChildren.HasElements)
-                    {
-                        currentHeading.Add(currentOEChildren);
-                    }
+                var processed = HandleBlock(block).ToList();
 
-                    // Create new heading
-                    currentHeading = ConvertHeading(heading);
-                    currentOEChildren = new XElement(_ns + "OEChildren");
-                    oeChildren.Add(currentHeading);
-                }
-                else if (block is ListBlock list)
+                // Check if the current block is a list.
+                if (block is ListBlock && lastHeadingElement != null)
                 {
-                    // Add list items to current heading's children
-                    var listItems = ConvertList(list);
-                    if (currentOEChildren != null)
+                    // This is a list that follows a heading. Nest all its generated elements.
+                    var childrenContainer = lastHeadingElement.Element(OneNoteNamespace + "OEChildren");
+                    if (childrenContainer == null)
                     {
-                        foreach (var item in listItems)
-                        {
-                            currentOEChildren.Add(item);
-                        }
+                        childrenContainer = new XElement(OneNoteNamespace + "OEChildren");
+                        lastHeadingElement.Add(childrenContainer);
                     }
-                    else
-                    {
-                        // No heading, add list items directly
-                        foreach (var item in listItems)
-                        {
-                            oeChildren.Add(item);
-                        }
-                    }
+                    childrenContainer.Add(processed);
                 }
                 else
                 {
-                    // Close previous heading's children if any
-                    if (currentHeading != null && currentOEChildren != null && currentOEChildren.HasElements)
-                    {
-                        currentHeading.Add(currentOEChildren);
-                        currentHeading = null;
-                        currentOEChildren = null;
-                    }
-
-                    // Add other blocks (paragraphs, code, etc.)
-                    var oeElements = ConvertBlock(block);
-                    if (oeElements != null)
-                    {
-                        foreach (var oe in oeElements)
-                        {
-                            oeChildren.Add(oe);
-                        }
-                    }
+                    elements.AddRange(processed);
+                    // If this block is a heading, track it. Otherwise, reset.
+                    lastHeadingElement = (block is HeadingBlock) ? processed.LastOrDefault() : null;
                 }
             }
-
-            // Close final heading's children if any
-            if (currentHeading != null && currentOEChildren != null && currentOEChildren.HasElements)
-            {
-                currentHeading.Add(currentOEChildren);
-            }
-
+            
+            oeChildren.Add(elements);
             outline.Add(oeChildren);
             return outline;
         }
 
-        private XElement CreateEmptyOutline()
+        public IEnumerable<XElement> ProcessBlocks(IEnumerable<Block> blocks)
         {
-            return new XElement(_ns + "Outline",
-                new XElement(_ns + "OEChildren",
-                    new XElement(_ns + "OE",
-                        new XElement(_ns + "T", new XCData(""))
-                    )
-                )
-            );
+            var elements = new List<XElement>();
+            foreach (var block in blocks)
+            {
+                elements.AddRange(HandleBlock(block));
+            }
+            return elements;
         }
 
-        private System.Collections.Generic.List<XElement> ConvertBlock(Block block)
+        private IEnumerable<XElement> HandleBlock(Block block)
         {
-            var result = new System.Collections.Generic.List<XElement>();
+            if (block is LinkReferenceDefinitionGroup) return Enumerable.Empty<XElement>();
 
-            // Skip Markdig internal blocks
-            if (block is Markdig.Syntax.LinkReferenceDefinitionGroup)
+            IBlockHandler handler;
+            if (!_blockHandlers.TryGetValue(block.GetType(), out handler))
             {
-                return result;
+                handler = _fallbackHandler;
             }
-
-            if (block is HeadingBlock heading)
-            {
-                result.Add(ConvertHeading(heading));
-            }
-            else if (block is ParagraphBlock paragraph)
-            {
-                result.Add(ConvertParagraph(paragraph));
-            }
-            else if (block is ListBlock list)
-            {
-                result.AddRange(ConvertList(list));
-            }
-            else if (block is CodeBlock code)
-            {
-                result.Add(ConvertCodeBlock(code));
-            }
-            else
-            {
-                result.Add(ConvertFallback(block));
-            }
-
-            return result;
+            return handler.Handle(block, this);
         }
 
-        private XElement ConvertHeading(HeadingBlock heading)
+
+        private string SanitizeText(string text)
         {
-            var oe = new XElement(_ns + "OE");
-
-            // Map heading levels to OneNote styles
-            int styleIndex = Math.Min(heading.Level - 1, 5);
-            oe.Add(new XAttribute("quickStyleIndex", styleIndex.ToString()));
-
-            // Apply spacing based on heading level
-            ApplySpacing(oe, _styleConfig.GetHeadingSpacing(heading.Level));
-
-            // Get font configuration for this heading level
-            var fontConfig = _styleConfig.GetHeadingFont(heading.Level);
-
-            // Convert inline content to HTML and apply font styles
-            var htmlContent = ConvertInlinesToHtml(heading.Inline);
-            var styleAttributes = $"font-size:{fontConfig.FontSize}pt";
-            if (fontConfig.IsBold)
+            // Recursively remove lang spans to handle nested cases.
+            while (SpanLangRegex.IsMatch(text))
             {
-                styleAttributes += ";font-weight:bold";
+                text = SpanLangRegex.Replace(text, "$1");
             }
-            var styledHeading = $"<span style='{styleAttributes}'>{htmlContent}</span>";
-            oe.Add(new XElement(_ns + "T", new XCData(styledHeading)));
-
-            return oe;
+            return text;
         }
 
-        private XElement ConvertParagraph(ParagraphBlock paragraph)
-        {
-            var oe = new XElement(_ns + "OE");
-
-            // Apply paragraph spacing
-            ApplySpacing(oe, _styleConfig.GetParagraphSpacing());
-
-            // Convert inline content to HTML
-            var htmlContent = ConvertInlinesToHtml(paragraph.Inline);
-            oe.Add(new XElement(_ns + "T", new XCData(htmlContent)));
-
-            return oe;
-        }
-
-        private System.Collections.Generic.List<XElement> ConvertList(ListBlock list)
-        {
-            var result = new System.Collections.Generic.List<XElement>();
-
-            foreach (var item in list.OfType<ListItemBlock>())
-            {
-                foreach (var childBlock in item)
-                {
-                    if (childBlock is ParagraphBlock para)
-                    {
-                        var oe = new XElement(_ns + "OE");
-
-                        // Apply list item spacing
-                        ApplySpacing(oe, _styleConfig.GetListSpacing());
-
-                        // Add List element for bullet/number
-                        var listElement = new XElement(_ns + "List");
-                        if (list.IsOrdered)
-                        {
-                            // Ordered list: <Number>
-                            var number = new XElement(_ns + "Number",
-                                new XAttribute("numberSequence", "0"),
-                                new XAttribute("numberFormat", "##."),
-                                new XAttribute("fontSize", "11.0")
-                            );
-                            listElement.Add(number);
-                        }
-                        else
-                        {
-                            // Unordered list: <Bullet>
-                            var bullet = new XElement(_ns + "Bullet",
-                                new XAttribute("bullet", "2"),
-                                new XAttribute("fontSize", "11.0")
-                            );
-                            listElement.Add(bullet);
-                        }
-                        oe.Add(listElement);
-
-                        // Add text content
-                        var htmlContent = ConvertInlinesToHtml(para.Inline);
-                        oe.Add(new XElement(_ns + "T", new XCData(htmlContent)));
-
-                        result.Add(oe);
-                    }
-                }
-            }
-
-            return result;
-        }
-
-        private XElement ConvertCodeBlock(CodeBlock code)
-        {
-            var oe = new XElement(_ns + "OE");
-
-            // Apply code block spacing
-            ApplySpacing(oe, _styleConfig.GetCodeSpacing());
-
-            var textElement = new XElement(_ns + "T",
-                new XCData($"<span style='font-family:Consolas'>{EscapeHtml(code.Lines.ToString())}</span>")
-            );
-            oe.Add(textElement);
-            return oe;
-        }
-
-        private XElement ConvertFallback(Block block)
-        {
-            var oe = new XElement(_ns + "OE");
-            oe.Add(new XElement(_ns + "T", new XCData(block.ToString())));
-            return oe;
-        }
-
-        /// <summary>
-        /// Converts inline elements to HTML format for OneNote CDATA.
-        /// </summary>
-        private string ConvertInlinesToHtml(ContainerInline container)
+        public string ConvertInlinesToHtml(ContainerInline container)
         {
             if (container == null) return string.Empty;
-
             var html = new StringBuilder();
-
             foreach (var inline in container)
             {
                 if (inline is LiteralInline literal)
                 {
-                    html.Append(EscapeHtml(literal.Content.ToString()));
+                    html.Append(HtmlEscaper.Escape(literal.Content.ToString()));
                 }
                 else if (inline is EmphasisInline emphasis)
                 {
                     var content = ConvertInlinesToHtml(emphasis);
-
                     if (emphasis.DelimiterChar == '*' || emphasis.DelimiterChar == '_')
                     {
-                        if (emphasis.DelimiterCount == 2)
-                        {
-                            // Bold: **text** or __text__
-                            html.Append($"<span style='font-weight:bold'>{content}</span>");
-                        }
-                        else if (emphasis.DelimiterCount == 1)
-                        {
-                            // Italic: *text* or _text_
-                            html.Append($"<span style='font-style:italic'>{content}</span>");
-                        }
-                        else
-                        {
-                            html.Append(content);
-                        }
+                        if (emphasis.DelimiterCount == 2) html.Append($"<span style='font-weight:bold'>{content}</span>");
+                        else if (emphasis.DelimiterCount == 1) html.Append($"<span style='font-style:italic'>{content}</span>");
+                        else html.Append(content);
                     }
                     else if (emphasis.DelimiterChar == '~' && emphasis.DelimiterCount == 2)
                     {
-                        // Strikethrough: ~~text~~
                         html.Append($"<span style='text-decoration:line-through'>{content}</span>");
                     }
-                    else
-                    {
-                        html.Append(content);
-                    }
+                    else html.Append(content);
                 }
                 else if (inline is CodeInline code)
                 {
-                    html.Append($"<span style='font-family:Consolas'>{EscapeHtml(code.Content)}</span>");
+                    html.Append($"<span style='font-family:Consolas'>{HtmlEscaper.Escape(code.Content)}</span>");
                 }
                 else if (inline is LineBreakInline)
                 {
                     html.Append("\n");
                 }
-                else if (inline is ContainerInline nestedContainer)
+                else if (inline is ContainerInline nested)
                 {
-                    html.Append(ConvertInlinesToHtml(nestedContainer));
+                    html.Append(ConvertInlinesToHtml(nested));
                 }
             }
-
             return html.ToString();
         }
 
-        /// <summary>
-        /// Escapes HTML special characters.
-        /// </summary>
-        private string EscapeHtml(string text)
+        private XElement CreateEmptyOutline()
         {
-            if (string.IsNullOrEmpty(text)) return text;
-
-            return text
-                .Replace("&", "&amp;")
-                .Replace("<", "&lt;")
-                .Replace(">", "&gt;")
-                .Replace("\"", "&quot;")
-                .Replace("'", "&#39;");
+            return new XElement(OneNoteNamespace + "Outline",
+                new XElement(OneNoteNamespace + "OEChildren",
+                    new XElement(OneNoteNamespace + "OE",
+                        new XElement(OneNoteNamespace + "T", new XCData(""))
+                    )
+                )
+            );
         }
     }
 }
