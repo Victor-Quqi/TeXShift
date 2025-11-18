@@ -40,8 +40,13 @@ using OneNote = Microsoft.Office.Interop.OneNote;
          /// </summary>
          public void OnDisconnection(ext_DisconnectMode RemoveMode, ref Array custom)
          {
+             // Explicitly release the COM object to ensure OneNote can shut down cleanly.
+             SafeReleaseComObject(_oneNoteApp);
              _serviceContainer = null;
-             _oneNoteApp = null;
+ 
+             // While explicit release is key, garbage collection can help clean up any other managed wrappers.
+             GC.Collect();
+             GC.WaitForPendingFinalizers();
              GC.Collect();
              GC.WaitForPendingFinalizers();
          }
@@ -172,6 +177,29 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             }
         }
 
+        /// <summary>
+        /// Safely releases a COM object and sets its reference to null.
+        /// </summary>
+        /// <param name="obj">The COM object to release.</param>
+        private void SafeReleaseComObject(object obj)
+        {
+            if (obj != null)
+            {
+                try
+                {
+                    Marshal.ReleaseComObject(obj);
+                }
+                catch (Exception)
+                {
+                    // Ignore exceptions during release, as the object might already be gone.
+                }
+                finally
+                {
+                    obj = null;
+                }
+            }
+        }
+ 
         /// <summary>
         /// Debug button: Shows and saves the selected content's XML structure only.
         /// </summary>

@@ -58,13 +58,26 @@ namespace TeXShift.Core
             { "h6", new FontConfig(11.0, true) }     // 六级标题：11pt 粗体
         };
 
+        // Default indent configurations for nested content, matching onemark for consistency.
+        private static readonly Dictionary<int, double> DefaultIndents = new Dictionary<int, double>
+        {
+            { 1, 22.0 },
+            { 2, 22.0 },
+            { 3, 22.0 },
+            { 4, 22.0 }
+        };
+ 
         private Dictionary<string, SpacingConfig> _customSpacing;
         private Dictionary<string, FontConfig> _customFonts;
+        private Dictionary<int, double> _customIndents;
 
+        public IReadOnlyDictionary<int, double> Indents => _customIndents;
+ 
         public OneNoteStyleConfig()
         {
             _customSpacing = new Dictionary<string, SpacingConfig>(DefaultSpacing);
             _customFonts = new Dictionary<string, FontConfig>(DefaultFonts);
+            _customIndents = new Dictionary<int, double>(DefaultIndents);
         }
 
         /// <summary>
@@ -131,12 +144,21 @@ namespace TeXShift.Core
         }
 
         /// <summary>
+        /// Allows customization of indent for a specific level.
+        /// </summary>
+        public void SetIndent(int level, double indent)
+        {
+            _customIndents[level] = indent;
+        }
+ 
+        /// <summary>
         /// Resets all spacing and font configurations to default values.
         /// </summary>
         public void ResetToDefaults()
         {
             _customSpacing = new Dictionary<string, SpacingConfig>(DefaultSpacing);
             _customFonts = new Dictionary<string, FontConfig>(DefaultFonts);
+            _customIndents = new Dictionary<int, double>(DefaultIndents);
         }
     }
 }
