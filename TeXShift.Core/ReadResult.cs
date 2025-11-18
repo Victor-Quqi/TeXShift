@@ -1,3 +1,5 @@
+using System.Xml.Linq;
+
 namespace TeXShift.Core
 {
     /// <summary>
@@ -32,6 +34,21 @@ namespace TeXShift.Core
         public string ExtractedText { get; set; }
         public DetectionMode Mode { get; set; }
         public string ErrorMessage { get; set; }
+
+        /// <summary>
+        /// The OneNote page ID where the content was read from.
+        /// </summary>
+        public string PageId { get; set; }
+
+        /// <summary>
+        /// The ObjectID of the node to be replaced (Outline in Cursor mode, OE in Selection mode).
+        /// </summary>
+        public string TargetObjectId { get; set; }
+
+        /// <summary>
+        /// The original XML node (used for preserving attributes during replacement).
+        /// </summary>
+        public XElement OriginalXmlNode { get; set; }
 
         public string ModeAsString()
         {

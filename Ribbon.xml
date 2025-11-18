@@ -12,10 +12,15 @@
                 </group>
                 <group id="grpDebugTools" label="调试工具">
                     <button id="btnDebugXml"
-                            label="查看XML"
+                            label="查看整页XML"
                             size="large"
                             onAction="OnDebugXmlButtonClick"
                             imageMso="FileOpen" />
+                    <button id="btnDebugSelectionXml"
+                            label="查看选中XML"
+                            size="large"
+                            onAction="OnDebugSelectionXmlButtonClick"
+                            imageMso="FileFind" />
                 </group>
             </tab>
         </tabs>

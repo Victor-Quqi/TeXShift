@@ -76,28 +76,143 @@ using OneNote = Microsoft.Office.Interop.OneNote;
 
         public void OnConvertButtonClick(IRibbonControl control)
         {
+            string debugFolder = null;
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
             try
             {
-                var reader = new ContentReader(_oneNoteApp);
-                var result = reader.ExtractContent();
+                // Prepare debug output folder
+                debugFolder = PrepareDebugFolder();
 
-                if (result.IsSuccess)
+                // Step 1: Read content from OneNote
+                var reader = new ContentReader(_oneNoteApp);
+                var readResult = reader.ExtractContent();
+
+                if (!readResult.IsSuccess)
                 {
-                    ShowTextInScrollableMessageBox(result.ExtractedText, $"检测到: {result.ModeAsString()}");
+                    MessageBox.Show(readResult.ErrorMessage, "操作提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
                 }
-                else
+
+                // Save input Markdown
+                string inputFile = Path.Combine(debugFolder, $"01_Input_Markdown_{timestamp}.md");
+                File.WriteAllText(inputFile, readResult.ExtractedText, Encoding.UTF8);
+
+                // Save original XML node
+                if (readResult.OriginalXmlNode != null)
                 {
-                    MessageBox.Show(result.ErrorMessage, "操作提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    string originalXmlFile = Path.Combine(debugFolder, $"02_Original_XML_{timestamp}.xml");
+                    File.WriteAllText(originalXmlFile, readResult.OriginalXmlNode.ToString(), Encoding.UTF8);
                 }
+
+                // Step 2: Convert Markdown to OneNote XML
+                var converter = new MarkdownConverter();
+                var oneNoteXml = converter.ConvertToOneNoteXml(readResult.ExtractedText);
+
+                // Save converted XML
+                string convertedXmlFile = Path.Combine(debugFolder, $"03_Converted_XML_{timestamp}.xml");
+                File.WriteAllText(convertedXmlFile, oneNoteXml.ToString(), Encoding.UTF8);
+
+                // Step 3: Write back to OneNote
+                var writer = new ContentWriter(_oneNoteApp);
+                writer.ReplaceContent(readResult, oneNoteXml);
+
+                // Save final page XML (after update)
+                string finalPageXml;
+                _oneNoteApp.GetPageContent(readResult.PageId, out finalPageXml, OneNote.PageInfo.piAll);
+                string finalXmlFile = Path.Combine(debugFolder, $"04_Final_Page_XML_{timestamp}.xml");
+                File.WriteAllText(finalXmlFile, FormatXml(finalPageXml), Encoding.UTF8);
+
+                // Success message with debug info
+                MessageBox.Show(
+                    $"转换成功!\n\n" +
+                    $"模式: {readResult.ModeAsString()}\n" +
+                    $"处理了 {readResult.ExtractedText.Length} 个字符\n\n" +
+                    $"调试文件已保存至:\n{debugFolder}",
+                    "TeXShift - 转换完成",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
             }
             catch (Exception ex)
             {
-                MessageBox.Show("插件发生未知错误：\n" + ex.ToString(), "插件异常", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // Save error log
+                if (debugFolder != null)
+                {
+                    try
+                    {
+                        string errorLogFile = Path.Combine(debugFolder, $"ERROR_{timestamp}.txt");
+                        File.WriteAllText(errorLogFile,
+                            $"转换失败\n\n时间: {DateTime.Now}\n\n错误消息:\n{ex.Message}\n\n堆栈跟踪:\n{ex.StackTrace}",
+                            Encoding.UTF8);
+                    }
+                    catch { }
+                }
+
+                MessageBox.Show(
+                    $"转换失败:\n\n{ex.Message}\n\n详细信息:\n{ex.StackTrace}",
+                    "TeXShift - 错误",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
             }
         }
 
         /// <summary>
-        /// Debug button: Shows and saves the raw OneNote XML structure for current selection.
+        /// Debug button: Shows and saves the selected content's XML structure only.
+        /// </summary>
+        public void OnDebugSelectionXmlButtonClick(IRibbonControl control)
+        {
+            try
+            {
+                // Use ContentReader to get selected content
+                var reader = new ContentReader(_oneNoteApp);
+                var result = reader.ExtractContent();
+
+                if (!result.IsSuccess)
+                {
+                    MessageBox.Show(result.ErrorMessage, "调试工具", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (result.OriginalXmlNode == null)
+                {
+                    MessageBox.Show("未能获取选中内容的XML节点。", "调试工具", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Format XML for better readability
+                string formattedXml = FormatXml(result.OriginalXmlNode.ToString());
+
+                // Save to file
+                string debugFolder = PrepareDebugFolder();
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string filename = $"Selection_XML_{timestamp}.xml";
+                string fullPath = Path.Combine(debugFolder, filename);
+                File.WriteAllText(fullPath, formattedXml, Encoding.UTF8);
+
+                // Show in dialog
+                string caption = $"选中内容 XML 结构 - {result.ModeAsString()} (已保存至: {filename})";
+                ShowTextInScrollableMessageBox(formattedXml, caption);
+
+                // Show success message
+                MessageBox.Show(
+                    $"选中内容的XML已保存至：\n{fullPath}\n\n" +
+                    $"模式: {result.ModeAsString()}\n" +
+                    $"节点类型: {result.OriginalXmlNode.Name.LocalName}\n" +
+                    $"ObjectID: {result.TargetObjectId}",
+                    "调试工具 - 保存成功",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("调试功能发生错误：\n" + ex.ToString(), "调试工具异常", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Debug button: Shows and saves the raw OneNote XML structure for entire page.
         /// </summary>
         public void OnDebugXmlButtonClick(IRibbonControl control)
         {
@@ -214,6 +329,30 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Prepares the debug output folder for saving conversion artifacts.
+        /// </summary>
+        private string PrepareDebugFolder()
+        {
+            string assemblyLocation = Assembly.GetExecutingAssembly().Location;
+            string currentDir = Path.GetDirectoryName(assemblyLocation);
+            string projectRoot = FindProjectRoot(currentDir);
+
+            if (projectRoot == null)
+            {
+                projectRoot = currentDir;
+            }
+
+            string debugFolder = Path.Combine(projectRoot, "DebugOutput");
+
+            if (!Directory.Exists(debugFolder))
+            {
+                Directory.CreateDirectory(debugFolder);
+            }
+
+            return debugFolder;
         }
 
         /// <summary>
