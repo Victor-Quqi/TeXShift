@@ -36,10 +36,10 @@ namespace TeXShift.Core
                 return new ReadResult { IsSuccess = false, ErrorMessage = "获取页面内容失败。" };
             }
 
-            return ParseXmlContent(xmlContent);
+            return ParseXmlContent(xmlContent, pageId);
         }
 
-        private ReadResult ParseXmlContent(string xmlContent)
+        private ReadResult ParseXmlContent(string xmlContent, string pageId)
         {
             var doc = XDocument.Parse(xmlContent);
             var ns = doc.Root.Name.Namespace;
@@ -59,15 +59,15 @@ namespace TeXShift.Core
 
             if (isCursorMode)
             {
-                return HandleCursorMode(deepestSelectedNodes.First(), ns);
+                return HandleCursorMode(deepestSelectedNodes.First(), ns, pageId);
             }
             else
             {
-                return HandleSelectionMode(deepestSelectedNodes, ns);
+                return HandleSelectionMode(deepestSelectedNodes, ns, pageId);
             }
         }
 
-        private ReadResult HandleCursorMode(XElement cursorNode, XNamespace ns)
+        private ReadResult HandleCursorMode(XElement cursorNode, XNamespace ns, string pageId)
         {
             var outlineContainer = cursorNode.Ancestors(ns + "Outline").FirstOrDefault();
             if (outlineContainer == null)
@@ -86,10 +86,20 @@ namespace TeXShift.Core
             }
 
             string extractedText = sb.ToString().TrimEnd('\r', '\n');
-            return new ReadResult { IsSuccess = true, Mode = DetectionMode.Cursor, ExtractedText = extractedText };
+            string objectId = outlineContainer.Attribute("objectID")?.Value;
+
+            return new ReadResult
+            {
+                IsSuccess = true,
+                Mode = DetectionMode.Cursor,
+                ExtractedText = extractedText,
+                PageId = pageId,
+                TargetObjectId = objectId,
+                OriginalXmlNode = outlineContainer
+            };
         }
 
-        private ReadResult HandleSelectionMode(System.Collections.Generic.List<XElement> selectedNodes, XNamespace ns)
+        private ReadResult HandleSelectionMode(System.Collections.Generic.List<XElement> selectedNodes, XNamespace ns, string pageId)
         {
             var sb = new StringBuilder();
             foreach (var node in selectedNodes.Where(n => n.Name == ns + "T"))
@@ -103,7 +113,24 @@ namespace TeXShift.Core
                  return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = "成功定位到选区，但未能提取出有效文本内容。" };
             }
 
-            return new ReadResult { IsSuccess = true, Mode = DetectionMode.Selection, ExtractedText = extractedText };
+            // Find the common parent OE or Outline node
+            var firstTextNode = selectedNodes.FirstOrDefault(n => n.Name == ns + "T");
+            var parentOE = firstTextNode?.Ancestors(ns + "OE").FirstOrDefault();
+            var parentOutline = firstTextNode?.Ancestors(ns + "Outline").FirstOrDefault();
+
+            // Use OE for selection mode, fallback to Outline
+            var targetNode = parentOE ?? parentOutline;
+            string objectId = targetNode?.Attribute("objectID")?.Value;
+
+            return new ReadResult
+            {
+                IsSuccess = true,
+                Mode = DetectionMode.Selection,
+                ExtractedText = extractedText,
+                PageId = pageId,
+                TargetObjectId = objectId,
+                OriginalXmlNode = targetNode
+            };
         }
     }
 }

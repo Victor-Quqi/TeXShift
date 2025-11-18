@@ -101,6 +101,9 @@
     <Compile Include="Connect.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TeXShift.Core\ContentReader.cs" />
+    <Compile Include="TeXShift.Core\ContentWriter.cs" />
+    <Compile Include="TeXShift.Core\MarkdownConverter.cs" />
+    <Compile Include="TeXShift.Core\OneNoteStyleConfig.cs" />
     <Compile Include="TeXShift.Core\ReadResult.cs" />
   </ItemGroup>
   <ItemGroup>
