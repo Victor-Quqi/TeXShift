@@ -4,10 +4,15 @@
         <tabs>
             <tab id="tabTeXShift" label="TeXShift">
                 <group id="grpConvertTools" label="转换工具">
-                    <button id="btnConvert"
+                    <button id="btnSilentConvert"
                             label="一键转换"
                             size="large"
                             onAction="OnConvertButtonClick"
+                            imageMso="Repeat" />
+                    <button id="btnDebugConvert"
+                            label="调试转换"
+                            size="large"
+                            onAction="OnDebugConvertButtonClick"
                             imageMso="HappyFace" />
                 </group>
                 <group id="grpDebugTools" label="调试工具">

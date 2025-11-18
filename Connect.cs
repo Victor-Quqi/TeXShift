@@ -89,15 +89,40 @@ using OneNote = Microsoft.Office.Interop.OneNote;
         /// Ribbon button click handler for conversion.
         /// Uses async void pattern for event handlers.
         /// </summary>
-        public async void OnConvertButtonClick(IRibbonControl control)
+        public void OnConvertButtonClick(IRibbonControl control)
+        {
+            // This is the new "Silent Convert" button.
+            // It does not show a success message box to avoid interrupting the user's workflow.
+            // It does NOT write debug files.
+            // Errors will still be displayed.
+            PerformConversionAsync(showSuccessDialog: false, writeDebugFiles: false);
+        }
+
+        public void OnDebugConvertButtonClick(IRibbonControl control)
+        {
+            // This is the original "Convert" button, now repurposed for debugging.
+            // It shows detailed success information and saves debug files.
+            PerformConversionAsync(showSuccessDialog: true, writeDebugFiles: true);
+        }
+
+        /// <summary>
+        /// Core conversion logic. Reads from OneNote, converts, and writes back.
+        /// </summary>
+        /// <param name="showSuccessDialog">If true, shows a detailed message box on success.</param>
+        /// <param name="writeDebugFiles">If true, saves conversion artifacts to the DebugOutput folder.</param>
+        private async void PerformConversionAsync(bool showSuccessDialog, bool writeDebugFiles)
         {
             string debugFolder = null;
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string timestamp = null;
 
             try
             {
-                // Prepare debug output folder
-                debugFolder = PrepareDebugFolder();
+                if (writeDebugFiles)
+                {
+                    // Prepare debug output folder only if needed
+                    debugFolder = PrepareDebugFolder();
+                    timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                }
 
                 // Step 1: Read content from OneNote (async - non-blocking)
                 var reader = _serviceContainer.CreateContentReader(_oneNoteApp);
@@ -109,63 +134,78 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                     return;
                 }
 
-                // Save input Markdown (async file I/O)
-                string inputFile = Path.Combine(debugFolder, $"01_Input_Markdown_{timestamp}.md");
-                await Task.Run(() => File.WriteAllText(inputFile, readResult.ExtractedText, Encoding.UTF8));
-
-                // Save original XML node (async file I/O)
-                if (readResult.OriginalXmlNode != null)
+                if (writeDebugFiles)
                 {
-                    string originalXmlFile = Path.Combine(debugFolder, $"02_Original_XML_{timestamp}.xml");
-                    await Task.Run(() => File.WriteAllText(originalXmlFile, readResult.OriginalXmlNode.ToString(), Encoding.UTF8));
+                    // Save input Markdown (async file I/O)
+                    string inputFile = Path.Combine(debugFolder, $"01_Input_Markdown_{timestamp}.md");
+                    await Task.Run(() => File.WriteAllText(inputFile, readResult.ExtractedText, Encoding.UTF8));
+
+                    // Save original XML node (async file I/O)
+                    if (readResult.OriginalXmlNode != null)
+                    {
+                        string originalXmlFile = Path.Combine(debugFolder, $"02_Original_XML_{timestamp}.xml");
+                        await Task.Run(() => File.WriteAllText(originalXmlFile, readResult.OriginalXmlNode.ToString(), Encoding.UTF8));
+                    }
                 }
 
                 // Step 2: Convert Markdown to OneNote XML (async - non-blocking)
                 var converter = _serviceContainer.CreateMarkdownConverter();
                 var oneNoteXml = await converter.ConvertToOneNoteXmlAsync(readResult.ExtractedText);
 
-                // Save converted XML (async file I/O)
-                string convertedXmlFile = Path.Combine(debugFolder, $"03_Converted_XML_{timestamp}.xml");
-                await Task.Run(() => File.WriteAllText(convertedXmlFile, oneNoteXml.ToString(), Encoding.UTF8));
+                if (writeDebugFiles)
+                {
+                    // Save converted XML (async file I/O)
+                    string convertedXmlFile = Path.Combine(debugFolder, $"03_Converted_XML_{timestamp}.xml");
+                    await Task.Run(() => File.WriteAllText(convertedXmlFile, oneNoteXml.ToString(), Encoding.UTF8));
+                }
 
                 // Step 3: Write back to OneNote (async - non-blocking)
                 var writer = _serviceContainer.CreateContentWriter(_oneNoteApp);
                 await writer.ReplaceContentAsync(readResult, oneNoteXml);
 
-                // Save final page XML (async)
-                string finalPageXml = await Task.Run(() =>
+                if (writeDebugFiles)
                 {
-                    string xml;
-                    _oneNoteApp.GetPageContent(readResult.PageId, out xml, OneNote.PageInfo.piAll);
-                    return xml;
-                });
-                string finalXmlFile = Path.Combine(debugFolder, $"04_Final_Page_XML_{timestamp}.xml");
-                await Task.Run(() => File.WriteAllText(finalXmlFile, FormatXml(finalPageXml), Encoding.UTF8));
+                    // Save final page XML (async)
+                    string finalPageXml = await Task.Run(() =>
+                    {
+                        string xml;
+                        _oneNoteApp.GetPageContent(readResult.PageId, out xml, OneNote.PageInfo.piAll);
+                        return xml;
+                    });
+                    string finalXmlFile = Path.Combine(debugFolder, $"04_Final_Page_XML_{timestamp}.xml");
+                    await Task.Run(() => File.WriteAllText(finalXmlFile, FormatXml(finalPageXml), Encoding.UTF8));
+                }
 
-                // Success message with debug info
-                MessageBox.Show(
-                    $"转换成功!\n\n" +
-                    $"模式: {readResult.ModeAsString()}\n" +
-                    $"处理了 {readResult.ExtractedText.Length} 个字符\n\n" +
-                    $"调试文件已保存至:\n{debugFolder}",
-                    "TeXShift - 转换完成",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information
-                );
+                if (showSuccessDialog)
+                {
+                    // Success message with debug info
+                    MessageBox.Show(
+                        $"转换成功!\n\n" +
+                        $"模式: {readResult.ModeAsString()}\n" +
+                        $"处理了 {readResult.ExtractedText.Length} 个字符\n\n" +
+                        $"调试文件已保存至:\n{debugFolder}",
+                        "TeXShift - 转换完成",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
+                }
             }
             catch (Exception ex)
             {
-                // Save error log (fire-and-forget async)
-                if (debugFolder != null)
+                if (writeDebugFiles)
                 {
-                    try
+                    // Save error log (fire-and-forget async)
+                    if (debugFolder != null)
                     {
-                        string errorLogFile = Path.Combine(debugFolder, $"ERROR_{timestamp}.txt");
-                        await Task.Run(() => File.WriteAllText(errorLogFile,
-                            $"转换失败\n\n时间: {DateTime.Now}\n\n错误消息:\n{ex.Message}\n\n堆栈跟踪:\n{ex.StackTrace}",
-                            Encoding.UTF8));
+                        try
+                        {
+                            string errorLogFile = Path.Combine(debugFolder, $"ERROR_{timestamp}.txt");
+                            await Task.Run(() => File.WriteAllText(errorLogFile,
+                                $"转换失败\n\n时间: {DateTime.Now}\n\n错误消息:\n{ex.Message}\n\n堆栈跟踪:\n{ex.StackTrace}",
+                                Encoding.UTF8));
+                        }
+                        catch { }
                     }
-                    catch { }
                 }
 
                 MessageBox.Show(
