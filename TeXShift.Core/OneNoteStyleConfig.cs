@@ -33,6 +33,23 @@ namespace TeXShift.Core
             }
         }
 
+        public class InlineCodeConfig
+        {
+            public string FontFamily { get; set; }
+            public string BackgroundColor { get; set; }
+            public string PaddingChar { get; set; }
+            public int PaddingCount { get; set; }
+
+
+            public InlineCodeConfig(string fontFamily, string backgroundColor, string paddingChar = "&nbsp;", int paddingCount = 1)
+            {
+                FontFamily = fontFamily;
+                BackgroundColor = backgroundColor;
+                PaddingChar = paddingChar;
+                PaddingCount = paddingCount;
+            }
+        }
+ 
         // Default spacing configurations
         private static readonly Dictionary<string, SpacingConfig> DefaultSpacing = new Dictionary<string, SpacingConfig>
         {
@@ -56,10 +73,13 @@ namespace TeXShift.Core
             { "h4", new FontConfig(16.0, true) },    // 四级标题：16pt 粗体
             { "h5", new FontConfig(14.0, true) },    // 五级标题：14pt 粗体
             { "h6", new FontConfig(11.0, true) }     // 六级标题：11pt 粗体
-        };
+       };
 
-        // Default indent configurations for nested content, matching onemark for consistency.
-        private static readonly Dictionary<int, double> DefaultIndents = new Dictionary<int, double>
+       // Default style for inline code
+       private static readonly InlineCodeConfig DefaultInlineCodeStyle = new InlineCodeConfig("Consolas", "#F1F1F1", "&nbsp;", 1); // Default: 1 non-breaking space
+
+       // Default indent configurations for nested content, matching onemark for consistency.
+       private static readonly Dictionary<int, double> DefaultIndents = new Dictionary<int, double>
         {
             { 1, 22.0 },
             { 2, 22.0 },
@@ -70,7 +90,8 @@ namespace TeXShift.Core
         private Dictionary<string, SpacingConfig> _customSpacing;
         private Dictionary<string, FontConfig> _customFonts;
         private Dictionary<int, double> _customIndents;
-
+        private InlineCodeConfig _customInlineCodeStyle;
+ 
         public IReadOnlyDictionary<int, double> Indents => _customIndents;
  
         public OneNoteStyleConfig()
@@ -78,6 +99,7 @@ namespace TeXShift.Core
             _customSpacing = new Dictionary<string, SpacingConfig>(DefaultSpacing);
             _customFonts = new Dictionary<string, FontConfig>(DefaultFonts);
             _customIndents = new Dictionary<int, double>(DefaultIndents);
+            _customInlineCodeStyle = DefaultInlineCodeStyle;
         }
 
         /// <summary>
@@ -127,6 +149,14 @@ namespace TeXShift.Core
         }
 
         /// <summary>
+        /// Gets style configuration for inline code.
+        /// </summary>
+        public InlineCodeConfig GetInlineCodeStyle()
+        {
+            return _customInlineCodeStyle;
+        }
+ 
+        /// <summary>
         /// Allows customization of spacing for a specific element type.
         /// </summary>
         public void SetSpacing(string elementType, double before, double after, double between)
@@ -150,6 +180,14 @@ namespace TeXShift.Core
         {
             _customIndents[level] = indent;
         }
+
+        /// <summary>
+        /// Allows customization of style for inline code.
+        /// </summary>
+        public void SetInlineCodeStyle(string fontFamily, string backgroundColor, string paddingChar = "&nbsp;", int paddingCount = 1)
+        {
+            _customInlineCodeStyle = new InlineCodeConfig(fontFamily, backgroundColor, paddingChar, paddingCount);
+        }
  
         /// <summary>
         /// Resets all spacing and font configurations to default values.
@@ -159,6 +197,8 @@ namespace TeXShift.Core
             _customSpacing = new Dictionary<string, SpacingConfig>(DefaultSpacing);
             _customFonts = new Dictionary<string, FontConfig>(DefaultFonts);
             _customIndents = new Dictionary<int, double>(DefaultIndents);
+            _customInlineCodeStyle = DefaultInlineCodeStyle;
         }
     }
 }
+

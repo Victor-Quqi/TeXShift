@@ -176,7 +176,16 @@ namespace TeXShift.Core
                 }
                 else if (inline is CodeInline code)
                 {
-                    html.Append($"<span style='font-family:Consolas'>{HtmlEscaper.Escape(code.Content)}</span>");
+                    var style = StyleConfig.GetInlineCodeStyle();
+                    // OneNote does not support 'padding' on <span> elements.
+                    // We simulate padding by repeating a configured character (e.g., &nbsp;) inside the span.
+                    var styleString = $"font-family:{style.FontFamily};background-color:{style.BackgroundColor}";
+                    var padding = new StringBuilder();
+                    for (int i = 0; i < style.PaddingCount; i++)
+                    {
+                        padding.Append(style.PaddingChar);
+                    }
+                    html.Append($"<span style='{styleString}'>{padding}{HtmlEscaper.Escape(code.Content)}{padding}</span>");
                 }
                 else if (inline is LineBreakInline)
                 {
