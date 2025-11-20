@@ -140,7 +140,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                 }
 
                 // Step 2: Convert Markdown to OneNote XML
-                var converter = _serviceContainer.CreateMarkdownConverter();
+                var converter = _serviceContainer.CreateMarkdownConverter(readResult.SourceOutlineWidth);
                 var oneNoteXml = await converter.ConvertToOneNoteXmlAsync(readResult.ExtractedText);
 
                 if (writeDebugFiles)
@@ -269,10 +269,22 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             {
                 var (pageId, xmlContent) = await Task.Run(() =>
                 {
-                    string id = _oneNoteApp.Windows.CurrentWindow?.CurrentPageId;
-                    if (string.IsNullOrEmpty(id)) return (null, null);
-                    _oneNoteApp.GetPageContent(id, out string xml, OneNote.PageInfo.piAll);
-                    return (id, xml);
+                    OneNote.Windows windows = null;
+                    OneNote.Window window = null;
+                    try
+                    {
+                        windows = _oneNoteApp.Windows;
+                        window = windows.CurrentWindow;
+                        string id = window?.CurrentPageId;
+                        if (string.IsNullOrEmpty(id)) return (null, null);
+                        _oneNoteApp.GetPageContent(id, out string xml, OneNote.PageInfo.piAll);
+                        return (id, xml);
+                    }
+                    finally
+                    {
+                        SafeReleaseComObject(window);
+                        SafeReleaseComObject(windows);
+                    }
                 });
 
                 if (string.IsNullOrEmpty(pageId) || string.IsNullOrEmpty(xmlContent))

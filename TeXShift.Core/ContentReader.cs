@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -118,7 +119,8 @@ namespace TeXShift.Core
                 Mode = DetectionMode.Cursor,
                 ExtractedText = extractedText,
                 PageId = pageId,
-                OriginalXmlNode = outlineContainer
+                OriginalXmlNode = outlineContainer,
+                SourceOutlineWidth = ExtractOutlineWidth(outlineContainer, ns)
             };
             if (objectId != null)
             {
@@ -161,6 +163,8 @@ namespace TeXShift.Core
                 return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = "成功定位到选区，但未能提取出有效文本内容。" };
             }
 
+            var outlineContainer = parentOEs.FirstOrDefault()?.Ancestors(ns + "Outline").FirstOrDefault();
+
             var result = new ReadResult
             {
                 IsSuccess = true,
@@ -168,7 +172,8 @@ namespace TeXShift.Core
                 ExtractedText = extractedText,
                 PageId = pageId,
                 OriginalXmlNode = parentOEs.FirstOrDefault(), // For attribute preservation
-                OriginalXmlNodes = parentOEs.Cast<XElement>().ToList()
+                OriginalXmlNodes = parentOEs.Cast<XElement>().ToList(),
+                SourceOutlineWidth = outlineContainer != null ? ExtractOutlineWidth(outlineContainer, ns) : null
             };
 
             foreach (var oe in parentOEs)
@@ -204,6 +209,7 @@ namespace TeXShift.Core
 
             // Append text content from all <T> elements within this <OE>.
             var oeText = string.Concat(oe.Elements(ns + "T").Select(t => t.Value));
+            oeText = WebUtility.HtmlDecode(oeText);
             sb.AppendLine(oeText);
 
             // If there's a nested OEChildren, process it recursively.
@@ -214,6 +220,23 @@ namespace TeXShift.Core
             }
         }
 
+
+        /// <summary>
+        /// Extracts the width from an Outline element's Size child element.
+        /// </summary>
+        private double? ExtractOutlineWidth(XElement outlineElement, XNamespace ns)
+        {
+            var sizeElement = outlineElement.Element(ns + "Size");
+            if (sizeElement != null)
+            {
+                var widthAttr = sizeElement.Attribute("width");
+                if (widthAttr != null && double.TryParse(widthAttr.Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double width))
+                {
+                    return width;
+                }
+            }
+            return null;
+        }
 
         /// <summary>
         /// Safely releases a COM object.

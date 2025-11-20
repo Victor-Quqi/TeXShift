@@ -73,6 +73,20 @@ namespace TeXShift.Core
                 InitialImageWidth = initialImageWidth;
             }
         }
+
+        public class QuoteBlockConfig
+        {
+            public string BackgroundColor { get; set; }
+            public double BaseWidth { get; set; }
+            public double WidthReduction { get; set; }
+
+            public QuoteBlockConfig(string backgroundColor = "#E2F5FE", double baseWidth = 534.0, double widthReduction = 13.52)
+            {
+                BackgroundColor = backgroundColor;
+                BaseWidth = baseWidth;
+                WidthReduction = widthReduction;
+            }
+        }
  
         // Default spacing configurations
         private static readonly Dictionary<string, SpacingConfig> DefaultSpacing = new Dictionary<string, SpacingConfig>
@@ -85,7 +99,8 @@ namespace TeXShift.Core
             { "h6", new SpacingConfig(7.0, 7.0, 16.0) },
             { "paragraph", new SpacingConfig(5.5, 5.5, 16.0) },
             { "list", new SpacingConfig(5.5, 5.5, 16.0) },
-            { "code", new SpacingConfig(5.5, 5.5, 16.0) }
+            { "code", new SpacingConfig(5.5, 5.5, 16.0) },
+            { "quote", new SpacingConfig(5.5, 5.5, 16.0) }
         };
 
         // Default font size configurations for headings
@@ -105,6 +120,9 @@ namespace TeXShift.Core
        // Default style for horizontal rule
        private static readonly HorizontalRuleConfig DefaultHorizontalRuleStyle = new HorizontalRuleConfig(HorizontalRuleMode.Image, "#888888", 90, '─', 2325);
 
+       // Default style for quote blocks
+       private static readonly QuoteBlockConfig DefaultQuoteBlockStyle = new QuoteBlockConfig("#E8F5E9", 534.0, 13.52);
+
        // Default indent configurations for nested content, matching onemark for consistency.
        private static readonly Dictionary<int, double> DefaultIndents = new Dictionary<int, double>
         {
@@ -119,6 +137,7 @@ namespace TeXShift.Core
         private Dictionary<int, double> _customIndents;
         private InlineCodeConfig _customInlineCodeStyle;
         private HorizontalRuleConfig _customHorizontalRuleStyle;
+        private QuoteBlockConfig _customQuoteBlockStyle;
  
         public IReadOnlyDictionary<int, double> Indents => _customIndents;
  
@@ -129,6 +148,7 @@ namespace TeXShift.Core
             _customIndents = new Dictionary<int, double>(DefaultIndents);
             _customInlineCodeStyle = DefaultInlineCodeStyle;
             _customHorizontalRuleStyle = DefaultHorizontalRuleStyle;
+            _customQuoteBlockStyle = DefaultQuoteBlockStyle;
         }
 
         /// <summary>
@@ -191,6 +211,22 @@ namespace TeXShift.Core
         public HorizontalRuleConfig GetHorizontalRuleStyle()
         {
             return _customHorizontalRuleStyle;
+        }
+
+        /// <summary>
+        /// Gets spacing configuration for quote blocks.
+        /// </summary>
+        public SpacingConfig GetQuoteSpacing()
+        {
+            return _customSpacing["quote"];
+        }
+
+        /// <summary>
+        /// Gets style configuration for quote blocks.
+        /// </summary>
+        public QuoteBlockConfig GetQuoteBlockStyle()
+        {
+            return _customQuoteBlockStyle;
         }
  
         /// <summary>
