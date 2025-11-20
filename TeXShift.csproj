@@ -105,6 +105,8 @@
     <Compile Include="TeXShift.Core\IContentReader.cs" />
     <Compile Include="TeXShift.Core\IContentWriter.cs" />
     <Compile Include="TeXShift.Core\IMarkdownConverter.cs" />
+    <Compile Include="TeXShift.Core\Logging\DebugLogger.cs" />
+    <Compile Include="TeXShift.Core\Logging\IDebugLogger.cs" />
     <Compile Include="TeXShift.Core\MarkdownConverter.cs" />
     <Compile Include="TeXShift.Core\Markdown\Handlers\CodeBlockHandler.cs" />
     <Compile Include="TeXShift.Core\Markdown\Handlers\FallbackHandler.cs" />

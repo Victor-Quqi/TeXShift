@@ -1,5 +1,6 @@
 using System;
 using Markdig;
+using TeXShift.Core.Logging;
 using OneNote = Microsoft.Office.Interop.OneNote;
 
 namespace TeXShift.Core
@@ -70,6 +71,15 @@ namespace TeXShift.Core
                 throw new ArgumentNullException(nameof(oneNoteApp));
 
             return new ContentWriter(oneNoteApp);
+        }
+
+        /// <summary>
+        /// Creates a new IDebugLogger instance.
+        /// Transient lifetime: new instance per call.
+        /// </summary>
+        public IDebugLogger CreateDebugLogger()
+        {
+            return new DebugLogger();
         }
     }
 }
