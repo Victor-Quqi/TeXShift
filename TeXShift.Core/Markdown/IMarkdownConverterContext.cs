@@ -23,6 +23,17 @@ namespace TeXShift.Core.Markdown
         OneNoteStyleConfig StyleConfig { get; }
 
         /// <summary>
+        /// Gets the current nesting depth for quote blocks.
+        /// </summary>
+        int QuoteNestingDepth { get; }
+
+        /// <summary>
+        /// Gets the width of the source Outline element in points (if available).
+        /// Used for dynamic table width calculation during conversion.
+        /// </summary>
+        double? SourceOutlineWidth { get; }
+
+        /// <summary>
         /// Converts a container of inline elements (like bold, italic, code) into an HTML string
         /// suitable for embedding within a OneNote <T> element's CDATA section.
         /// </summary>
@@ -37,5 +48,15 @@ namespace TeXShift.Core.Markdown
         /// <param name="blocks">The collection of blocks to process.</param>
         /// <returns>A collection of converted OneNote XML elements.</returns>
         IEnumerable<XElement> ProcessBlocks(IEnumerable<Block> blocks);
+
+        /// <summary>
+        /// Increments the quote nesting depth for processing nested quote blocks.
+        /// </summary>
+        void IncrementQuoteDepth();
+
+        /// <summary>
+        /// Decrements the quote nesting depth after processing a quote block.
+        /// </summary>
+        void DecrementQuoteDepth();
     }
 }

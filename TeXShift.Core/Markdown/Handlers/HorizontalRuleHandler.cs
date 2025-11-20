@@ -20,7 +20,10 @@ namespace TeXShift.Core.Markdown.Handlers
 
             if (styleConfig.Mode == OneNoteStyleConfig.HorizontalRuleMode.Image)
             {
-                oe = CreateImageRule(ns, styleConfig);
+                var imageWidth = context.SourceOutlineWidth.HasValue
+                    ? (int)(context.SourceOutlineWidth.Value * 4.2)
+                    : styleConfig.InitialImageWidth;
+                oe = CreateImageRule(ns, styleConfig, imageWidth);
             }
             else
             {
@@ -47,9 +50,9 @@ namespace TeXShift.Core.Markdown.Handlers
             );
         }
 
-        private XElement CreateImageRule(XNamespace ns, OneNoteStyleConfig.HorizontalRuleConfig styleConfig)
+        private XElement CreateImageRule(XNamespace ns, OneNoteStyleConfig.HorizontalRuleConfig styleConfig, int imageWidth)
         {
-            var base64Image = GenerateLineImageBase64(styleConfig.Color, styleConfig.InitialImageWidth, 1);
+            var base64Image = GenerateLineImageBase64(styleConfig.Color, imageWidth, 1);
 
             // Per OneNote's XML schema, size attributes are not allowed on the Image element.
             // The image's dimensions are determined by the image data itself.

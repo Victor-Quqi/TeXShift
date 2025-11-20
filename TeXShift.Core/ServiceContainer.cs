@@ -56,9 +56,9 @@ namespace TeXShift.Core
         /// Transient lifetime: new instance per call.
         /// Uses singleton StyleConfig and MarkdownPipeline for efficiency.
         /// </summary>
-        public IMarkdownConverter CreateMarkdownConverter()
+        public IMarkdownConverter CreateMarkdownConverter(double? sourceOutlineWidth = null)
         {
-            return new MarkdownConverter(StyleConfig, MarkdownPipeline);
+            return new MarkdownConverter(StyleConfig, MarkdownPipeline, sourceOutlineWidth);
         }
 
         /// <summary>

@@ -59,6 +59,12 @@ namespace TeXShift.Core
         /// </summary>
         public List<XElement> OriginalXmlNodes { get; set; } = new List<XElement>();
 
+        /// <summary>
+        /// The width of the source Outline element in points (extracted from Size element).
+        /// Used for dynamic table width calculation during conversion.
+        /// </summary>
+        public double? SourceOutlineWidth { get; set; }
+
         public string ModeAsString()
         {
             switch (Mode)

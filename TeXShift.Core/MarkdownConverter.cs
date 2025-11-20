@@ -24,17 +24,21 @@ namespace TeXShift.Core
         private readonly Dictionary<Type, IBlockHandler> _blockHandlers;
         private readonly FallbackHandler _fallbackHandler = new FallbackHandler();
         private readonly MarkdownPipeline _pipeline;
+        private int _quoteNestingDepth = 0;
 
         private static readonly Regex SpanLangRegex = new Regex(@"<span\s+lang=[^>]+>(.*?)</span>", RegexOptions.Compiled | RegexOptions.Singleline);
 
         // Explicit implementation of IMarkdownConverterContext properties
         public XNamespace OneNoteNamespace { get; } = "http://schemas.microsoft.com/office/onenote/2013/onenote";
         public OneNoteStyleConfig StyleConfig { get; }
+        public int QuoteNestingDepth => _quoteNestingDepth;
+        public double? SourceOutlineWidth { get; }
 
-        public MarkdownConverter(OneNoteStyleConfig styleConfig, MarkdownPipeline pipeline)
+        public MarkdownConverter(OneNoteStyleConfig styleConfig, MarkdownPipeline pipeline, double? sourceOutlineWidth = null)
         {
             StyleConfig = styleConfig ?? throw new ArgumentNullException(nameof(styleConfig));
             _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
+            SourceOutlineWidth = sourceOutlineWidth;
 
             // Register all the specialized handlers for each block type.
             _blockHandlers = new Dictionary<Type, IBlockHandler>
@@ -44,7 +48,7 @@ namespace TeXShift.Core
                 { typeof(ListBlock), new ListHandler() },
                 { typeof(CodeBlock), new CodeBlockHandler() },
                 { typeof(ThematicBreakBlock), new HorizontalRuleHandler() },
-                // Add new handlers here, e.g., { typeof(TableBlock), new TableHandler() }
+                { typeof(QuoteBlock), new QuoteBlockHandler() }
             };
         }
 
@@ -74,16 +78,22 @@ namespace TeXShift.Core
             outline.Add(indentsElement);
 
             var oeChildren = new XElement(OneNoteNamespace + "OEChildren");
-
-            // Final, correct logic:
-            // 1. Process all blocks into a flat list of XElements.
-            // 2. Post-process to handle a specific OneNote rendering quirk:
-            //    If a ListBlock follows a HeadingBlock, it MUST be nested to avoid default indentation on the Heading.
-            //    Other blocks (like Paragraphs) should remain at the top level.
-
             var blocks = document.ToList();
+            var elements = PostProcessBlocks(blocks);
+            oeChildren.Add(elements);
+            outline.Add(oeChildren);
+            return outline;
+        }
+
+        public IEnumerable<XElement> ProcessBlocks(IEnumerable<Block> blocks)
+        {
+            return PostProcessBlocks(blocks.ToList());
+        }
+
+        private List<XElement> PostProcessBlocks(List<Block> blocks)
+        {
             var elements = new List<XElement>();
-            XElement lastHeadingElement = null;
+            XElement lastContainerElement = null;
 
             for (int i = 0; i < blocks.Count; i++)
             {
@@ -92,37 +102,21 @@ namespace TeXShift.Core
 
                 var processed = HandleBlock(block).ToList();
 
-                // Check if the current block is a list.
-                if (block is ListBlock && lastHeadingElement != null)
+                if (block is ListBlock && lastContainerElement != null)
                 {
-                    // This is a list that follows a heading. Nest all its generated elements.
-                    var childrenContainer = lastHeadingElement.Element(OneNoteNamespace + "OEChildren");
+                    var childrenContainer = lastContainerElement.Element(OneNoteNamespace + "OEChildren");
                     if (childrenContainer == null)
                     {
                         childrenContainer = new XElement(OneNoteNamespace + "OEChildren");
-                        lastHeadingElement.Add(childrenContainer);
+                        lastContainerElement.Add(childrenContainer);
                     }
                     childrenContainer.Add(processed);
                 }
                 else
                 {
                     elements.AddRange(processed);
-                    // If this block is a heading, track it. Otherwise, reset.
-                    lastHeadingElement = (block is HeadingBlock) ? processed.LastOrDefault() : null;
+                    lastContainerElement = (block is HeadingBlock || block is ParagraphBlock) ? processed.LastOrDefault() : null;
                 }
-            }
-            
-            oeChildren.Add(elements);
-            outline.Add(oeChildren);
-            return outline;
-        }
-
-        public IEnumerable<XElement> ProcessBlocks(IEnumerable<Block> blocks)
-        {
-            var elements = new List<XElement>();
-            foreach (var block in blocks)
-            {
-                elements.AddRange(HandleBlock(block));
             }
             return elements;
         }
@@ -148,6 +142,16 @@ namespace TeXShift.Core
                 text = SpanLangRegex.Replace(text, "$1");
             }
             return text;
+        }
+
+        public void IncrementQuoteDepth()
+        {
+            _quoteNestingDepth++;
+        }
+
+        public void DecrementQuoteDepth()
+        {
+            _quoteNestingDepth--;
         }
 
         public string ConvertInlinesToHtml(ContainerInline container)
