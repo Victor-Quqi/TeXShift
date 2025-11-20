@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using Extensibility;
 using Microsoft.Office.Core;
 using TeXShift.Core;
+using TeXShift.Core.Logging;
 using OneNote = Microsoft.Office.Interop.OneNote;
 
  namespace TeXShift
@@ -112,19 +113,17 @@ using OneNote = Microsoft.Office.Interop.OneNote;
         /// <param name="writeDebugFiles">If true, saves conversion artifacts to the DebugOutput folder.</param>
         private async void PerformConversionAsync(bool showSuccessDialog, bool writeDebugFiles)
         {
-            string debugFolder = null;
-            string timestamp = null;
+            IDebugLogger logger = null;
 
             try
             {
                 if (writeDebugFiles)
                 {
-                    // Prepare debug output folder only if needed
-                    debugFolder = PrepareDebugFolder();
-                    timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    logger = _serviceContainer.CreateDebugLogger();
+                    logger.StartSession();
                 }
 
-                // Step 1: Read content from OneNote (async - non-blocking)
+                // Step 1: Read content from OneNote
                 var reader = _serviceContainer.CreateContentReader(_oneNoteApp);
                 var readResult = await reader.ExtractContentAsync();
 
@@ -136,54 +135,40 @@ using OneNote = Microsoft.Office.Interop.OneNote;
 
                 if (writeDebugFiles)
                 {
-                    // Save input Markdown (async file I/O)
-                    string inputFile = Path.Combine(debugFolder, $"01_Input_Markdown_{timestamp}.md");
-                    await Task.Run(() => File.WriteAllText(inputFile, readResult.ExtractedText, Encoding.UTF8));
-
-                    // Save original XML node (async file I/O)
-                    if (readResult.OriginalXmlNode != null)
-                    {
-                        string originalXmlFile = Path.Combine(debugFolder, $"02_Original_XML_{timestamp}.xml");
-                        await Task.Run(() => File.WriteAllText(originalXmlFile, readResult.OriginalXmlNode.ToString(), Encoding.UTF8));
-                    }
+                    await logger.LogInputMarkdownAsync(readResult.ExtractedText);
+                    await logger.LogOriginalXmlAsync(readResult.OriginalXmlNode);
                 }
 
-                // Step 2: Convert Markdown to OneNote XML (async - non-blocking)
+                // Step 2: Convert Markdown to OneNote XML
                 var converter = _serviceContainer.CreateMarkdownConverter();
                 var oneNoteXml = await converter.ConvertToOneNoteXmlAsync(readResult.ExtractedText);
 
                 if (writeDebugFiles)
                 {
-                    // Save converted XML (async file I/O)
-                    string convertedXmlFile = Path.Combine(debugFolder, $"03_Converted_XML_{timestamp}.xml");
-                    await Task.Run(() => File.WriteAllText(convertedXmlFile, oneNoteXml.ToString(), Encoding.UTF8));
+                    await logger.LogConvertedXmlAsync(oneNoteXml);
                 }
 
-                // Step 3: Write back to OneNote (async - non-blocking)
+                // Step 3: Write back to OneNote
                 var writer = _serviceContainer.CreateContentWriter(_oneNoteApp);
                 await writer.ReplaceContentAsync(readResult, oneNoteXml);
 
                 if (writeDebugFiles)
                 {
-                    // Save final page XML (async)
                     string finalPageXml = await Task.Run(() =>
                     {
-                        string xml;
-                        _oneNoteApp.GetPageContent(readResult.PageId, out xml, OneNote.PageInfo.piAll);
+                        _oneNoteApp.GetPageContent(readResult.PageId, out string xml, OneNote.PageInfo.piAll);
                         return xml;
                     });
-                    string finalXmlFile = Path.Combine(debugFolder, $"04_Final_Page_XML_{timestamp}.xml");
-                    await Task.Run(() => File.WriteAllText(finalXmlFile, FormatXml(finalPageXml), Encoding.UTF8));
+                    await logger.LogFinalPageXmlAsync(finalPageXml);
                 }
 
                 if (showSuccessDialog)
                 {
-                    // Success message with debug info
                     MessageBox.Show(
                         $"转换成功!\n\n" +
                         $"模式: {readResult.ModeAsString()}\n" +
                         $"处理了 {readResult.ExtractedText.Length} 个字符\n\n" +
-                        $"调试文件已保存至:\n{debugFolder}",
+                        $"调试文件已保存至:\n{logger?.DebugSessionFolder}",
                         "TeXShift - 转换完成",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information
@@ -192,21 +177,8 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             }
             catch (Exception ex)
             {
-                if (writeDebugFiles)
-                {
-                    // Save error log (fire-and-forget async)
-                    if (debugFolder != null)
-                    {
-                        try
-                        {
-                            string errorLogFile = Path.Combine(debugFolder, $"ERROR_{timestamp}.txt");
-                            await Task.Run(() => File.WriteAllText(errorLogFile,
-                                $"转换失败\n\n时间: {DateTime.Now}\n\n错误消息:\n{ex.Message}\n\n堆栈跟踪:\n{ex.StackTrace}",
-                                Encoding.UTF8));
-                        }
-                        catch { }
-                    }
-                }
+                // Use fire-and-forget for logging to avoid secondary exceptions blocking the UI
+                _ = logger?.LogErrorAsync(ex);
 
                 MessageBox.Show(
                     $"转换失败:\n\n{ex.Message}\n\n详细信息:\n{ex.StackTrace}",
@@ -247,7 +219,6 @@ using OneNote = Microsoft.Office.Interop.OneNote;
         {
             try
             {
-                // Use ContentReader to get selected content (async)
                 var reader = _serviceContainer.CreateContentReader(_oneNoteApp);
                 var result = await reader.ExtractContentAsync();
 
@@ -263,23 +234,19 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                     return;
                 }
 
-                // Format XML for better readability
-                string formattedXml = FormatXml(result.OriginalXmlNode.ToString());
+                var logger = _serviceContainer.CreateDebugLogger();
+                logger.StartSession();
+                string savedPath = await logger.LogSelectionXmlAsync(result.OriginalXmlNode);
+                string formattedXml = System.Xml.Linq.XDocument.Parse(result.OriginalXmlNode.ToString()).ToString();
 
-                // Save to file (async)
-                string debugFolder = PrepareDebugFolder();
-                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string filename = $"Selection_XML_{timestamp}.xml";
-                string fullPath = Path.Combine(debugFolder, filename);
-                await Task.Run(() => File.WriteAllText(fullPath, formattedXml, Encoding.UTF8));
 
                 // Show in dialog
-                string caption = $"选中内容 XML 结构 - {result.ModeAsString()} (已保存至: {filename})";
+                string caption = $"选中内容 XML 结构 - {result.ModeAsString()} (已保存至: {Path.GetFileName(savedPath)})";
                 ShowTextInScrollableMessageBox(formattedXml, caption);
 
                 // Show success message
                 MessageBox.Show(
-                    $"选中内容的XML已保存至：\n{fullPath}\n\n" +
+                    $"选中内容的XML已保存至：\n{savedPath}\n\n" +
                     $"模式: {result.ModeAsString()}\n" +
                     $"节点类型: {result.OriginalXmlNode.Name.LocalName}\n" +
                     $"ObjectIDs: {string.Join(", ", result.TargetObjectIds)}",
@@ -300,35 +267,24 @@ using OneNote = Microsoft.Office.Interop.OneNote;
         {
             try
             {
-                // Get page ID and XML content (async)
                 var (pageId, xmlContent) = await Task.Run(() =>
                 {
                     string id = _oneNoteApp.Windows.CurrentWindow?.CurrentPageId;
-                    if (string.IsNullOrEmpty(id))
-                        return (null, null);
-
-                    string xml;
-                    _oneNoteApp.GetPageContent(id, out xml, OneNote.PageInfo.piAll);
+                    if (string.IsNullOrEmpty(id)) return (null, null);
+                    _oneNoteApp.GetPageContent(id, out string xml, OneNote.PageInfo.piAll);
                     return (id, xml);
                 });
 
-                if (string.IsNullOrEmpty(pageId))
+                if (string.IsNullOrEmpty(pageId) || string.IsNullOrEmpty(xmlContent))
                 {
-                    MessageBox.Show("无法获取当前页面ID。", "调试工具", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("无法获取当前页面内容。", "调试工具", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                if (string.IsNullOrEmpty(xmlContent))
-                {
-                    MessageBox.Show("获取页面XML失败。", "调试工具", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                // Format XML for better readability
-                string formattedXml = FormatXml(xmlContent);
-
-                // Save to file (async)
-                string savedPath = await SaveDebugXmlAsync(formattedXml);
+                var logger = _serviceContainer.CreateDebugLogger();
+                logger.StartSession();
+                string savedPath = await logger.LogPageXmlAsync(xmlContent);
+                string formattedXml = System.Xml.Linq.XDocument.Parse(xmlContent).ToString();
 
                 // Show in dialog
                 string caption = $"OneNote XML 结构 (已保存至: {Path.GetFileName(savedPath)})";
@@ -347,105 +303,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             }
         }
 
-        /// <summary>
-        /// Formats XML string with proper indentation for readability.
-        /// </summary>
-        private string FormatXml(string xml)
-        {
-            try
-            {
-                var doc = System.Xml.Linq.XDocument.Parse(xml);
-                return doc.ToString();
-            }
-            catch
-            {
-                // If parsing fails, return original
-                return xml;
-            }
-        }
 
-        /// <summary>
-        /// Asynchronously saves debug XML to DebugOutput folder with timestamp.
-        /// </summary>
-        private async Task<string> SaveDebugXmlAsync(string xml)
-        {
-            return await Task.Run(() =>
-            {
-                // Find project root directory (where .sln file is located)
-                string assemblyLocation = Assembly.GetExecutingAssembly().Location;
-                string currentDir = Path.GetDirectoryName(assemblyLocation);
-                string projectRoot = FindProjectRoot(currentDir);
-
-                if (projectRoot == null)
-                {
-                    // Fallback to assembly location if project root not found
-                    projectRoot = currentDir;
-                }
-
-                string debugFolder = Path.Combine(projectRoot, "DebugOutput");
-
-                if (!Directory.Exists(debugFolder))
-                {
-                    Directory.CreateDirectory(debugFolder);
-                }
-
-                // Generate filename with timestamp
-                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string filename = $"OneNote_XML_{timestamp}.xml";
-                string fullPath = Path.Combine(debugFolder, filename);
-
-                // Save file
-                File.WriteAllText(fullPath, xml, Encoding.UTF8);
-
-                return fullPath;
-            });
-        }
-
-        /// <summary>
-        /// Finds the project root directory by looking for .sln file.
-        /// </summary>
-        private string FindProjectRoot(string startPath)
-        {
-            DirectoryInfo dir = new DirectoryInfo(startPath);
-
-            while (dir != null)
-            {
-                // Check if this directory contains a .sln file
-                if (dir.GetFiles("*.sln").Length > 0)
-                {
-                    return dir.FullName;
-                }
-
-                // Move up to parent directory
-                dir = dir.Parent;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Prepares the debug output folder for saving conversion artifacts.
-        /// </summary>
-        private string PrepareDebugFolder()
-        {
-            string assemblyLocation = Assembly.GetExecutingAssembly().Location;
-            string currentDir = Path.GetDirectoryName(assemblyLocation);
-            string projectRoot = FindProjectRoot(currentDir);
-
-            if (projectRoot == null)
-            {
-                projectRoot = currentDir;
-            }
-
-            string debugFolder = Path.Combine(projectRoot, "DebugOutput");
-
-            if (!Directory.Exists(debugFolder))
-            {
-                Directory.CreateDirectory(debugFolder);
-            }
-
-            return debugFolder;
-        }
 
         /// <summary>
         /// Helper function: Creates a form with a scrollbar to display a large amount of text.
