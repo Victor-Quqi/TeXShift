@@ -32,14 +32,6 @@ namespace TeXShift.Core.Markdown.Handlers
             var ns = context.OneNoteNamespace;
             var styleConfig = context.StyleConfig;
 
-            // A ListItemBlock in Markdig contains a ParagraphBlock for its text content.
-            var paragraph = listItem.OfType<ParagraphBlock>().FirstOrDefault();
-            if (paragraph == null)
-            {
-                // This case is unlikely for standard lists but provides robustness.
-                return new XElement(ns + "OE", new XElement(ns + "T", new XCData("")));
-            }
-
             var oe = new XElement(ns + "OE");
 
             // Apply list item spacing from style configuration.
@@ -67,26 +59,30 @@ namespace TeXShift.Core.Markdown.Handlers
             }
             oe.Add(listElement);
 
-            // Add the actual text content of the list item.
-            var htmlContent = context.ConvertInlinesToHtml(paragraph.Inline);
-            oe.Add(new XElement(ns + "T", new XCData(htmlContent)));
-
-            // --- RECURSION LOGIC ---
-            // Check if this list item contains a nested list.
-            var nestedList = listItem.OfType<ListBlock>().FirstOrDefault();
-            if (nestedList != null)
+            // Add the main text content when the first block is a paragraph.
+            // Other blocks (quote, code, nested lists, extra paragraphs) are processed below.
+            var firstBlock = listItem.FirstOrDefault();
+            if (firstBlock is ParagraphBlock paragraph)
             {
-                // If a nested list exists, create an OEChildren container for it.
+                var htmlContent = context.ConvertInlinesToHtml(paragraph.Inline);
+                oe.Add(new XElement(ns + "T", new XCData(htmlContent)));
+            }
+            else
+            {
+                oe.Add(new XElement(ns + "T", new XCData(string.Empty)));
+            }
+
+            // Process any remaining child blocks inside this list item to preserve nested structures.
+            var remainingBlocks = listItem.Skip(firstBlock is ParagraphBlock ? 1 : 0).ToList();
+            if (remainingBlocks.Any())
+            {
                 var childrenContainer = new XElement(ns + "OEChildren");
-
-                // Recursively call this same method for each item in the nested list.
-                foreach (var nestedItem in nestedList.OfType<ListItemBlock>())
+                var convertedChildren = context.ProcessBlocks(remainingBlocks).ToList();
+                if (convertedChildren.Any())
                 {
-                    childrenContainer.Add(ProcessListItemBlock(nestedItem, nestedList.IsOrdered, context));
+                    childrenContainer.Add(convertedChildren);
+                    oe.Add(childrenContainer);
                 }
-
-                // Attach the container with the nested items to the current OE element.
-                oe.Add(childrenContainer);
             }
 
             return oe;
