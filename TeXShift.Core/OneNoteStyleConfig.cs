@@ -87,6 +87,73 @@ namespace TeXShift.Core
                 WidthReduction = widthReduction;
             }
         }
+
+        /// <summary>
+        /// Configuration for width reservation to prevent content from exceeding container boundaries.
+        /// Uses conservative values to ensure tables and nested elements never stretch the text box.
+        /// All values are in points and can be adjusted based on actual font/style combinations.
+        /// </summary>
+        public class WidthReservationConfig
+        {
+            /// <summary>
+            /// List indent width (must match Indents configuration).
+            /// </summary>
+            public double ListIndent { get; set; }
+
+            /// <summary>
+            /// Conservative reservation for table border + cell padding + rendering overhead.
+            /// </summary>
+            public double TableSystemOverhead { get; set; }
+
+            /// <summary>
+            /// Width reservation for unordered list markers (bullets).
+            /// </summary>
+            public double UnorderedListMarker { get; set; }
+
+            /// <summary>
+            /// Width reservation for ordered list markers (numbers up to 3 digits).
+            /// </summary>
+            public double OrderedListMarker { get; set; }
+
+            /// <summary>
+            /// Left margin for quote blocks (visual spacing).
+            /// </summary>
+            public double QuoteBlockMargin { get; set; }
+
+            /// <summary>
+            /// Width reservation for task list checkboxes (future use).
+            /// </summary>
+            public double TaskListCheckbox { get; set; }
+
+            public WidthReservationConfig(
+                double listIndent = 22.0,
+                double tableSystemOverhead = 15.0,
+                double unorderedListMarker = 16.0,
+                double orderedListMarker = 28.0,
+                double quoteBlockMargin = 8.0,
+                double taskListCheckbox = 20.0)
+            {
+                ListIndent = listIndent;
+                TableSystemOverhead = tableSystemOverhead;
+                UnorderedListMarker = unorderedListMarker;
+                OrderedListMarker = orderedListMarker;
+                QuoteBlockMargin = quoteBlockMargin;
+                TaskListCheckbox = taskListCheckbox;
+            }
+
+            /// <summary>
+            /// Total width consumed by a quote block table (system overhead + left margin).
+            /// </summary>
+            public double QuoteBlockTotalReservation => TableSystemOverhead + QuoteBlockMargin;
+
+            /// <summary>
+            /// Calculates total width consumed by a list item (indent + marker width).
+            /// </summary>
+            public double GetListItemReservation(bool isOrdered)
+            {
+                return ListIndent + (isOrdered ? OrderedListMarker : UnorderedListMarker);
+            }
+        }
  
         // Default spacing configurations
         private static readonly Dictionary<string, SpacingConfig> DefaultSpacing = new Dictionary<string, SpacingConfig>
@@ -123,6 +190,17 @@ namespace TeXShift.Core
        // Default style for quote blocks
        private static readonly QuoteBlockConfig DefaultQuoteBlockStyle = new QuoteBlockConfig("#E8F5E9", 534.0, 13.52);
 
+       // Default width reservation configuration
+       // Note: Small reservation values prioritize maximum table width (96%+ fill rate).
+       // This allows tables to nearly fill the text box, accepting slight text box expansion (~6%).
+       private static readonly WidthReservationConfig DefaultWidthReservation = new WidthReservationConfig(
+           listIndent: 22.0,              // Must match DefaultIndents
+           tableSystemOverhead: 4.0,      // Minimal border + cell padding (prioritizes width)
+           unorderedListMarker: 4.0,     // Bullet symbols with spacing
+           orderedListMarker: 7.0,       // Numbers up to 3 digits (e.g., "999. ")
+           quoteBlockMargin: 4.0,         // Minimal left margin (prioritizes width)
+           taskListCheckbox: 5.0);       // Future task list support
+
        // Default indent configurations for nested content, matching onemark for consistency.
        private static readonly Dictionary<int, double> DefaultIndents = new Dictionary<int, double>
         {
@@ -138,8 +216,10 @@ namespace TeXShift.Core
         private InlineCodeConfig _customInlineCodeStyle;
         private HorizontalRuleConfig _customHorizontalRuleStyle;
         private QuoteBlockConfig _customQuoteBlockStyle;
- 
+        private WidthReservationConfig _customWidthReservation;
+
         public IReadOnlyDictionary<int, double> Indents => _customIndents;
+        public WidthReservationConfig WidthReservation => _customWidthReservation;
  
         public OneNoteStyleConfig()
         {
@@ -149,6 +229,7 @@ namespace TeXShift.Core
             _customInlineCodeStyle = DefaultInlineCodeStyle;
             _customHorizontalRuleStyle = DefaultHorizontalRuleStyle;
             _customQuoteBlockStyle = DefaultQuoteBlockStyle;
+            _customWidthReservation = DefaultWidthReservation;
         }
 
         /// <summary>

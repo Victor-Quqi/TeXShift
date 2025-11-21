@@ -77,7 +77,14 @@ namespace TeXShift.Core.Markdown.Handlers
             if (remainingBlocks.Any())
             {
                 var childrenContainer = new XElement(ns + "OEChildren");
+
+                // Push width reservation for list item before processing nested blocks
+                var widthReservation = styleConfig.WidthReservation;
+                var reservation = widthReservation.GetListItemReservation(isOrdered);
+                context.PushWidthReservation(reservation);
                 var convertedChildren = context.ProcessBlocks(remainingBlocks).ToList();
+                context.PopWidthReservation();
+
                 if (convertedChildren.Any())
                 {
                     childrenContainer.Add(convertedChildren);

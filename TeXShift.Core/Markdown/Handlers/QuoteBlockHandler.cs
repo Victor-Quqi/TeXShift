@@ -12,6 +12,7 @@ namespace TeXShift.Core.Markdown.Handlers
             var quoteBlock = (QuoteBlock)block;
             var ns = context.OneNoteNamespace;
             var quoteConfig = context.StyleConfig.GetQuoteBlockStyle();
+            var widthReservation = context.StyleConfig.WidthReservation;
 
             context.IncrementQuoteDepth();
             var depth = context.QuoteNestingDepth;
@@ -23,12 +24,14 @@ namespace TeXShift.Core.Markdown.Handlers
             table.Add(new XAttribute("hasHeaderRow", "false"));
 
             var columns = new XElement(ns + "Columns");
-            var width = context.SourceOutlineWidth.HasValue
-                ? context.SourceOutlineWidth.Value - (depth * quoteConfig.WidthReduction)
-                : quoteConfig.BaseWidth - (depth - 1) * quoteConfig.WidthReduction;
+
+            // Calculate table width using conservative reservation strategy
+            var totalReservation = widthReservation.QuoteBlockTotalReservation;
+            var tableWidth = context.CurrentAvailableWidth - totalReservation;
+
             var column = new XElement(ns + "Column");
             column.Add(new XAttribute("index", "0"));
-            column.Add(new XAttribute("width", width.ToString("F2")));
+            column.Add(new XAttribute("width", tableWidth.ToString("F2")));
             column.Add(new XAttribute("isLocked", "true"));
             columns.Add(column);
             table.Add(columns);
@@ -37,7 +40,11 @@ namespace TeXShift.Core.Markdown.Handlers
             var cell = new XElement(ns + "Cell");
             cell.Add(new XAttribute("shadingColor", quoteConfig.BackgroundColor));
 
+            // Push width reservation before processing child blocks
+            context.PushWidthReservation(totalReservation);
             var childElements = context.ProcessBlocks(quoteBlock).ToList();
+            context.PopWidthReservation();
+
             var oeChildren = new XElement(ns + "OEChildren");
             if (childElements.Any())
             {

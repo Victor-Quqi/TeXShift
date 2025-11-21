@@ -25,6 +25,8 @@ namespace TeXShift.Core
         private readonly FallbackHandler _fallbackHandler = new FallbackHandler();
         private readonly MarkdownPipeline _pipeline;
         private int _quoteNestingDepth = 0;
+        private readonly Stack<double> _widthReservationStack = new Stack<double>();
+        private readonly double _initialWidth;
 
         private static readonly Regex SpanLangRegex = new Regex(@"<span\s+lang=[^>]+>(.*?)</span>", RegexOptions.Compiled | RegexOptions.Singleline);
 
@@ -34,11 +36,26 @@ namespace TeXShift.Core
         public int QuoteNestingDepth => _quoteNestingDepth;
         public double? SourceOutlineWidth { get; }
 
+        /// <summary>
+        /// Gets the current available width after subtracting all parent reservations.
+        /// Minimum value is 50.0 points to prevent degenerate cases.
+        /// </summary>
+        public double CurrentAvailableWidth
+        {
+            get
+            {
+                var totalReserved = _widthReservationStack.Sum();
+                var available = _initialWidth - totalReserved;
+                return Math.Max(available, 50.0);
+            }
+        }
+
         public MarkdownConverter(OneNoteStyleConfig styleConfig, MarkdownPipeline pipeline, double? sourceOutlineWidth = null)
         {
             StyleConfig = styleConfig ?? throw new ArgumentNullException(nameof(styleConfig));
             _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
             SourceOutlineWidth = sourceOutlineWidth;
+            _initialWidth = sourceOutlineWidth ?? StyleConfig.GetQuoteBlockStyle().BaseWidth;
 
             // Register all the specialized handlers for each block type.
             _blockHandlers = new Dictionary<Type, IBlockHandler>
@@ -152,6 +169,19 @@ namespace TeXShift.Core
         public void DecrementQuoteDepth()
         {
             _quoteNestingDepth--;
+        }
+
+        public void PushWidthReservation(double reservedWidth)
+        {
+            _widthReservationStack.Push(reservedWidth);
+        }
+
+        public void PopWidthReservation()
+        {
+            if (_widthReservationStack.Count > 0)
+            {
+                _widthReservationStack.Pop();
+            }
         }
 
         public string ConvertInlinesToHtml(ContainerInline container)
