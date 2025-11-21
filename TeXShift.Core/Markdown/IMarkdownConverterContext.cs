@@ -34,6 +34,13 @@ namespace TeXShift.Core.Markdown
         double? SourceOutlineWidth { get; }
 
         /// <summary>
+        /// Gets the current available width in points after subtracting all parent reservations.
+        /// Used by handlers to calculate table widths that won't exceed the text box boundary.
+        /// Minimum value is 50.0 points to prevent degenerate cases.
+        /// </summary>
+        double CurrentAvailableWidth { get; }
+
+        /// <summary>
         /// Converts a container of inline elements (like bold, italic, code) into an HTML string
         /// suitable for embedding within a OneNote <T> element's CDATA section.
         /// </summary>
@@ -58,5 +65,18 @@ namespace TeXShift.Core.Markdown
         /// Decrements the quote nesting depth after processing a quote block.
         /// </summary>
         void DecrementQuoteDepth();
+
+        /// <summary>
+        /// Pushes a width reservation onto the stack to reduce available width for nested elements.
+        /// Handlers should call this before processing child blocks that consume horizontal space.
+        /// </summary>
+        /// <param name="reservedWidth">Width in points to reserve (e.g., list indent + marker width).</param>
+        void PushWidthReservation(double reservedWidth);
+
+        /// <summary>
+        /// Pops a width reservation from the stack after processing nested elements.
+        /// Must be called after processing to restore parent's available width.
+        /// </summary>
+        void PopWidthReservation();
     }
 }
