@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -227,8 +226,11 @@ namespace TeXShift.Core
         {
             sb.Append(new string(' ', indentLevel * 4));
 
+            // XElement.Value automatically decodes XML entities from CDATA sections:
+            //   &gt; → >  (for Markdown syntax recognition)
+            //   &amp;lt; → &lt; (preserves user's HTML entities)
+            // Additional HtmlDecode would cause double-decoding and content loss.
             var oeText = string.Concat(oe.Elements(ns + "T").Select(t => t.Value));
-            oeText = WebUtility.HtmlDecode(oeText);
             sb.AppendLine(oeText);
 
             var nestedChildren = oe.Element(ns + "OEChildren");
