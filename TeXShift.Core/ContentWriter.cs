@@ -47,14 +47,12 @@ namespace TeXShift.Core
             if (!readResult.TargetObjectIds.Any())
                 throw new ArgumentException("TargetObjectIds is required", nameof(readResult));
 
-            // Get current page XML
             string pageXml;
             _oneNoteApp.GetPageContent(readResult.PageId, out pageXml, OneNote.PageInfo.piAll, OneNote.XMLSchema.xs2013);
 
             var doc = XDocument.Parse(pageXml);
             var ns = doc.Root.Name.Namespace;
 
-            // Find all target nodes to be removed/replaced
             var targetNodes = readResult.TargetObjectIds
                 .Select(id => FindNodeByObjectId(doc, id, ns))
                 .Where(node => node != null)
@@ -67,44 +65,51 @@ namespace TeXShift.Core
 
             var firstTargetNode = targetNodes.First();
 
-            // Smart replacement logic
             bool isNewContentOutline = newOutlineXml.Name.LocalName == "Outline";
 
             if (readResult.Mode == DetectionMode.Cursor)
             {
-                // Case 1: Cursor mode, replacing a whole Outline.
+                // Cursor mode: Replace the entire Outline element
                 PreserveAttributes(newOutlineXml, firstTargetNode);
                 newOutlineXml.SetAttributeValue("objectID", readResult.TargetObjectIds.First());
                 firstTargetNode.ReplaceWith(newOutlineXml);
             }
-            else // Selection mode
+            else // Selection mode: Replace OEs, not the entire Outline
             {
-                // In selection mode, we always replace OEs.
                 var newOEChildren = isNewContentOutline
                     ? newOutlineXml.Descendants(ns + "OE").ToList()
                     : new System.Collections.Generic.List<XElement> { newOutlineXml };
 
-                // Replace the first OE with all the new content
                 if (newOEChildren.Any())
                 {
                     firstTargetNode.ReplaceWith(newOEChildren);
                 }
                 else
                 {
-                    // If new content is empty, just remove the first node
                     firstTargetNode.Remove();
                 }
 
-                // Remove all other old OEs involved in the multi-line selection
                 foreach (var nodeToRemove in targetNodes.Skip(1))
                 {
                     nodeToRemove.Remove();
                 }
             }
 
-            // Update the page content
             string updatedXml = doc.ToString();
-            _oneNoteApp.UpdatePageContent(updatedXml, DateTime.MinValue, OneNote.XMLSchema.xs2013, true);
+            try
+            {
+                _oneNoteApp.UpdatePageContent(updatedXml, DateTime.MinValue, OneNote.XMLSchema.xs2013, true);
+            }
+            catch (System.Runtime.InteropServices.COMException comEx)
+            {
+                throw new InvalidOperationException(
+                    $"无法更新 OneNote 页面内容。可能的原因：页面被锁定、权限不足或 OneNote 未响应。\n\nCOM 错误代码: 0x{comEx.HResult:X}",
+                    comEx);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"更新 OneNote 页面内容时发生错误: {ex.Message}", ex);
+            }
         }
 
         /// <summary>

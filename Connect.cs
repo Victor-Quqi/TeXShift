@@ -117,76 +117,111 @@ using OneNote = Microsoft.Office.Interop.OneNote;
 
             try
             {
-                if (writeDebugFiles)
-                {
-                    logger = _serviceContainer.CreateDebugLogger();
-                    logger.StartSession();
-                }
-
-                // Step 1: Read content from OneNote
-                var reader = _serviceContainer.CreateContentReader(_oneNoteApp);
-                var readResult = await reader.ExtractContentAsync();
-
-                if (!readResult.IsSuccess)
-                {
-                    MessageBox.Show(readResult.ErrorMessage, "操作提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                if (writeDebugFiles)
-                {
-                    await logger.LogInputMarkdownAsync(readResult.ExtractedText);
-                    await logger.LogOriginalXmlAsync(readResult.OriginalXmlNode);
-                }
-
-                // Step 2: Convert Markdown to OneNote XML
-                var converter = _serviceContainer.CreateMarkdownConverter(readResult.SourceOutlineWidth);
-                var oneNoteXml = await converter.ConvertToOneNoteXmlAsync(readResult.ExtractedText);
-
-                if (writeDebugFiles)
-                {
-                    await logger.LogConvertedXmlAsync(oneNoteXml);
-                }
-
-                // Step 3: Write back to OneNote
-                var writer = _serviceContainer.CreateContentWriter(_oneNoteApp);
-                await writer.ReplaceContentAsync(readResult, oneNoteXml);
-
-                if (writeDebugFiles)
-                {
-                    string finalPageXml = await Task.Run(() =>
-                    {
-                        _oneNoteApp.GetPageContent(readResult.PageId, out string xml, OneNote.PageInfo.piAll);
-                        return xml;
-                    });
-                    await logger.LogFinalPageXmlAsync(finalPageXml);
-                }
+                logger = InitializeDebugLogger(writeDebugFiles);
+                var readResult = await ExecuteConversionPipeline(logger, writeDebugFiles);
 
                 if (showSuccessDialog)
                 {
-                    MessageBox.Show(
-                        $"转换成功!\n\n" +
-                        $"模式: {readResult.ModeAsString()}\n" +
-                        $"处理了 {readResult.ExtractedText.Length} 个字符\n\n" +
-                        $"调试文件已保存至:\n{logger?.DebugSessionFolder}",
-                        "TeXShift - 转换完成",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
+                    ShowSuccessMessage(readResult, logger);
                 }
             }
             catch (Exception ex)
             {
-                // Use fire-and-forget for logging to avoid secondary exceptions blocking the UI
-                _ = logger?.LogErrorAsync(ex);
-
-                MessageBox.Show(
-                    $"转换失败:\n\n{ex.Message}\n\n详细信息:\n{ex.StackTrace}",
-                    "TeXShift - 错误",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
+                HandleConversionError(ex, logger);
             }
+        }
+
+        /// <summary>
+        /// Initializes the debug logger if debug file writing is enabled.
+        /// </summary>
+        private IDebugLogger InitializeDebugLogger(bool writeDebugFiles)
+        {
+            if (!writeDebugFiles)
+                return null;
+
+            var logger = _serviceContainer.CreateDebugLogger();
+            logger.StartSession();
+            return logger;
+        }
+
+        /// <summary>
+        /// Executes the three-stage conversion pipeline (Read → Convert → Write).
+        /// </summary>
+        /// <returns>The read result containing conversion metadata.</returns>
+        private async Task<ReadResult> ExecuteConversionPipeline(IDebugLogger logger, bool writeDebugFiles)
+        {
+            // Step 1: Read content from OneNote
+            var reader = _serviceContainer.CreateContentReader(_oneNoteApp);
+            var readResult = await reader.ExtractContentAsync();
+
+            if (!readResult.IsSuccess)
+            {
+                MessageBox.Show(readResult.ErrorMessage, "操作提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                throw new InvalidOperationException("Content extraction failed.");
+            }
+
+            if (writeDebugFiles)
+            {
+                await logger.LogInputMarkdownAsync(readResult.ExtractedText);
+                await logger.LogOriginalXmlAsync(readResult.OriginalXmlNode);
+            }
+
+            // Step 2: Convert Markdown to OneNote XML
+            var converter = _serviceContainer.CreateMarkdownConverter(readResult.SourceOutlineWidth);
+            var oneNoteXml = await converter.ConvertToOneNoteXmlAsync(readResult.ExtractedText);
+
+            if (writeDebugFiles)
+            {
+                await logger.LogConvertedXmlAsync(oneNoteXml);
+            }
+
+            // Step 3: Write back to OneNote
+            var writer = _serviceContainer.CreateContentWriter(_oneNoteApp);
+            await writer.ReplaceContentAsync(readResult, oneNoteXml);
+
+            if (writeDebugFiles)
+            {
+                string finalPageXml = await Task.Run(() =>
+                {
+                    _oneNoteApp.GetPageContent(readResult.PageId, out string xml, OneNote.PageInfo.piAll);
+                    return xml;
+                });
+                await logger.LogFinalPageXmlAsync(finalPageXml);
+            }
+
+            return readResult;
+        }
+
+        /// <summary>
+        /// Shows a success message box with conversion details.
+        /// </summary>
+        private void ShowSuccessMessage(ReadResult readResult, IDebugLogger logger)
+        {
+            MessageBox.Show(
+                $"转换成功!\n\n" +
+                $"模式: {readResult.ModeAsString()}\n" +
+                $"处理了 {readResult.ExtractedText.Length} 个字符\n\n" +
+                $"调试文件已保存至:\n{logger?.DebugSessionFolder}",
+                "TeXShift - 转换完成",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information
+            );
+        }
+
+        /// <summary>
+        /// Handles and displays conversion errors.
+        /// </summary>
+        private void HandleConversionError(Exception ex, IDebugLogger logger)
+        {
+            // Use fire-and-forget for logging to avoid secondary exceptions blocking the UI
+            _ = logger?.LogErrorAsync(ex);
+
+            MessageBox.Show(
+                $"转换失败:\n\n{ex.Message}\n\n详细信息:\n{ex.StackTrace}",
+                "TeXShift - 错误",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error
+            );
         }
 
         /// <summary>
@@ -201,13 +236,10 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                 {
                     Marshal.ReleaseComObject(obj);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // Ignore exceptions during release, as the object might already be gone.
-                }
-                finally
-                {
-                    obj = null;
+                    // Log the exception but don't throw - object might already be released
+                    System.Diagnostics.Debug.WriteLine($"Warning: Failed to release COM object: {ex.Message}");
                 }
             }
         }
