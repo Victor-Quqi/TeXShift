@@ -119,6 +119,11 @@ namespace TeXShift.Core
 
                 var processed = HandleBlock(block).ToList();
 
+                // Special handling for lists following headings or paragraphs:
+                // In Markdown, a list immediately after a paragraph/heading is semantically at the same level.
+                // However, in OneNote's visual hierarchy, attaching the list as a child (OEChildren) of the
+                // previous element creates the expected indented appearance without requiring manual spacing.
+                // This mimics OneNote's native behavior where lists are often indented under their context.
                 if (block is ListBlock && lastContainerElement != null)
                 {
                     var childrenContainer = lastContainerElement.Element(OneNoteNamespace + "OEChildren");

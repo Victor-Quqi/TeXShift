@@ -58,7 +58,11 @@ namespace TeXShift.Core.Logging
                 string errorContent = $"转换失败\n\n时间: {DateTime.Now}\n\n错误消息:\n{ex.Message}\n\n堆栈跟踪:\n{ex.StackTrace}";
                 await Task.Run(() => File.WriteAllText(errorLogFile, errorContent, Encoding.UTF8));
             }
-            catch { } // Prevent logging errors from causing a crash
+            catch (Exception logEx)
+            {
+                // Prevent logging errors from causing a crash
+                System.Diagnostics.Debug.WriteLine($"Warning: Failed to log error: {logEx.Message}");
+            }
         }
 
         public async Task<string> LogSelectionXmlAsync(XNode selectionXml)
@@ -119,9 +123,11 @@ namespace TeXShift.Core.Logging
             {
                 return XDocument.Parse(xml).ToString();
             }
-            catch
+            catch (Exception ex)
             {
-                return xml; // If parsing fails, return original
+                // If parsing fails, return original
+                System.Diagnostics.Debug.WriteLine($"Warning: Failed to format XML: {ex.Message}");
+                return xml;
             }
         }
     }

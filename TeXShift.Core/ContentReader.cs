@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -131,33 +132,13 @@ namespace TeXShift.Core
 
         private ReadResult HandleSelectionMode(System.Collections.Generic.List<XElement> selectedNodes, XNamespace ns, string pageId)
         {
-            // Find all unique parent OE nodes that are either selected themselves or contain selected children.
-            var parentOEs = selectedNodes
-                .Select(n => n.Name == ns + "OE" ? n : n.Ancestors(ns + "OE").FirstOrDefault())
-                .Where(oe => oe != null)
-                .Distinct()
-                .ToList();
-
+            var parentOEs = FindParentOENodes(selectedNodes, ns);
             if (!parentOEs.Any())
             {
                 return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = "成功定位到选区，但未能找到有效的文本容器。" };
             }
 
-            // In SelectionMode, we must reconstruct the hierarchical relationship from the flat list of selected OEs.
-            // The key insight is that a node's parent will also be in the list if it was part of the selection.
-            var sb = new StringBuilder();
-            var topLevelOEs = parentOEs.Where(oe => oe.Parent?.Parent != null && !parentOEs.Contains(oe.Parent.Parent)).ToList();
-
-            for (int i = 0; i < topLevelOEs.Count; i++)
-            {
-                ProcessOE(topLevelOEs[i], ns, sb, 0);
-                if (i < topLevelOEs.Count - 1)
-                {
-                    sb.AppendLine();
-                }
-            }
-
-            string extractedText = sb.ToString();
+            string extractedText = BuildTextFromOENodes(parentOEs, ns);
             if (string.IsNullOrEmpty(extractedText))
             {
                 return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = "成功定位到选区，但未能提取出有效文本内容。" };
@@ -176,6 +157,48 @@ namespace TeXShift.Core
                 SourceOutlineWidth = outlineContainer != null ? ExtractOutlineWidth(outlineContainer, ns) : null
             };
 
+            CollectObjectIds(parentOEs, result);
+            return result;
+        }
+
+        /// <summary>
+        /// Finds all unique parent OE nodes from the selected nodes.
+        /// </summary>
+        private System.Collections.Generic.List<XElement> FindParentOENodes(System.Collections.Generic.List<XElement> selectedNodes, XNamespace ns)
+        {
+            return selectedNodes
+                .Select(n => n.Name == ns + "OE" ? n : n.Ancestors(ns + "OE").FirstOrDefault())
+                .Where(oe => oe != null)
+                .Distinct()
+                .ToList();
+        }
+
+        /// <summary>
+        /// Builds text from a hierarchical structure of OE nodes.
+        /// </summary>
+        private string BuildTextFromOENodes(System.Collections.Generic.List<XElement> parentOEs, XNamespace ns)
+        {
+            // Reconstruct hierarchical relationship: top-level OEs are those whose parent isn't also selected
+            var sb = new StringBuilder();
+            var topLevelOEs = parentOEs.Where(oe => oe.Parent?.Parent != null && !parentOEs.Contains(oe.Parent.Parent)).ToList();
+
+            for (int i = 0; i < topLevelOEs.Count; i++)
+            {
+                ProcessOE(topLevelOEs[i], ns, sb, 0);
+                if (i < topLevelOEs.Count - 1)
+                {
+                    sb.AppendLine();
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Collects object IDs from OE nodes and adds them to the result.
+        /// </summary>
+        private void CollectObjectIds(System.Collections.Generic.List<XElement> parentOEs, ReadResult result)
+        {
             foreach (var oe in parentOEs)
             {
                 string objectId = oe.Attribute("objectID")?.Value;
@@ -184,8 +207,6 @@ namespace TeXShift.Core
                     result.TargetObjectIds.Add(objectId);
                 }
             }
-
-            return result;
         }
 
         /// <summary>
@@ -204,15 +225,12 @@ namespace TeXShift.Core
         /// </summary>
         private void ProcessOE(XElement oe, XNamespace ns, StringBuilder sb, int indentLevel)
         {
-            // Append indentation: Use 4 spaces per level for robust Markdown parsing.
             sb.Append(new string(' ', indentLevel * 4));
 
-            // Append text content from all <T> elements within this <OE>.
             var oeText = string.Concat(oe.Elements(ns + "T").Select(t => t.Value));
             oeText = WebUtility.HtmlDecode(oeText);
             sb.AppendLine(oeText);
 
-            // If there's a nested OEChildren, process it recursively.
             var nestedChildren = oe.Element(ns + "OEChildren");
             if (nestedChildren != null)
             {
@@ -249,9 +267,10 @@ namespace TeXShift.Core
                 {
                     Marshal.ReleaseComObject(obj);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Ignore exceptions, object might already be released.
+                    // Log the exception but don't throw - object might already be released
+                    System.Diagnostics.Debug.WriteLine($"Warning: Failed to release COM object: {ex.Message}");
                 }
             }
         }
