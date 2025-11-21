@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -29,6 +30,9 @@ namespace TeXShift.Core
         private readonly double _initialWidth;
 
         private static readonly Regex SpanLangRegex = new Regex(@"<span\s+lang=[^>]+>(.*?)</span>", RegexOptions.Compiled | RegexOptions.Singleline);
+
+        // Regex to match HTML entities (e.g., &lt;, &gt;, &amp;, &#60;, &#x3C;)
+        private static readonly Regex HtmlEntityRegex = new Regex(@"&(?:lt|gt|amp|quot|apos|#\d+|#x[0-9a-fA-F]+);", RegexOptions.Compiled);
 
         // Explicit implementation of IMarkdownConverterContext properties
         public XNamespace OneNoteNamespace { get; } = "http://schemas.microsoft.com/office/onenote/2013/onenote";
@@ -81,7 +85,18 @@ namespace TeXShift.Core
         private XElement ConvertToOneNoteXml(string markdown)
         {
             var sanitizedMarkdown = SanitizeText(markdown);
-            var document = Markdig.Markdown.Parse(sanitizedMarkdown, _pipeline);
+
+            // Step 1: HtmlDecode to restore Markdown syntax characters
+            // (e.g., &gt; → >, &lt; → <, &amp;lt; → &lt;)
+            // This allows Markdig to recognize syntax like "> quote" while preserving
+            // user's intended HTML entities like "&lt;" for display.
+            sanitizedMarkdown = WebUtility.HtmlDecode(sanitizedMarkdown);
+
+            // Step 2: Protect remaining HTML entities from being decoded again by Markdig
+            var (protectedMarkdown, entityMap) = ProtectHtmlEntities(sanitizedMarkdown);
+
+            // Step 3: Parse Markdown with protected entities
+            var document = Markdig.Markdown.Parse(protectedMarkdown, _pipeline);
             var outline = new XElement(OneNoteNamespace + "Outline");
 
             // Add the Indents element to control layout and prevent default margins.
@@ -99,6 +114,10 @@ namespace TeXShift.Core
             var elements = PostProcessBlocks(blocks);
             oeChildren.Add(elements);
             outline.Add(oeChildren);
+
+            // Step 4: Restore protected HTML entities to their original form
+            RestoreHtmlEntities(outline, entityMap);
+
             return outline;
         }
 
@@ -164,6 +183,65 @@ namespace TeXShift.Core
                 text = SpanLangRegex.Replace(text, "$1");
             }
             return text;
+        }
+
+        /// <summary>
+        /// Protects HTML entities in the markdown text by replacing them with placeholders.
+        /// This prevents Markdig from auto-decoding entities like &lt; to &lt;, which would
+        /// cause double-escaping issues when HtmlEscaper re-encodes them.
+        /// </summary>
+        /// <param name="markdown">The markdown text containing HTML entities</param>
+        /// <returns>A tuple of (protected markdown, entity map for restoration)</returns>
+        private (string, Dictionary<string, string>) ProtectHtmlEntities(string markdown)
+        {
+            var entityMap = new Dictionary<string, string>();
+            var counter = 0;
+
+            var result = HtmlEntityRegex.Replace(markdown, match =>
+            {
+                // Use Unicode Replacement Character (U+FFFD) as placeholder delimiter
+                // This character is extremely rare in normal text
+                var placeholder = $"\uFFFD{counter++}\uFFFD";
+                entityMap[placeholder] = match.Value;
+                return placeholder;
+            });
+
+            return (result, entityMap);
+        }
+
+        /// <summary>
+        /// Restores HTML entities in the generated OneNote XML by replacing placeholders
+        /// with their original entity strings.
+        /// </summary>
+        /// <param name="outline">The OneNote Outline element to process</param>
+        /// <param name="entityMap">The map of placeholders to original entities</param>
+        private void RestoreHtmlEntities(XElement outline, Dictionary<string, string> entityMap)
+        {
+            if (entityMap.Count == 0) return; // Optimization: skip if no entities to restore
+
+            var ns = OneNoteNamespace;
+            foreach (var tElement in outline.Descendants(ns + "T"))
+            {
+                var cdata = tElement.Nodes().OfType<XCData>().FirstOrDefault();
+                if (cdata == null) continue;
+
+                var text = cdata.Value;
+                var modified = false;
+
+                foreach (var kvp in entityMap)
+                {
+                    if (text.Contains(kvp.Key))
+                    {
+                        text = text.Replace(kvp.Key, kvp.Value);
+                        modified = true;
+                    }
+                }
+
+                if (modified)
+                {
+                    cdata.ReplaceWith(new XCData(text));
+                }
+            }
         }
 
         public void IncrementQuoteDepth()
