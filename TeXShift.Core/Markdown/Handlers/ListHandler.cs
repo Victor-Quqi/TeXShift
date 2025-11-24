@@ -1,4 +1,7 @@
 using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
+using Markdig.Extensions.TaskLists;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
@@ -40,31 +43,73 @@ namespace TeXShift.Core.Markdown.Handlers
             oe.Add(new XAttribute("spaceAfter", spacing.SpaceAfter.ToString("F1")));
             oe.Add(new XAttribute("spaceBetween", spacing.SpaceBetween.ToString("F1")));
 
-            // Add the List element for the bullet or number.
-            var listElement = new XElement(ns + "List");
-            if (isOrdered)
-            {
-                var number = new XElement(ns + "Number",
-                    new XAttribute("numberSequence", "0"),
-                    new XAttribute("numberFormat", "##."),
-                    new XAttribute("fontSize", "11.0"));
-                listElement.Add(number);
-            }
-            else
-            {
-                var bullet = new XElement(ns + "Bullet",
-                    new XAttribute("bullet", "2"),
-                    new XAttribute("fontSize", "11.0"));
-                listElement.Add(bullet);
-            }
-            oe.Add(listElement);
-
-            // Add the main text content when the first block is a paragraph.
-            // Other blocks (quote, code, nested lists, extra paragraphs) are processed below.
+            // Check if this is a task list item by looking for a TaskList inline element
+            TaskList taskList = null;
             var firstBlock = listItem.FirstOrDefault();
             if (firstBlock is ParagraphBlock paragraph)
             {
-                var htmlContent = context.ConvertInlinesToHtml(paragraph.Inline);
+                taskList = paragraph.Inline?.Descendants<TaskList>().FirstOrDefault();
+            }
+
+            // Task list items require alignment and quickStyleIndex attributes
+            if (taskList != null)
+            {
+                oe.Add(new XAttribute("alignment", "left"));
+                oe.Add(new XAttribute("quickStyleIndex", "1"));
+            }
+
+            // Add either a Tag element (for task lists) or a List element (for regular lists)
+            if (taskList != null)
+            {
+                // Task list item: add a <one:Tag> element for the checkbox
+                var tag = new XElement(ns + "Tag",
+                    new XAttribute("index", "0"),
+                    new XAttribute("completed", taskList.Checked.ToString().ToLower()),
+                    new XAttribute("disabled", "false"),
+                    new XAttribute("creationDate", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")));
+
+                if (taskList.Checked)
+                {
+                    tag.Add(new XAttribute("completionDate", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")));
+                }
+
+                oe.Add(tag);
+            }
+            else
+            {
+                // Regular list item: add a <one:List> element for bullet or number
+                var listElement = new XElement(ns + "List");
+                if (isOrdered)
+                {
+                    var number = new XElement(ns + "Number",
+                        new XAttribute("numberSequence", "0"),
+                        new XAttribute("numberFormat", "##."),
+                        new XAttribute("fontSize", "11.0"));
+                    listElement.Add(number);
+                }
+                else
+                {
+                    var bullet = new XElement(ns + "Bullet",
+                        new XAttribute("bullet", "2"),
+                        new XAttribute("fontSize", "11.0"));
+                    listElement.Add(bullet);
+                }
+                oe.Add(listElement);
+            }
+
+            // Add the main text content when the first block is a paragraph.
+            // Other blocks (quote, code, nested lists, extra paragraphs) are processed below.
+            if (firstBlock is ParagraphBlock paragraphBlock)
+            {
+                var htmlContent = context.ConvertInlinesToHtml(paragraphBlock.Inline);
+
+                // For task list items, trim leading whitespace from the text content
+                // because Markdown syntax "- [ ] text" includes a space after the checkbox
+                if (taskList != null)
+                {
+                    htmlContent = htmlContent.TrimStart();
+                }
+
                 oe.Add(new XElement(ns + "T", new XCData(htmlContent)));
             }
             else
