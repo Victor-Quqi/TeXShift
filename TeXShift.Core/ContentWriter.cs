@@ -53,6 +53,9 @@ namespace TeXShift.Core
             var doc = XDocument.Parse(pageXml);
             var ns = doc.Root.Name.Namespace;
 
+            // Ensure TagDef exists for task lists (Tag elements with index="0")
+            EnsureTagDefExists(doc, ns);
+
             var targetNodes = readResult.TargetObjectIds
                 .Select(id => FindNodeByObjectId(doc, id, ns))
                 .Where(node => node != null)
@@ -169,6 +172,37 @@ namespace TeXShift.Core
                     else
                         newNode.AddFirst(new XElement(sizeAttr));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Ensures that the page has a TagDef for task list checkboxes (index="0").
+        /// If it doesn't exist, adds it to the page root.
+        /// </summary>
+        private void EnsureTagDefExists(XDocument doc, XNamespace ns)
+        {
+            var pageRoot = doc.Root;
+            if (pageRoot == null) return;
+
+            // Check if TagDef with index="0" already exists
+            var existingTagDef = pageRoot.Elements(ns + "TagDef")
+                .FirstOrDefault(e => e.Attribute("index")?.Value == "0");
+
+            if (existingTagDef == null)
+            {
+                // Create a new TagDef for task list checkboxes
+                // type="0" means checkbox, symbol="3" is the checkbox icon
+                var tagDef = new XElement(ns + "TagDef",
+                    new XAttribute("index", "0"),
+                    new XAttribute("type", "0"),
+                    new XAttribute("symbol", "3"),
+                    new XAttribute("fontColor", "automatic"),
+                    new XAttribute("highlightColor", "none"),
+                    new XAttribute("name", "待办事项"));
+
+                // Insert TagDef at the beginning of the page (after xmlns declarations)
+                // It should come before QuickStyleDef, PageSettings, and other page-level elements
+                pageRoot.AddFirst(tagDef);
             }
         }
     }

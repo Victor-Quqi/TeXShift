@@ -9,6 +9,7 @@ using System.Xml.Linq;
 using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Markdig.Extensions.TaskLists;
 using TeXShift.Core.Markdown;
 using TeXShift.Core.Markdown.Handlers;
 using TeXShift.Core.Utils;
@@ -273,6 +274,12 @@ namespace TeXShift.Core
             var html = new StringBuilder();
             foreach (var inline in container)
             {
+                // Skip TaskList inline elements (checkboxes are handled separately in ListHandler)
+                if (inline is TaskList)
+                {
+                    continue;
+                }
+
                 if (inline is LiteralInline literal)
                 {
                     html.Append(HtmlEscaper.Escape(literal.Content.ToString()));
