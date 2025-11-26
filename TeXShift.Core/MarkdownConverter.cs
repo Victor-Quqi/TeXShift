@@ -10,6 +10,7 @@ using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Markdig.Extensions.TaskLists;
+using Markdig.Extensions.Tables;
 using TeXShift.Core.Markdown;
 using TeXShift.Core.Markdown.Handlers;
 using TeXShift.Core.Utils;
@@ -72,7 +73,8 @@ namespace TeXShift.Core
                 { typeof(ListBlock), new ListHandler() },
                 { typeof(CodeBlock), new CodeBlockHandler() },
                 { typeof(ThematicBreakBlock), new HorizontalRuleHandler() },
-                { typeof(QuoteBlock), new QuoteBlockHandler() }
+                { typeof(QuoteBlock), new QuoteBlockHandler() },
+                { typeof(Table), new TableHandler() }
             };
         }
 
@@ -314,6 +316,17 @@ namespace TeXShift.Core
                         padding.Append(style.PaddingChar);
                     }
                     html.Append($"<span style='{styleString}'>{padding}{HtmlEscaper.Escape(code.Content)}{padding}</span>");
+                }
+                else if (inline is LinkInline link)
+                {
+                    var content = ConvertInlinesToHtml(link);
+                    var url = link.Url ?? "";
+                    // If link text is empty, display the URL as the link text
+                    if (string.IsNullOrEmpty(content))
+                    {
+                        content = HtmlEscaper.Escape(url);
+                    }
+                    html.Append($"<a href=\"{HtmlEscaper.Escape(url)}\">{content}</a>");
                 }
                 else if (inline is LineBreakInline)
                 {
