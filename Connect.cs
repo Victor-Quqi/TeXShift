@@ -354,23 +354,25 @@ using OneNote = Microsoft.Office.Interop.OneNote;
         /// </summary>
         private void ShowTextInScrollableMessageBox(string text, string caption)
         {
-            Form form = new Form
+            using (Form form = new Form
             {
                 Text = caption,
                 Size = new System.Drawing.Size(600, 400),
                 StartPosition = FormStartPosition.CenterParent
-            };
-            TextBox textBox = new TextBox
+            })
             {
-                Multiline = true,
-                ScrollBars = ScrollBars.Vertical,
-                Dock = DockStyle.Fill,
-                ReadOnly = true,
-                Font = new System.Drawing.Font("Consolas", 10),
-                Text = text
-            };
-            form.Controls.Add(textBox);
-            form.ShowDialog();
+                TextBox textBox = new TextBox
+                {
+                    Multiline = true,
+                    ScrollBars = ScrollBars.Vertical,
+                    Dock = DockStyle.Fill,
+                    ReadOnly = true,
+                    Font = new System.Drawing.Font("Consolas", 10),
+                    Text = text
+                };
+                form.Controls.Add(textBox);
+                form.ShowDialog();
+            }
         }
 
         private static string GetResourceText(string resourceName)
