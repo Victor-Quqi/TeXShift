@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using TeXShift.Core.Markdown;
-using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.Markdown.Handlers
 {
@@ -17,10 +16,10 @@ namespace TeXShift.Core.Markdown.Handlers
             var styleConfig = context.StyleConfig;
 
             // Check if paragraph contains only a single image
-            var singleImage = GetSingleImage(paragraph);
+            var singleImage = ImageElementHelper.GetSingleImage(paragraph);
             if (singleImage != null)
             {
-                return HandleImageParagraph(singleImage, ns);
+                return new[] { ImageElementHelper.CreateImageOE(singleImage, ns) };
             }
 
             // Check if paragraph contains standalone image lines mixed with text
@@ -43,73 +42,6 @@ namespace TeXShift.Core.Markdown.Handlers
             oe.Add(new XElement(ns + "T", new XCData(htmlContent)));
 
             return new[] { oe };
-        }
-
-        /// <summary>
-        /// Checks if paragraph contains only a single image and returns it.
-        /// </summary>
-        private LinkInline GetSingleImage(ParagraphBlock paragraph)
-        {
-            if (paragraph.Inline == null) return null;
-
-            var inlines = paragraph.Inline.ToList();
-
-            // Filter out whitespace-only literals
-            var meaningfulInlines = inlines.Where(i =>
-                !(i is LiteralInline lit && string.IsNullOrWhiteSpace(lit.Content.ToString()))).ToList();
-
-            if (meaningfulInlines.Count == 1 && meaningfulInlines[0] is LinkInline link && link.IsImage)
-            {
-                return link;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Handles a paragraph that contains only a single image.
-        /// </summary>
-        private IEnumerable<XElement> HandleImageParagraph(LinkInline imageLink, XNamespace ns)
-        {
-            var url = imageLink.Url ?? "";
-            var altText = GetAltText(imageLink);
-
-            // Try to load the image
-            var result = ImageLoader.LoadImage(url);
-
-            if (!result.Success)
-            {
-                // Fallback: create a link to the image
-                var oe = new XElement(ns + "OE",
-                    new XElement(ns + "T", new XCData($"<a href=\"{HtmlEscaper.Escape(url)}\">[🖼️{HtmlEscaper.Escape(altText)}]</a>")));
-                return new[] { oe };
-            }
-
-            // Create image element
-            var imageElement = new XElement(ns + "Image",
-                new XAttribute("format", result.Format));
-
-            if (!string.IsNullOrEmpty(altText))
-            {
-                imageElement.Add(new XAttribute("alt", altText));
-            }
-
-            imageElement.Add(new XElement(ns + "Data", result.Base64Data));
-
-            var imageOe = new XElement(ns + "OE", imageElement);
-            return new[] { imageOe };
-        }
-
-        /// <summary>
-        /// Extracts alt text from an image link.
-        /// </summary>
-        private string GetAltText(LinkInline imageLink)
-        {
-            if (imageLink.FirstChild is LiteralInline literal)
-            {
-                return literal.Content.ToString();
-            }
-            return "image";
         }
 
         /// <summary>
@@ -251,9 +183,8 @@ namespace TeXShift.Core.Markdown.Handlers
             {
                 if (segment.IsImage)
                 {
-                    // Handle as standalone image
-                    var imageElements = HandleImageParagraph(segment.ImageLink, ns);
-                    results.AddRange(imageElements);
+                    // Handle as standalone image using shared helper
+                    results.Add(ImageElementHelper.CreateImageOE(segment.ImageLink, ns));
                 }
                 else
                 {
@@ -263,7 +194,7 @@ namespace TeXShift.Core.Markdown.Handlers
                     oe.Add(new XAttribute("spaceAfter", spacing.SpaceAfter.ToString("F1")));
                     oe.Add(new XAttribute("spaceBetween", spacing.SpaceBetween.ToString("F1")));
 
-                    var htmlContent = ConvertInlinesToHtml(segment.TextInlines, context);
+                    var htmlContent = context.ConvertInlinesToHtml(segment.TextInlines);
                     oe.Add(new XElement(ns + "T", new XCData(htmlContent)));
 
                     results.Add(oe);
@@ -271,14 +202,6 @@ namespace TeXShift.Core.Markdown.Handlers
             }
 
             return results;
-        }
-
-        /// <summary>
-        /// Converts a list of inlines to HTML string.
-        /// </summary>
-        private string ConvertInlinesToHtml(List<Inline> inlines, IMarkdownConverterContext context)
-        {
-            return context.ConvertInlinesToHtml(inlines);
         }
     }
 }
