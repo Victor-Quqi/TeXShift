@@ -30,7 +30,9 @@ namespace TeXShift.Core
         private readonly Stack<double> _widthReservationStack = new Stack<double>();
         private readonly double _initialWidth;
 
-        private static readonly Regex SpanLangRegex = new Regex(@"<span\s+lang=[^>]+>(.*?)</span>", RegexOptions.Compiled | RegexOptions.Singleline);
+        // Regex to remove all span tags (including style spans from OneNote font formatting)
+        // This ensures Markdown syntax like "- [ ]" isn't broken by wrapping span tags
+        private static readonly Regex SpanTagRegex = new Regex(@"<span\s[^>]*>(.*?)</span>", RegexOptions.Compiled | RegexOptions.Singleline);
 
         // Regex to match HTML entities (e.g., &lt;, &gt;, &amp;, &#60;, &#x3C;)
         private static readonly Regex HtmlEntityRegex = new Regex(@"&(?:lt|gt|amp|quot|apos|#\d+|#x[0-9a-fA-F]+);", RegexOptions.Compiled);
@@ -139,11 +141,8 @@ namespace TeXShift.Core
 
                 var processed = HandleBlock(block).ToList();
 
-                // Special handling for lists following headings or paragraphs:
-                // In Markdown, a list immediately after a paragraph/heading is semantically at the same level.
-                // However, in OneNote's visual hierarchy, attaching the list as a child (OEChildren) of the
-                // previous element creates the expected indented appearance without requiring manual spacing.
-                // This mimics OneNote's native behavior where lists are often indented under their context.
+                // Lists get nested under the preceding container element (heading, paragraph, or code block)
+                // This preserves document order while providing consistent indentation
                 if (block is ListBlock && lastContainerElement != null)
                 {
                     var childrenContainer = lastContainerElement.Element(OneNoteNamespace + "OEChildren");
@@ -153,11 +152,14 @@ namespace TeXShift.Core
                         lastContainerElement.Add(childrenContainer);
                     }
                     childrenContainer.Add(processed);
+                    // Lists don't become containers - keep the current container for subsequent lists
                 }
                 else
                 {
                     elements.AddRange(processed);
-                    lastContainerElement = (block is HeadingBlock || block is ParagraphBlock) ? processed.LastOrDefault() : null;
+                    // All block types (except lists) can serve as containers for subsequent lists
+                    // This allows lists to maintain consistent indentation regardless of what precedes them
+                    lastContainerElement = processed.LastOrDefault();
                 }
             }
             return elements;
@@ -178,10 +180,11 @@ namespace TeXShift.Core
 
         private string SanitizeText(string text)
         {
-            // Recursively remove lang spans to handle nested cases.
-            while (SpanLangRegex.IsMatch(text))
+            // Remove all span tags (lang, style, etc.) that OneNote adds for formatting
+            // These can break Markdown syntax like "- [ ]" when they wrap list markers
+            while (SpanTagRegex.IsMatch(text))
             {
-                text = SpanLangRegex.Replace(text, "$1");
+                text = SpanTagRegex.Replace(text, "$1");
             }
             return text;
         }

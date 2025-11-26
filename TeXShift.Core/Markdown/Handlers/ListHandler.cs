@@ -51,17 +51,12 @@ namespace TeXShift.Core.Markdown.Handlers
                 taskList = paragraph.Inline?.Descendants<TaskList>().FirstOrDefault();
             }
 
-            // Task list items require alignment and quickStyleIndex attributes
-            if (taskList != null)
-            {
-                oe.Add(new XAttribute("alignment", "left"));
-                oe.Add(new XAttribute("quickStyleIndex", "1"));
-            }
-
             // Add either a Tag element (for task lists) or a List element (for regular lists)
             if (taskList != null)
             {
                 // Task list item: add a <one:Tag> element for the checkbox
+                // Note: Task lists and regular lists use different layout systems in OneNote
+                // and cannot be perfectly aligned when mixed. This is a OneNote limitation.
                 var tag = new XElement(ns + "Tag",
                     new XAttribute("index", "0"),
                     new XAttribute("completed", taskList.Checked.ToString().ToLower()),
