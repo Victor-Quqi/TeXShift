@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using TeXShift.Core.Markdown;
+using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.Markdown.Handlers
 {
@@ -96,16 +97,40 @@ namespace TeXShift.Core.Markdown.Handlers
             // Other blocks (quote, code, nested lists, extra paragraphs) are processed below.
             if (firstBlock is ParagraphBlock paragraphBlock)
             {
-                var htmlContent = context.ConvertInlinesToHtml(paragraphBlock.Inline);
-
-                // For task list items, trim leading whitespace from the text content
-                // because Markdown syntax "- [ ] text" includes a space after the checkbox
-                if (taskList != null)
+                // Check if the paragraph contains only a single image (excluding TaskList checkbox)
+                var singleImage = GetSingleImage(paragraphBlock);
+                if (singleImage != null)
                 {
-                    htmlContent = htmlContent.TrimStart();
+                    // Handle as standalone image
+                    var imageElement = CreateImageElement(singleImage, ns);
+                    if (imageElement != null)
+                    {
+                        oe.Add(imageElement);
+                    }
+                    else
+                    {
+                        // Fallback to link if image loading failed
+                        var htmlContent = context.ConvertInlinesToHtml(paragraphBlock.Inline);
+                        if (taskList != null)
+                        {
+                            htmlContent = htmlContent.TrimStart();
+                        }
+                        oe.Add(new XElement(ns + "T", new XCData(htmlContent)));
+                    }
                 }
+                else
+                {
+                    var htmlContent = context.ConvertInlinesToHtml(paragraphBlock.Inline);
 
-                oe.Add(new XElement(ns + "T", new XCData(htmlContent)));
+                    // For task list items, trim leading whitespace from the text content
+                    // because Markdown syntax "- [ ] text" includes a space after the checkbox
+                    if (taskList != null)
+                    {
+                        htmlContent = htmlContent.TrimStart();
+                    }
+
+                    oe.Add(new XElement(ns + "T", new XCData(htmlContent)));
+                }
             }
             else
             {
@@ -133,6 +158,67 @@ namespace TeXShift.Core.Markdown.Handlers
             }
 
             return oe;
+        }
+
+        /// <summary>
+        /// Checks if paragraph contains only a single image and returns it.
+        /// Filters out TaskList checkboxes and whitespace-only literals.
+        /// </summary>
+        private LinkInline GetSingleImage(ParagraphBlock paragraph)
+        {
+            if (paragraph.Inline == null) return null;
+
+            var inlines = paragraph.Inline.ToList();
+
+            // Filter out whitespace-only literals and TaskList checkboxes
+            var meaningfulInlines = inlines.Where(i =>
+                !(i is LiteralInline lit && string.IsNullOrWhiteSpace(lit.Content.ToString())) &&
+                !(i is TaskList)).ToList();
+
+            if (meaningfulInlines.Count == 1 && meaningfulInlines[0] is LinkInline link && link.IsImage)
+            {
+                return link;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Creates an Image element from a LinkInline, or returns null if loading fails.
+        /// </summary>
+        private XElement CreateImageElement(LinkInline imageLink, XNamespace ns)
+        {
+            var url = imageLink.Url ?? "";
+            var altText = GetAltText(imageLink);
+
+            var result = ImageLoader.LoadImage(url);
+            if (!result.Success)
+            {
+                return null;
+            }
+
+            var imageElement = new XElement(ns + "Image",
+                new XAttribute("format", result.Format));
+
+            if (!string.IsNullOrEmpty(altText))
+            {
+                imageElement.Add(new XAttribute("alt", altText));
+            }
+
+            imageElement.Add(new XElement(ns + "Data", result.Base64Data));
+            return imageElement;
+        }
+
+        /// <summary>
+        /// Extracts alt text from an image link.
+        /// </summary>
+        private string GetAltText(LinkInline imageLink)
+        {
+            if (imageLink.FirstChild is LiteralInline literal)
+            {
+                return literal.Content.ToString();
+            }
+            return "image";
         }
     }
 }
