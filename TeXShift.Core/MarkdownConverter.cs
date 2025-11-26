@@ -188,6 +188,7 @@ namespace TeXShift.Core
             {
                 text = SpanTagRegex.Replace(text, "$1");
             }
+
             return text;
         }
 
@@ -276,8 +277,14 @@ namespace TeXShift.Core
         public string ConvertInlinesToHtml(ContainerInline container)
         {
             if (container == null) return string.Empty;
+            return ConvertInlinesToHtml((IEnumerable<Inline>)container);
+        }
+
+        public string ConvertInlinesToHtml(IEnumerable<Inline> inlines)
+        {
+            if (inlines == null) return string.Empty;
             var html = new StringBuilder();
-            foreach (var inline in container)
+            foreach (var inline in inlines)
             {
                 // Skip TaskList inline elements (checkboxes are handled separately in ListHandler)
                 if (inline is TaskList)
@@ -319,14 +326,29 @@ namespace TeXShift.Core
                 }
                 else if (inline is LinkInline link)
                 {
-                    var content = ConvertInlinesToHtml(link);
                     var url = link.Url ?? "";
-                    // If link text is empty, display the URL as the link text
-                    if (string.IsNullOrEmpty(content))
+
+                    // Handle images: inline images are downgraded to links
+                    if (link.IsImage)
                     {
-                        content = HtmlEscaper.Escape(url);
+                        var altText = ConvertInlinesToHtml(link);
+                        if (string.IsNullOrEmpty(altText))
+                        {
+                            altText = "image";
+                        }
+                        // Downgrade to link with image icon prefix
+                        html.Append($"<a href=\"{HtmlEscaper.Escape(url)}\">[🖼️{altText}]</a>");
                     }
-                    html.Append($"<a href=\"{HtmlEscaper.Escape(url)}\">{content}</a>");
+                    else
+                    {
+                        var content = ConvertInlinesToHtml(link);
+                        // If link text is empty, display the URL as the link text
+                        if (string.IsNullOrEmpty(content))
+                        {
+                            content = HtmlEscaper.Escape(url);
+                        }
+                        html.Append($"<a href=\"{HtmlEscaper.Escape(url)}\">{content}</a>");
+                    }
                 }
                 else if (inline is LineBreakInline)
                 {

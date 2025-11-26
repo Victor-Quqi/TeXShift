@@ -1,8 +1,10 @@
 using Markdig.Extensions.Tables;
 using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
+using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.Markdown.Handlers
 {
@@ -51,19 +53,30 @@ namespace TeXShift.Core.Markdown.Handlers
                     var cellElement = new XElement(ns + "Cell");
                     var oeChildren = new XElement(ns + "OEChildren");
 
-                    // Process cell content - cells contain paragraphs
-                    var cellContent = "";
-                    foreach (var cellChild in cell)
+                    // Check if cell contains only a single image
+                    var singleImage = GetSingleImageFromCell(cell);
+                    if (singleImage != null)
                     {
-                        if (cellChild is ParagraphBlock paragraph)
+                        var imageOe = CreateImageElement(singleImage, ns);
+                        oeChildren.Add(imageOe);
+                    }
+                    else
+                    {
+                        // Process cell content - cells contain paragraphs
+                        var cellContent = "";
+                        foreach (var cellChild in cell)
                         {
-                            cellContent += context.ConvertInlinesToHtml(paragraph.Inline);
+                            if (cellChild is ParagraphBlock paragraph)
+                            {
+                                cellContent += context.ConvertInlinesToHtml(paragraph.Inline);
+                            }
                         }
+
+                        var oe = new XElement(ns + "OE",
+                            new XElement(ns + "T", new XCData(cellContent)));
+                        oeChildren.Add(oe);
                     }
 
-                    var oe = new XElement(ns + "OE",
-                        new XElement(ns + "T", new XCData(cellContent)));
-                    oeChildren.Add(oe);
                     cellElement.Add(oeChildren);
                     rowElement.Add(cellElement);
                 }
@@ -74,6 +87,76 @@ namespace TeXShift.Core.Markdown.Handlers
             // Wrap table in OE element
             var outerOe = new XElement(ns + "OE", tableElement);
             return new[] { outerOe };
+        }
+
+        /// <summary>
+        /// Checks if cell contains only a single image and returns it.
+        /// </summary>
+        private LinkInline GetSingleImageFromCell(TableCell cell)
+        {
+            // Cell should have exactly one paragraph
+            var paragraphs = cell.OfType<ParagraphBlock>().ToList();
+            if (paragraphs.Count != 1) return null;
+
+            var paragraph = paragraphs[0];
+            if (paragraph.Inline == null) return null;
+
+            var inlines = paragraph.Inline.ToList();
+
+            // Filter out whitespace-only literals
+            var meaningfulInlines = inlines.Where(i =>
+                !(i is LiteralInline lit && string.IsNullOrWhiteSpace(lit.Content.ToString()))).ToList();
+
+            if (meaningfulInlines.Count == 1 && meaningfulInlines[0] is LinkInline link && link.IsImage)
+            {
+                return link;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Creates an image element for the cell.
+        /// </summary>
+        private XElement CreateImageElement(LinkInline imageLink, XNamespace ns)
+        {
+            var url = imageLink.Url ?? "";
+            var altText = GetAltText(imageLink);
+
+            // Try to load the image
+            var result = ImageLoader.LoadImage(url);
+
+            if (!result.Success)
+            {
+                // Fallback: create a link to the image
+                return new XElement(ns + "OE",
+                    new XElement(ns + "T", new XCData($"<a href=\"{HtmlEscaper.Escape(url)}\">[🖼️{HtmlEscaper.Escape(altText)}]</a>")));
+            }
+
+            // Create image element
+            var imageElement = new XElement(ns + "Image",
+                new XAttribute("format", result.Format));
+
+            if (!string.IsNullOrEmpty(altText))
+            {
+                imageElement.Add(new XAttribute("alt", altText));
+            }
+
+            imageElement.Add(new XElement(ns + "Data", result.Base64Data));
+
+            return new XElement(ns + "OE", imageElement);
+        }
+
+        /// <summary>
+        /// Extracts alt text from an image link.
+        /// </summary>
+        private string GetAltText(LinkInline imageLink)
+        {
+            if (imageLink.FirstChild is LiteralInline literal)
+            {
+                return literal.Content.ToString();
+            }
+            return "image";
         }
     }
 }

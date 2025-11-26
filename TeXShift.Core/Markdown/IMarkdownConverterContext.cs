@@ -49,6 +49,14 @@ namespace TeXShift.Core.Markdown
         string ConvertInlinesToHtml(ContainerInline container);
 
         /// <summary>
+        /// Converts a collection of inline elements into an HTML string.
+        /// This overload allows processing a subset of inlines without modifying the AST.
+        /// </summary>
+        /// <param name="inlines">The collection of inline elements.</param>
+        /// <returns>An HTML-formatted string.</returns>
+        string ConvertInlinesToHtml(IEnumerable<Inline> inlines);
+
+        /// <summary>
         /// Recursively processes a collection of blocks using the main converter's logic.
         /// This is useful for handlers that contain nested blocks, like ListBlock.
         /// </summary>

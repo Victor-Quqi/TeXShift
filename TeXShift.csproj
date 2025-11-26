@@ -122,6 +122,7 @@
     <Compile Include="TeXShift.Core\ReadResult.cs" />
     <Compile Include="TeXShift.Core\ServiceContainer.cs" />
     <Compile Include="TeXShift.Core\Utils\HtmlEscaper.cs" />
+    <Compile Include="TeXShift.Core\Utils\ImageLoader.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
