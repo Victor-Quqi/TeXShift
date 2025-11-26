@@ -292,5 +292,6 @@ misc/
 DebugLogs/
 DebugOutput/
 .claude/
+nul
 AGENTS.md
 CLAUDE.md

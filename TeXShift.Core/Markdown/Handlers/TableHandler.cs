@@ -45,6 +45,7 @@ namespace TeXShift.Core.Markdown.Handlers
                 if (!(rowBlock is TableRow row)) continue;
 
                 var rowElement = new XElement(ns + "Row");
+                int columnIndex = 0;
 
                 foreach (var cellBlock in row)
                 {
@@ -53,12 +54,17 @@ namespace TeXShift.Core.Markdown.Handlers
                     var cellElement = new XElement(ns + "Cell");
                     var oeChildren = new XElement(ns + "OEChildren");
 
+                    // Get column alignment
+                    var alignment = GetColumnAlignment(table, columnIndex);
+
                     // Check if cell contains only a single image
                     var singleImage = GetSingleImageFromCell(cell);
                     if (singleImage != null)
                     {
                         // Use shared helper to create image OE
-                        oeChildren.Add(ImageElementHelper.CreateImageOE(singleImage, ns));
+                        var imageOe = ImageElementHelper.CreateImageOE(singleImage, ns);
+                        ApplyAlignment(imageOe, alignment);
+                        oeChildren.Add(imageOe);
                     }
                     else
                     {
@@ -72,13 +78,21 @@ namespace TeXShift.Core.Markdown.Handlers
                             }
                         }
 
+                        // Apply bold for header row
+                        if (row.IsHeader && !string.IsNullOrEmpty(cellContent))
+                        {
+                            cellContent = $"<span style='font-weight:bold'>{cellContent}</span>";
+                        }
+
                         var oe = new XElement(ns + "OE",
                             new XElement(ns + "T", new XCData(cellContent)));
+                        ApplyAlignment(oe, alignment);
                         oeChildren.Add(oe);
                     }
 
                     cellElement.Add(oeChildren);
                     rowElement.Add(cellElement);
+                    columnIndex++;
                 }
 
                 tableElement.Add(rowElement);
@@ -87,6 +101,45 @@ namespace TeXShift.Core.Markdown.Handlers
             // Wrap table in OE element
             var outerOe = new XElement(ns + "OE", tableElement);
             return new[] { outerOe };
+        }
+
+        /// <summary>
+        /// Gets the alignment for a specific column from the table's column definitions.
+        /// </summary>
+        private string GetColumnAlignment(Table table, int columnIndex)
+        {
+            if (table.ColumnDefinitions == null || columnIndex >= table.ColumnDefinitions.Count)
+            {
+                return "left";
+            }
+
+            var colDef = table.ColumnDefinitions[columnIndex];
+            switch (colDef.Alignment)
+            {
+                case TableColumnAlign.Center:
+                    return "center";
+                case TableColumnAlign.Right:
+                    return "right";
+                default:
+                    return "left";
+            }
+        }
+
+        /// <summary>
+        /// Applies alignment attributes to an OE element.
+        /// </summary>
+        private void ApplyAlignment(XElement oe, string alignment)
+        {
+            oe.SetAttributeValue("alignment", alignment);
+
+            if (alignment == "center" || alignment == "right")
+            {
+                var existingStyle = oe.Attribute("style")?.Value ?? "";
+                var textAlign = $"text-align:{alignment}";
+                oe.SetAttributeValue("style", string.IsNullOrEmpty(existingStyle)
+                    ? textAlign
+                    : $"{existingStyle};{textAlign}");
+            }
         }
 
         /// <summary>
