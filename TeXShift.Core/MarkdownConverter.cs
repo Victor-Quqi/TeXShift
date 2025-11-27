@@ -9,10 +9,12 @@ using System.Xml.Linq;
 using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Markdig.Extensions.Mathematics;
 using Markdig.Extensions.TaskLists;
 using Markdig.Extensions.Tables;
 using TeXShift.Core.Markdown;
 using TeXShift.Core.Markdown.Handlers;
+using TeXShift.Core.Math;
 using TeXShift.Core.Utils;
 
 namespace TeXShift.Core
@@ -27,6 +29,7 @@ namespace TeXShift.Core
         private readonly Dictionary<Type, IBlockHandler> _blockHandlers;
         private readonly FallbackHandler _fallbackHandler = new FallbackHandler();
         private readonly MarkdownPipeline _pipeline;
+        private readonly IMathService _mathService;
         private int _quoteNestingDepth = 0;
         private readonly Stack<double> _widthReservationStack = new Stack<double>();
         private readonly double _initialWidth;
@@ -54,14 +57,15 @@ namespace TeXShift.Core
             {
                 var totalReserved = _widthReservationStack.Sum();
                 var available = _initialWidth - totalReserved;
-                return Math.Max(available, 50.0);
+                return System.Math.Max(available, 50.0);
             }
         }
 
-        public MarkdownConverter(OneNoteStyleConfig styleConfig, MarkdownPipeline pipeline, double? sourceOutlineWidth = null)
+        public MarkdownConverter(OneNoteStyleConfig styleConfig, MarkdownPipeline pipeline, IMathService mathService, double? sourceOutlineWidth = null)
         {
             StyleConfig = styleConfig ?? throw new ArgumentNullException(nameof(styleConfig));
             _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
+            _mathService = mathService; // Can be null if math support is disabled
             SourceOutlineWidth = sourceOutlineWidth;
             _initialWidth = sourceOutlineWidth ?? StyleConfig.GetQuoteBlockStyle().BaseWidth;
 
@@ -76,7 +80,8 @@ namespace TeXShift.Core
                 { typeof(FencedCodeBlock), new CodeBlockHandler() },
                 { typeof(ThematicBreakBlock), new HorizontalRuleHandler() },
                 { typeof(QuoteBlock), new QuoteBlockHandler() },
-                { typeof(Table), new TableHandler() }
+                { typeof(Table), new TableHandler() },
+                { typeof(MathBlock), new MathBlockHandler(mathService) }
             };
         }
 
@@ -355,6 +360,51 @@ namespace TeXShift.Core
                 else if (inline is LineBreakInline)
                 {
                     html.Append("\n");
+                }
+                else if (inline is MathInline mathInline)
+                {
+                    // Handle inline math ($...$) and display math ($$...$$)
+                    // DelimiterCount: 1 = $, 2 = $$
+                    var isDisplayMath = mathInline.DelimiterCount == 2;
+
+                    if (_mathService != null)
+                    {
+                        // Auto-initialize MathService if needed
+                        if (!_mathService.IsInitialized)
+                        {
+                            try
+                            {
+                                _mathService.InitializeAsync().GetAwaiter().GetResult();
+                            }
+                            catch
+                            {
+                                // Initialization failed, show LaTeX source
+                                var delim = isDisplayMath ? "$$" : "$";
+                                html.Append($"[MathInit Error: {delim}{HtmlEscaper.Escape(mathInline.Content.ToString())}{delim}]");
+                                continue;
+                            }
+                        }
+
+                        try
+                        {
+                            var latex = mathInline.Content.ToString();
+                            var mathml = _mathService.LatexToMathMLAsync(latex, displayMode: isDisplayMath).GetAwaiter().GetResult();
+                            var wrappedMathml = _mathService.WrapMathMLForOneNote(mathml);
+                            html.Append(wrappedMathml);
+                        }
+                        catch
+                        {
+                            // On conversion error, show the LaTeX source as plain text
+                            var delim = isDisplayMath ? "$$" : "$";
+                            html.Append($"[LaTeX: {delim}{HtmlEscaper.Escape(mathInline.Content.ToString())}{delim}]");
+                        }
+                    }
+                    else
+                    {
+                        // MathService not available, show LaTeX source
+                        var delim = isDisplayMath ? "$$" : "$";
+                        html.Append($"{delim}{HtmlEscaper.Escape(mathInline.Content.ToString())}{delim}");
+                    }
                 }
                 else if (inline is ContainerInline nested)
                 {

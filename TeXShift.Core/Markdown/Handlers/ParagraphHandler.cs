@@ -1,9 +1,11 @@
+using Markdig.Extensions.Mathematics;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using TeXShift.Core.Markdown;
+using TeXShift.Core.Math;
 
 namespace TeXShift.Core.Markdown.Handlers
 {
@@ -20,6 +22,13 @@ namespace TeXShift.Core.Markdown.Handlers
             if (singleImage != null)
             {
                 return new[] { ImageElementHelper.CreateImageOE(singleImage, ns) };
+            }
+
+            // Check if paragraph contains display math ($$...$$) that should be split into separate blocks
+            var mathSegments = SplitParagraphByDisplayMath(paragraph);
+            if (mathSegments.Count > 1 || (mathSegments.Count == 1 && mathSegments[0].IsDisplayMath))
+            {
+                return HandleMathParagraph(mathSegments, context, ns, styleConfig);
             }
 
             // Check if paragraph contains standalone image lines mixed with text
@@ -45,13 +54,155 @@ namespace TeXShift.Core.Markdown.Handlers
         }
 
         /// <summary>
-        /// Represents a segment of a paragraph - either text content or a standalone image.
+        /// Represents a segment of a paragraph - either text content, a standalone image, or display math.
         /// </summary>
         private class ParagraphSegment
         {
             public bool IsImage { get; set; }
+            public bool IsDisplayMath { get; set; }
             public LinkInline ImageLink { get; set; }
+            public MathInline MathInline { get; set; }
             public List<Inline> TextInlines { get; set; }
+        }
+
+        /// <summary>
+        /// Splits a paragraph into segments, separating display math ($$...$$) from other content.
+        /// Each display math becomes its own centered block.
+        /// </summary>
+        private List<ParagraphSegment> SplitParagraphByDisplayMath(ParagraphBlock paragraph)
+        {
+            var segments = new List<ParagraphSegment>();
+            if (paragraph.Inline == null) return segments;
+
+            var currentTextInlines = new List<Inline>();
+            var inlines = paragraph.Inline.ToList();
+
+            foreach (var inline in inlines)
+            {
+                if (inline is MathInline mathInline && mathInline.DelimiterCount == 2)
+                {
+                    // Save current text segment if not empty
+                    if (currentTextInlines.Any(IsNonEmptyInline))
+                    {
+                        segments.Add(new ParagraphSegment { TextInlines = new List<Inline>(currentTextInlines) });
+                    }
+                    currentTextInlines.Clear();
+
+                    // Add display math segment
+                    segments.Add(new ParagraphSegment { IsDisplayMath = true, MathInline = mathInline });
+                }
+                else if (inline is LineBreakInline)
+                {
+                    // Skip line breaks between display math elements
+                    // Only add if we have non-math content
+                    if (currentTextInlines.Any(IsNonEmptyInline))
+                    {
+                        currentTextInlines.Add(inline);
+                    }
+                }
+                else
+                {
+                    currentTextInlines.Add(inline);
+                }
+            }
+
+            // Add remaining text segment if not empty
+            if (currentTextInlines.Any(IsNonEmptyInline))
+            {
+                segments.Add(new ParagraphSegment { TextInlines = currentTextInlines });
+            }
+
+            return segments;
+        }
+
+        /// <summary>
+        /// Handles a paragraph with display math, creating separate centered OE elements for each formula.
+        /// </summary>
+        private IEnumerable<XElement> HandleMathParagraph(List<ParagraphSegment> segments, IMarkdownConverterContext context, XNamespace ns, OneNoteStyleConfig styleConfig)
+        {
+            var results = new List<XElement>();
+            var spacing = styleConfig.GetParagraphSpacing();
+
+            foreach (var segment in segments)
+            {
+                if (segment.IsDisplayMath)
+                {
+                    // Create centered OE for display math
+                    var oe = new XElement(ns + "OE",
+                        new XAttribute("alignment", "center"),
+                        new XAttribute("spaceBefore", "8.8"),
+                        new XAttribute("spaceAfter", "8.8"));
+
+                    // Convert the math inline directly
+                    var mathHtml = ConvertDisplayMathToHtml(segment.MathInline, context);
+                    oe.Add(new XElement(ns + "T", new XCData(mathHtml)));
+
+                    results.Add(oe);
+                }
+                else if (segment.TextInlines != null && segment.TextInlines.Any())
+                {
+                    // Handle as text paragraph
+                    var oe = new XElement(ns + "OE");
+                    oe.Add(new XAttribute("spaceBefore", spacing.SpaceBefore.ToString("F1")));
+                    oe.Add(new XAttribute("spaceAfter", spacing.SpaceAfter.ToString("F1")));
+                    oe.Add(new XAttribute("spaceBetween", spacing.SpaceBetween.ToString("F1")));
+
+                    var htmlContent = context.ConvertInlinesToHtml(segment.TextInlines);
+                    oe.Add(new XElement(ns + "T", new XCData(htmlContent)));
+
+                    results.Add(oe);
+                }
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// Converts a display math MathInline to HTML/MathML for OneNote.
+        /// </summary>
+        private string ConvertDisplayMathToHtml(MathInline mathInline, IMarkdownConverterContext context)
+        {
+            // Get MathService from context if available
+            var mathService = GetMathService(context);
+            if (mathService == null)
+            {
+                return $"$${mathInline.Content}$$";
+            }
+
+            // Auto-initialize MathService if needed
+            if (!mathService.IsInitialized)
+            {
+                try
+                {
+                    mathService.InitializeAsync().GetAwaiter().GetResult();
+                }
+                catch
+                {
+                    return $"[MathInit Error: $${mathInline.Content}$$]";
+                }
+            }
+
+            try
+            {
+                var latex = mathInline.Content.ToString();
+                var mathml = mathService.LatexToMathMLAsync(latex, displayMode: true).GetAwaiter().GetResult();
+                return mathService.WrapMathMLForOneNote(mathml);
+            }
+            catch
+            {
+                return $"[LaTeX Error: $${mathInline.Content}$$]";
+            }
+        }
+
+        /// <summary>
+        /// Gets the MathService from the context. Returns null if not available.
+        /// </summary>
+        private IMathService GetMathService(IMarkdownConverterContext context)
+        {
+            // Access MathService through reflection since it's not in the interface
+            var converterType = context.GetType();
+            var field = converterType.GetField("_mathService", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            return field?.GetValue(context) as IMathService;
         }
 
         /// <summary>
