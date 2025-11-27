@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36623.8 d17.14
+VisualStudioVersion = 17.14.36623.8
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeXShift", "TeXShift.csproj", "{3B65AA02-BE5B-4F7A-9DA5-89D210CC94D4}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "TeXShiftSetup", "misc\repos\TeXShiftSetup\TeXShiftSetup.vdproj", "{72B00B7E-9C7B-AEFD-5C44-8EBA7DBAEFC9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,11 @@ Global
 		{3B65AA02-BE5B-4F7A-9DA5-89D210CC94D4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3B65AA02-BE5B-4F7A-9DA5-89D210CC94D4}.Release|x64.ActiveCfg = Release|x64
 		{3B65AA02-BE5B-4F7A-9DA5-89D210CC94D4}.Release|x64.Build.0 = Release|x64
+		{72B00B7E-9C7B-AEFD-5C44-8EBA7DBAEFC9}.Debug|Any CPU.ActiveCfg = Debug
+		{72B00B7E-9C7B-AEFD-5C44-8EBA7DBAEFC9}.Debug|x64.ActiveCfg = Debug
+		{72B00B7E-9C7B-AEFD-5C44-8EBA7DBAEFC9}.Debug|x64.Build.0 = Debug
+		{72B00B7E-9C7B-AEFD-5C44-8EBA7DBAEFC9}.Release|Any CPU.ActiveCfg = Release
+		{72B00B7E-9C7B-AEFD-5C44-8EBA7DBAEFC9}.Release|x64.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

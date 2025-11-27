@@ -11,8 +11,8 @@ LaTeX 到 MathML 转换使用 MathJax 实现，但 OneNote 对 MathML 的支持�
 | `sin(x)` 等函数公式消失 | 移除 `&#x2061;` + `(` 组合 | ✅ 有效 |
 | 括号大小不一致 | 添加 `fence="false"` 到括号 | ✅ 有效 |
 | 逗号消失 | 同上（阻止 mfenced 转换） | ✅ 有效 |
-| 公式消失 | 移除 `stretchy="false"`, `accent="false"`, `movablelimits="true"` | ⚠️ 一起测试有效，未单独验证 |
-| 页面更新时函数名变斜体 | 预先拆分多字符标识符为单字符 `<mml:mi>sin</mml:mi>` → `<mml:mrow><mml:mi>s</mml:mi>...</mml:mrow>` | 🔧 待验证 |
+| OneNote API 阻塞 | 移除 `stretchy="false"` | ✅ 必须（不移除会导致 API 无响应）|
+| 页面更新时函数名变斜体 | 预先拆分多字符标识符为单字符 `<mml:mi>sin</mml:mi>` → `<mml:mrow><mml:mi>s</mml:mi>...</mml:mrow>` | ✅ 有效 |
 
 ## 未解决的问题
 
