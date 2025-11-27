@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script>
+        // MathJax configuration - must be set before loading MathJax
+        MathJax = {
+            startup: { typeset: false },
+            tex: {
+                packages: {'[+]': ['ams', 'newcommand', 'configmacros']},
+                // Common LaTeX macros
+                macros: {
+                    RR: '\\mathbb{R}',
+                    NN: '\\mathbb{N}',
+                    ZZ: '\\mathbb{Z}',
+                    QQ: '\\mathbb{Q}',
+                    CC: '\\mathbb{C}'
+                }
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<script>
+    var mathJaxReady = false;
+
+    // Wait for MathJax to be ready
+    MathJax.startup.promise.then(function() {
+        mathJaxReady = true;
+    });
+
+    // Function to check if MathJax is ready (called from C#)
+    function isMathJaxReady() {
+        return mathJaxReady;
+    }
+
+    // Function to convert LaTeX to MathML (called from C#)
+    function texToMml(latex, display) {
+        try {
+            return MathJax.tex2mml(latex, { display: display });
+        } catch (e) {
+            return '<math xmlns="http://www.w3.org/1998/Math/MathML"><merror><mtext>' + e.message + '</mtext></merror></math>';
+        }
+    }
+</script>
+</body>
+</html>

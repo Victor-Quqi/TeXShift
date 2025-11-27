@@ -41,9 +41,12 @@ using OneNote = Microsoft.Office.Interop.OneNote;
          /// </summary>
          public void OnDisconnection(ext_DisconnectMode RemoveMode, ref Array custom)
          {
+             // Dispose ServiceContainer to clean up WebView2 and other resources
+             _serviceContainer?.Dispose();
+             _serviceContainer = null;
+
              // Explicitly release the COM object to ensure OneNote can shut down cleanly.
              SafeReleaseComObject(_oneNoteApp);
-             _serviceContainer = null;
  
              // While explicit release is key, garbage collection can help clean up any other managed wrappers.
              GC.Collect();
