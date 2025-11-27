@@ -1,3 +1,4 @@
+using System;
 using Markdig.Extensions.Mathematics;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
@@ -176,9 +177,9 @@ namespace TeXShift.Core.Markdown.Handlers
                 {
                     mathService.InitializeAsync().GetAwaiter().GetResult();
                 }
-                catch
+                catch (Exception ex)
                 {
-                    return $"[MathInit Error: $${mathInline.Content}$$]";
+                    return $"[MathInit Error: {ex.Message}]";
                 }
             }
 

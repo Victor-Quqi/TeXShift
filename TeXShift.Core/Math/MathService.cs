@@ -101,12 +101,41 @@ namespace TeXShift.Core.Math
 
             // Initialize WebView2 environment
             var userDataFolder = Path.Combine(Path.GetTempPath(), "TeXShift_WebView2");
+            Directory.CreateDirectory(userDataFolder);
             var env = await CoreWebView2Environment.CreateAsync(null, userDataFolder).ConfigureAwait(false);
             await _webView.EnsureCoreWebView2Async(env).ConfigureAwait(false);
 
-            // Load MathJax HTML from embedded resource
-            var html = GetMathJaxLoaderHtml();
-            _webView.CoreWebView2.NavigateToString(html);
+            // Find MathJax folder
+            var mathjaxPath = FindMathJaxPath();
+            if (string.IsNullOrEmpty(mathjaxPath))
+            {
+                throw new InvalidOperationException(
+                    "MathJax not found. Expected at Lib/mathjax relative to assembly or project root.");
+            }
+
+            // Generate loader HTML with file:// URL to MathJax
+            var mathjaxFileUrl = "file:///" + Path.Combine(mathjaxPath, "es5", "tex-mml-chtml.js").Replace('\\', '/');
+            var html = GetMathJaxLoaderHtml().Replace(
+                "https://mathjax.local/es5/tex-mml-chtml.js",
+                mathjaxFileUrl);
+
+            // Write loader HTML to temp folder and navigate via file://
+            var loaderPath = Path.Combine(userDataFolder, "loader.html");
+            File.WriteAllText(loaderPath, html);
+
+            // Wait for navigation to complete
+            var navTcs = new TaskCompletionSource<bool>();
+            void OnNavigationCompleted(object s, CoreWebView2NavigationCompletedEventArgs e)
+            {
+                _webView.CoreWebView2.NavigationCompleted -= OnNavigationCompleted;
+                if (e.IsSuccess)
+                    navTcs.SetResult(true);
+                else
+                    navTcs.SetException(new Exception($"Navigation failed: {e.WebErrorStatus}"));
+            }
+            _webView.CoreWebView2.NavigationCompleted += OnNavigationCompleted;
+            _webView.CoreWebView2.Navigate("file:///" + loaderPath.Replace('\\', '/'));
+            await navTcs.Task.ConfigureAwait(false);
 
             // Wait for MathJax to be ready
             await WaitForMathJaxReady().ConfigureAwait(false);
@@ -193,10 +222,8 @@ namespace TeXShift.Core.Math
             // Remove data-mjx-* attributes (MathJax internal, not standard MathML)
             var result = Regex.Replace(mathml, @"\s*data-mjx-[a-z]+=""[^""]*""", "", RegexOptions.IgnoreCase);
 
-            // TODO: The removal of the following three properties was tested together; it has not been individually verified which specific one caused the issue.
+            // Remove stretchy="false" - without this, formulas like \int_{0}^{\pi} fail to render
             result = result.Replace(" stretchy=\"false\"", "");
-            result = result.Replace(" accent=\"false\"", "");
-            result = result.Replace(" movablelimits=\"true\"", "");
 
             // Remove function application operator before parenthesis (verified fix for sin(x) etc.)
             result = Regex.Replace(result, @"<mml:mo>&#x2061;</mml:mo>\s*<mml:mo>\(", "<mml:mo>(");
@@ -252,6 +279,35 @@ namespace TeXShift.Core.Math
             });
 
             return result;
+        }
+
+        /// <summary>
+        /// Finds the MathJax folder path, checking multiple locations for dev/production environments.
+        /// </summary>
+        private string FindMathJaxPath()
+        {
+            var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+            // Production: Lib folder next to DLL
+            var prodPath = Path.Combine(assemblyDir, "Lib", "mathjax");
+            if (Directory.Exists(prodPath))
+            {
+                return prodPath;
+            }
+
+            // Development: Walk up to find project root with Lib folder
+            var dir = new DirectoryInfo(assemblyDir);
+            while (dir != null)
+            {
+                var devPath = Path.Combine(dir.FullName, "Lib", "mathjax");
+                if (Directory.Exists(devPath))
+                {
+                    return devPath;
+                }
+                dir = dir.Parent;
+            }
+
+            return null;
         }
 
         private string GetMathJaxLoaderHtml()
