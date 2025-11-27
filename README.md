@@ -1,46 +1,66 @@
 # TeXShift: Bridging OneNote and Plain Text
 
-**TeXShift** 是一个为 Microsoft OneNote 开发的 COM 插件，致力于解决工程师、研究者和学生在 OneNote 中进行技术笔记记录时的核心痛点：**在强大的富文本编辑器与高效的纯文本标记语言（如 Markdown, LaTeX）之间建立一座桥梁。**
+English | [简体中文](README.zh-CN.md)
+
+**TeXShift** is a COM Add-in for Microsoft OneNote designed to address the core pain points that engineers, researchers, and students face when taking technical notes in OneNote: **building a bridge between a powerful rich text editor and efficient plain text markup languages like Markdown and LaTeX.**
 
 ---
 
-## 核心功能 ✨
+## Features
 
-*   **✍️ 双向转换 (Bi-directional Conversion):**
-    一键在 OneNote 原生格式（包括 OMML 公式、富文本样式）与纯文本标记语言之间进行切换。智能识别选区内容，自动判断转换方向。
+### Implemented
 
-*   **⚡ 实时预览 (Live Preview Pane):**
-    提供一个可停靠的预览窗格，当您在 OneNote 中编辑 Markdown 或 LaTeX 时，实时渲染出最终的富文本效果，所见即所得。
+- **Markdown Conversion** - Convert Markdown syntax to OneNote rich text
+  - Headings (H1-H6)
+  - Ordered/unordered lists
+  - Task lists (checkboxes)
+  - Block quotes (nested support)
+  - Tables (header bold, column alignment)
+  - Links
+  - Embedded images
+  - Horizontal rules
 
-*   **🖥️ 代码高亮 (Syntax Highlighting):**
-    将 Markdown/LaTeX 中的代码块 (` ``` `) 优雅地转换为带有背景色和语法高亮的 OneNote 富文本块，让代码笔记清晰易读。
+- **LaTeX Formulas** - Convert LaTeX math expressions to native editable OneNote equations
+  - Built-in MathJax resources for fully offline operation
+  - Requires .NET Framework 4.8 and WebView2 Runtime
 
-*   **📊 图表生成 (Diagrams as Code):**
-    支持 [Mermaid](https://mermaid-js.github.io/mermaid/#/) 语法，将描述图表的文本一键转换为 PNG 图像并插入页面，实现“代码即图表”。
+- **Syntax Highlighting** - ColorCode-based code highlighting
+  - Transform code blocks into rich text with background color and syntax coloring
 
-*   **🎯 智能选择 (Intelligent Selection):**
-    识别 **光标模式**（操作整个文本框）与 **选区模式**（操作高亮文字所在的段落）。在选区模式下，插件会将包含选区的**整个段落**作为操作对象，确保转换的上下文完整性。
+- **Intelligent Selection** - Two operation modes
+  - **Cursor Mode**: Operates on the entire text box
+  - **Selection Mode**: Operates on complete paragraphs containing highlighted text
 
-*   **🔧 高度可定制 (Highly Customizable):**
-    通过设置界面可以自定义 Markdown 样式映射规则（如标题字号、代码块背景色）和常用功能的快捷键。
+- **Fully Offline** - All core features work locally without network connection
 
-*   **🔌 完全离线 (Offline First):**
-    所有核心功能均可在本地离线运行，无需网络连接，确保数据安全与随时随地的可用性。
+### In Development
 
-## 技术栈 🛠️
+- Live preview pane
+- Mermaid diagram support
+- Custom style settings
+- Rich text to Markdown (reverse conversion)
 
-*   **语言:** C# (.NET Framework)
-*   **框架:** OneNote COM Add-in
-*   **IDE:** Visual Studio 2026
+## Tech Stack
 
-## 项目状态 🚀
+- **Language:** C# (.NET Framework 4.8)
+- **Framework:** OneNote COM Add-in
+- **IDE:** Visual Studio 2026
+- **Dependencies:**
+  - Markdig - Markdown parsing
+  - ColorCode - Syntax highlighting
+  - MathJax - LaTeX rendering
 
-项目正处于积极开发阶段。开发优先级将首先聚焦于实现一个包含**核心转换逻辑**、**实时预览窗格**和**代码块高亮**的最小可行产品 (MVP)，以确保在课程项目展示中获得最佳效果。
+## System Requirements
 
-## 安装与使用
+- Windows 10/11
+- Microsoft OneNote Desktop (x64)
+- .NET Framework 4.8
+- WebView2 Runtime (for LaTeX rendering)
 
-项目仍在开发中，暂未发布稳定版本。
+## Installation
 
-## 许可证
+The project is still under active development. No stable release yet.
 
-本项目采用 [GPLv3](LICENSE) 发布。
+## License
+
+This project is licensed under [GPLv3](LICENSE).
