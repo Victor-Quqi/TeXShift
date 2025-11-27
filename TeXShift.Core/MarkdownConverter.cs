@@ -66,12 +66,14 @@ namespace TeXShift.Core
             _initialWidth = sourceOutlineWidth ?? StyleConfig.GetQuoteBlockStyle().BaseWidth;
 
             // Register all the specialized handlers for each block type.
+            // Note: CodeBlock = indented code (4-space), FencedCodeBlock = ```code```
             _blockHandlers = new Dictionary<Type, IBlockHandler>
             {
                 { typeof(HeadingBlock), new HeadingHandler() },
                 { typeof(ParagraphBlock), new ParagraphHandler() },
                 { typeof(ListBlock), new ListHandler() },
                 { typeof(CodeBlock), new CodeBlockHandler() },
+                { typeof(FencedCodeBlock), new CodeBlockHandler() },
                 { typeof(ThematicBreakBlock), new HorizontalRuleHandler() },
                 { typeof(QuoteBlock), new QuoteBlockHandler() },
                 { typeof(Table), new TableHandler() }

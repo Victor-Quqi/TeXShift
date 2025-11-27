@@ -88,6 +88,41 @@ namespace TeXShift.Core
             }
         }
 
+        public class CodeBlockConfig
+        {
+            public string BackgroundColor { get; set; }
+            public string DefaultTextColor { get; set; }
+            public string FontFamily { get; set; }
+            public double FontSize { get; set; }
+            public double LineHeight { get; set; }
+            public bool EnableSyntaxHighlight { get; set; }
+
+            // GitHub Dark 主题默认值
+            public CodeBlockConfig(
+                string backgroundColor = "#0D1117",
+                string defaultTextColor = "#C9D1D9",
+                string fontFamily = "Consolas",
+                double fontSize = 11.0,
+                double lineHeight = 16.0,
+                bool enableSyntaxHighlight = true)
+            {
+                BackgroundColor = backgroundColor;
+                DefaultTextColor = defaultTextColor;
+                FontFamily = fontFamily;
+                FontSize = fontSize;
+                LineHeight = lineHeight;
+                EnableSyntaxHighlight = enableSyntaxHighlight;
+            }
+
+            /// <summary>
+            /// 生成 OE 元素的 style 属性值
+            /// </summary>
+            public string GetOEStyle()
+            {
+                return $"line-height:{LineHeight:F1}pt;font-family:'{FontFamily}';font-size:{FontSize:F1}pt;color:{DefaultTextColor}";
+            }
+        }
+
         /// <summary>
         /// Configuration for width reservation to prevent content from exceeding container boundaries.
         /// Uses conservative values to ensure tables and nested elements never stretch the text box.
@@ -190,6 +225,9 @@ namespace TeXShift.Core
        // Default style for quote blocks
        private static readonly QuoteBlockConfig DefaultQuoteBlockStyle = new QuoteBlockConfig("#E8F5E9", 534.0, 13.52);
 
+       // Default style for code blocks (GitHub Dark theme)
+       private static readonly CodeBlockConfig DefaultCodeBlockStyle = new CodeBlockConfig();
+
        // Default width reservation configuration
        // Note: Small reservation values prioritize maximum table width (96%+ fill rate).
        // This allows tables to nearly fill the text box, accepting slight text box expansion (~6%).
@@ -216,6 +254,7 @@ namespace TeXShift.Core
         private InlineCodeConfig _customInlineCodeStyle;
         private HorizontalRuleConfig _customHorizontalRuleStyle;
         private QuoteBlockConfig _customQuoteBlockStyle;
+        private CodeBlockConfig _customCodeBlockStyle;
         private WidthReservationConfig _customWidthReservation;
 
         public IReadOnlyDictionary<int, double> Indents => _customIndents;
@@ -229,6 +268,7 @@ namespace TeXShift.Core
             _customInlineCodeStyle = DefaultInlineCodeStyle;
             _customHorizontalRuleStyle = DefaultHorizontalRuleStyle;
             _customQuoteBlockStyle = DefaultQuoteBlockStyle;
+            _customCodeBlockStyle = DefaultCodeBlockStyle;
             _customWidthReservation = DefaultWidthReservation;
         }
 
@@ -309,6 +349,14 @@ namespace TeXShift.Core
         {
             return _customQuoteBlockStyle;
         }
+
+        /// <summary>
+        /// Gets style configuration for code blocks.
+        /// </summary>
+        public CodeBlockConfig GetCodeBlockStyle()
+        {
+            return _customCodeBlockStyle;
+        }
  
         /// <summary>
         /// Allows customization of spacing for a specific element type.
@@ -361,6 +409,8 @@ namespace TeXShift.Core
             _customIndents = new Dictionary<int, double>(DefaultIndents);
             _customInlineCodeStyle = DefaultInlineCodeStyle;
             _customHorizontalRuleStyle = DefaultHorizontalRuleStyle;
+            _customQuoteBlockStyle = DefaultQuoteBlockStyle;
+            _customCodeBlockStyle = DefaultCodeBlockStyle;
         }
     }
 }

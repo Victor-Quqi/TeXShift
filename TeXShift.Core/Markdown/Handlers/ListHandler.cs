@@ -16,21 +16,23 @@ namespace TeXShift.Core.Markdown.Handlers
             var listBlock = (ListBlock)block;
             var elements = new List<XElement>();
 
-            // The main Handle method now only iterates through the top-level items.
-            // The recursive logic is delegated to the ProcessListItemBlock helper method.
+            // ProcessListItemBlock returns multiple elements: the list item OE followed by
+            // any sibling content (code blocks, blockquotes) that should appear after it.
+            // Nested lists remain as OEChildren for proper indentation.
             foreach (var listItem in listBlock.OfType<ListItemBlock>())
             {
-                elements.Add(ProcessListItemBlock(listItem, listBlock.IsOrdered, context));
+                elements.AddRange(ProcessListItemBlock(listItem, listBlock.IsOrdered, context));
             }
 
             return elements;
         }
 
         /// <summary>
-        /// Recursively processes a single list item and all its potential nested lists.
-        /// This is the core of the nesting logic.
+        /// Processes a single list item and returns it along with any sibling content blocks.
+        /// - Nested ListBlocks remain as OEChildren (for proper indentation)
+        /// - Other blocks (CodeBlock, QuoteBlock, etc.) become siblings for full-width display
         /// </summary>
-        private XElement ProcessListItemBlock(ListItemBlock listItem, bool isOrdered, IMarkdownConverterContext context)
+        private IEnumerable<XElement> ProcessListItemBlock(ListItemBlock listItem, bool isOrdered, IMarkdownConverterContext context)
         {
             var ns = context.OneNoteNamespace;
             var styleConfig = context.StyleConfig;
@@ -131,27 +133,44 @@ namespace TeXShift.Core.Markdown.Handlers
                 oe.Add(new XElement(ns + "T", new XCData(string.Empty)));
             }
 
-            // Process any remaining child blocks inside this list item to preserve nested structures.
+            // Collect results: the main list item OE plus any sibling blocks
+            var results = new List<XElement> { oe };
+
+            // Process any remaining child blocks inside this list item.
             var remainingBlocks = listItem.Skip(firstBlock is ParagraphBlock ? 1 : 0).ToList();
             if (remainingBlocks.Any())
             {
-                var childrenContainer = new XElement(ns + "OEChildren");
+                // Separate nested lists (stay as children) from other blocks (become siblings)
+                var nestedListBlocks = remainingBlocks.Where(b => b is ListBlock).ToList();
+                var siblingBlocks = remainingBlocks.Where(b => !(b is ListBlock)).ToList();
 
-                // Push width reservation for list item before processing nested blocks
-                var widthReservation = styleConfig.WidthReservation;
-                var reservation = widthReservation.GetListItemReservation(isOrdered);
-                context.PushWidthReservation(reservation);
-                var convertedChildren = context.ProcessBlocks(remainingBlocks).ToList();
-                context.PopWidthReservation();
-
-                if (convertedChildren.Any())
+                // Process nested lists as OEChildren (for proper indentation)
+                if (nestedListBlocks.Any())
                 {
-                    childrenContainer.Add(convertedChildren);
-                    oe.Add(childrenContainer);
+                    var childrenContainer = new XElement(ns + "OEChildren");
+
+                    var widthReservation = styleConfig.WidthReservation;
+                    var reservation = widthReservation.GetListItemReservation(isOrdered);
+                    context.PushWidthReservation(reservation);
+                    var convertedChildren = context.ProcessBlocks(nestedListBlocks).ToList();
+                    context.PopWidthReservation();
+
+                    if (convertedChildren.Any())
+                    {
+                        childrenContainer.Add(convertedChildren);
+                        oe.Add(childrenContainer);
+                    }
+                }
+
+                // Process other blocks (code blocks, blockquotes, etc.) as siblings
+                if (siblingBlocks.Any())
+                {
+                    var convertedSiblings = context.ProcessBlocks(siblingBlocks).ToList();
+                    results.AddRange(convertedSiblings);
                 }
             }
 
-            return oe;
+            return results;
         }
     }
 }
