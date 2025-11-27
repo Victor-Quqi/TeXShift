@@ -97,7 +97,7 @@ namespace TeXShift.Core
             public double LineHeight { get; set; }
             public bool EnableSyntaxHighlight { get; set; }
 
-            // GitHub Dark 主题默认值
+            // GitHub Dark Theme Defaults
             public CodeBlockConfig(
                 string backgroundColor = "#0D1117",
                 string defaultTextColor = "#C9D1D9",
@@ -115,7 +115,7 @@ namespace TeXShift.Core
             }
 
             /// <summary>
-            /// 生成 OE 元素的 style 属性值
+            /// Generate the style attribute value for the OE element
             /// </summary>
             public string GetOEStyle()
             {
