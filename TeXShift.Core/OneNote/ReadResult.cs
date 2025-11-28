@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Xml.Linq;
 
-namespace TeXShift.Core
+namespace TeXShift.Core.OneNote
 {
     /// <summary>
     /// Defines the detected user selection mode in OneNote.

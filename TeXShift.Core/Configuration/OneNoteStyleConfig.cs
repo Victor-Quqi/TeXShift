@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace TeXShift.Core
+namespace TeXShift.Core.Configuration
 {
     /// <summary>
     /// Configuration for OneNote element styles and spacing.
@@ -189,7 +189,7 @@ namespace TeXShift.Core
                 return ListIndent + (isOrdered ? OrderedListMarker : UnorderedListMarker);
             }
         }
- 
+
         // Default spacing configurations
         private static readonly Dictionary<string, SpacingConfig> DefaultSpacing = new Dictionary<string, SpacingConfig>
         {
@@ -247,7 +247,7 @@ namespace TeXShift.Core
             { 3, 22.0 },
             { 4, 22.0 }
         };
- 
+
         private Dictionary<string, SpacingConfig> _customSpacing;
         private Dictionary<string, FontConfig> _customFonts;
         private Dictionary<int, double> _customIndents;
@@ -259,7 +259,7 @@ namespace TeXShift.Core
 
         public IReadOnlyDictionary<int, double> Indents => _customIndents;
         public WidthReservationConfig WidthReservation => _customWidthReservation;
- 
+
         public OneNoteStyleConfig()
         {
             _customSpacing = new Dictionary<string, SpacingConfig>(DefaultSpacing);
@@ -357,7 +357,7 @@ namespace TeXShift.Core
         {
             return _customCodeBlockStyle;
         }
- 
+
         /// <summary>
         /// Allows customization of spacing for a specific element type.
         /// </summary>
@@ -398,7 +398,7 @@ namespace TeXShift.Core
         {
             _customHorizontalRuleStyle = new HorizontalRuleConfig(mode, color, charLength, character, initialImageWidth);
         }
- 
+
         /// <summary>
         /// Resets all spacing and font configurations to default values.
         /// </summary>
@@ -414,4 +414,3 @@ namespace TeXShift.Core
         }
     }
 }
-

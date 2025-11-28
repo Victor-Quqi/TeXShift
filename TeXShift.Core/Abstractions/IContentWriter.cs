@@ -1,7 +1,8 @@
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using TeXShift.Core.OneNote;
 
-namespace TeXShift.Core
+namespace TeXShift.Core.Abstractions
 {
     /// <summary>
     /// Interface for writing converted content back to OneNote pages.

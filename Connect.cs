@@ -7,8 +7,9 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Extensibility;
 using Microsoft.Office.Core;
-using TeXShift.Core;
 using TeXShift.Core.Logging;
+using TeXShift.Core.OneNote;
+using TeXShift.Core.Services;
 using OneNote = Microsoft.Office.Interop.OneNote;
 
  namespace TeXShift

@@ -2,19 +2,20 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using OneNote = Microsoft.Office.Interop.OneNote;
+using TeXShift.Core.Abstractions;
+using OneNoteInterop = Microsoft.Office.Interop.OneNote;
 
-namespace TeXShift.Core
+namespace TeXShift.Core.OneNote
 {
     /// <summary>
     /// Handles writing converted content back to OneNote pages.
     /// </summary>
-    public class ContentWriter : IContentWriter
+    public class OneNotePageWriter : IContentWriter
     {
-        private readonly OneNote.Application _oneNoteApp;
+        private readonly OneNoteInterop.Application _oneNoteApp;
         private readonly XNamespace _ns = "http://schemas.microsoft.com/office/onenote/2013/onenote";
 
-        public ContentWriter(OneNote.Application oneNoteApp)
+        public OneNotePageWriter(OneNoteInterop.Application oneNoteApp)
         {
             _oneNoteApp = oneNoteApp;
         }
@@ -48,7 +49,7 @@ namespace TeXShift.Core
                 throw new ArgumentException("TargetObjectIds is required", nameof(readResult));
 
             string pageXml;
-            _oneNoteApp.GetPageContent(readResult.PageId, out pageXml, OneNote.PageInfo.piAll, OneNote.XMLSchema.xs2013);
+            _oneNoteApp.GetPageContent(readResult.PageId, out pageXml, OneNoteInterop.PageInfo.piAll, OneNoteInterop.XMLSchema.xs2013);
 
             var doc = XDocument.Parse(pageXml);
             var ns = doc.Root.Name.Namespace;
@@ -101,7 +102,7 @@ namespace TeXShift.Core
             string updatedXml = doc.ToString();
             try
             {
-                _oneNoteApp.UpdatePageContent(updatedXml, DateTime.MinValue, OneNote.XMLSchema.xs2013, true);
+                _oneNoteApp.UpdatePageContent(updatedXml, DateTime.MinValue, OneNoteInterop.XMLSchema.xs2013, true);
             }
             catch (System.Runtime.InteropServices.COMException comEx)
             {

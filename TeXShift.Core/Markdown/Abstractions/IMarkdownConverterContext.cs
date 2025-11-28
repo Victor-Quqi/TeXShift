@@ -2,8 +2,10 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using System.Collections.Generic;
 using System.Xml.Linq;
+using TeXShift.Core.Configuration;
+using TeXShift.Core.Math;
 
-namespace TeXShift.Core.Markdown
+namespace TeXShift.Core.Markdown.Abstractions
 {
     /// <summary>
     /// Provides a context for block handlers during Markdown to OneNote XML conversion.
@@ -21,6 +23,11 @@ namespace TeXShift.Core.Markdown
         /// Gets the style configuration for OneNote elements.
         /// </summary>
         OneNoteStyleConfig StyleConfig { get; }
+
+        /// <summary>
+        /// Gets the MathService for LaTeX to MathML conversion (may be null).
+        /// </summary>
+        IMathService MathService { get; }
 
         /// <summary>
         /// Gets the current nesting depth for quote blocks.
