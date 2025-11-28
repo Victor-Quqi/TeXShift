@@ -5,6 +5,7 @@ using ColorCode.Parsing;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using TeXShift.Core.Configuration;
 using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.Syntax

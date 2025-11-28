@@ -1,11 +1,15 @@
 using System;
 using Markdig;
 using Markdig.Extensions.Mathematics;
+using TeXShift.Core.Abstractions;
+using TeXShift.Core.Configuration;
 using TeXShift.Core.Logging;
+using TeXShift.Core.Markdown;
 using TeXShift.Core.Math;
-using OneNote = Microsoft.Office.Interop.OneNote;
+using TeXShift.Core.OneNote;
+using OneNoteApp = Microsoft.Office.Interop.OneNote;
 
-namespace TeXShift.Core
+namespace TeXShift.Core.Services
 {
     /// <summary>
     /// Simple dependency injection container for managing service lifetimes.
@@ -62,12 +66,12 @@ namespace TeXShift.Core
         /// Creates a new IContentReader instance.
         /// Transient lifetime: new instance per call.
         /// </summary>
-        public IContentReader CreateContentReader(OneNote.Application oneNoteApp)
+        public IContentReader CreateContentReader(OneNoteApp.Application oneNoteApp)
         {
             if (oneNoteApp == null)
                 throw new ArgumentNullException(nameof(oneNoteApp));
 
-            return new ContentReader(oneNoteApp);
+            return new OneNotePageReader(oneNoteApp);
         }
 
         /// <summary>
@@ -77,19 +81,19 @@ namespace TeXShift.Core
         /// </summary>
         public IMarkdownConverter CreateMarkdownConverter(double? sourceOutlineWidth = null)
         {
-            return new MarkdownConverter(StyleConfig, MarkdownPipeline, MathService, sourceOutlineWidth);
+            return new MarkdownToOneNoteConverter(StyleConfig, MarkdownPipeline, MathService, sourceOutlineWidth);
         }
 
         /// <summary>
         /// Creates a new IContentWriter instance.
         /// Transient lifetime: new instance per call.
         /// </summary>
-        public IContentWriter CreateContentWriter(OneNote.Application oneNoteApp)
+        public IContentWriter CreateContentWriter(OneNoteApp.Application oneNoteApp)
         {
             if (oneNoteApp == null)
                 throw new ArgumentNullException(nameof(oneNoteApp));
 
-            return new ContentWriter(oneNoteApp);
+            return new OneNotePageWriter(oneNoteApp);
         }
 
         /// <summary>

@@ -5,8 +5,8 @@ using Markdig.Syntax.Inlines;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
-using TeXShift.Core.Markdown;
-using TeXShift.Core.Math;
+using TeXShift.Core.Configuration;
+using TeXShift.Core.Markdown.Abstractions;
 
 namespace TeXShift.Core.Markdown.Handlers
 {
@@ -163,8 +163,8 @@ namespace TeXShift.Core.Markdown.Handlers
         /// </summary>
         private string ConvertDisplayMathToHtml(MathInline mathInline, IMarkdownConverterContext context)
         {
-            // Get MathService from context if available
-            var mathService = GetMathService(context);
+            // Get MathService from context
+            var mathService = context.MathService;
             if (mathService == null)
             {
                 return $"$${mathInline.Content}$$";
@@ -193,17 +193,6 @@ namespace TeXShift.Core.Markdown.Handlers
             {
                 return $"[LaTeX Error: $${mathInline.Content}$$]";
             }
-        }
-
-        /// <summary>
-        /// Gets the MathService from the context. Returns null if not available.
-        /// </summary>
-        private IMathService GetMathService(IMarkdownConverterContext context)
-        {
-            // Access MathService through reflection since it's not in the interface
-            var converterType = context.GetType();
-            var field = converterType.GetField("_mathService", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            return field?.GetValue(context) as IMathService;
         }
 
         /// <summary>

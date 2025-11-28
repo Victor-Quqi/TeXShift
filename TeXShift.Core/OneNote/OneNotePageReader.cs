@@ -4,18 +4,19 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using OneNote = Microsoft.Office.Interop.OneNote;
+using TeXShift.Core.Abstractions;
+using OneNoteInterop = Microsoft.Office.Interop.OneNote;
 
-namespace TeXShift.Core
+namespace TeXShift.Core.OneNote
 {
     /// <summary>
     /// Handles reading and parsing content from a OneNote page.
     /// </summary>
-    public class ContentReader : IContentReader
+    public class OneNotePageReader : IContentReader
     {
-        private readonly OneNote.Application _oneNoteApp;
+        private readonly OneNoteInterop.Application _oneNoteApp;
 
-        public ContentReader(OneNote.Application oneNoteApp)
+        public OneNotePageReader(OneNoteInterop.Application oneNoteApp)
         {
             _oneNoteApp = oneNoteApp;
         }
@@ -36,8 +37,8 @@ namespace TeXShift.Core
         /// </summary>
         private ReadResult ExtractContent()
         {
-            OneNote.Windows windows = null;
-            OneNote.Window window = null;
+            OneNoteInterop.Windows windows = null;
+            OneNoteInterop.Window window = null;
             try
             {
                 windows = _oneNoteApp.Windows;
@@ -50,7 +51,7 @@ namespace TeXShift.Core
                 }
 
                 string xmlContent;
-                _oneNoteApp.GetPageContent(pageId, out xmlContent, OneNote.PageInfo.piAll);
+                _oneNoteApp.GetPageContent(pageId, out xmlContent, OneNoteInterop.PageInfo.piAll);
 
                 if (string.IsNullOrEmpty(xmlContent))
                 {

@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
+using TeXShift.Core.OneNote;
 
-namespace TeXShift.Core
+namespace TeXShift.Core.Abstractions
 {
     /// <summary>
     /// Interface for reading and extracting content from OneNote pages.

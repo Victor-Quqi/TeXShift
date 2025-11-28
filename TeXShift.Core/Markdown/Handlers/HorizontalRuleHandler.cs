@@ -6,6 +6,8 @@ using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Xml.Linq;
+using TeXShift.Core.Configuration;
+using TeXShift.Core.Markdown.Abstractions;
 
 namespace TeXShift.Core.Markdown.Handlers
 {

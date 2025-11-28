@@ -1,7 +1,7 @@
 using Markdig.Syntax;
 using System.Collections.Generic;
 using System.Xml.Linq;
-using TeXShift.Core.Markdown;
+using TeXShift.Core.Markdown.Abstractions;
 using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.Markdown.Handlers

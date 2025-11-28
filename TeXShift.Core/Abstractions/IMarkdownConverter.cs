@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace TeXShift.Core
+namespace TeXShift.Core.Abstractions
 {
     /// <summary>
     /// Interface for converting Markdown text to OneNote XML format.
