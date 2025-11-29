@@ -35,6 +35,12 @@ namespace TeXShift.Core.Math
             @"mtr|mtd|maction|semantics|annotation|annotation-xml)(\s|>|/>)",
             RegexOptions.Compiled);
 
+        // Regex to match mspace elements with width attribute (OneNote doesn't support mspace width)
+        private static readonly Regex MspaceRegex = new Regex(
+            @"<mml:mstyle[^>]*>\s*<mml:mspace\s+width=""([^""]+)""\s*(?:/>|></mml:mspace>)\s*</mml:mstyle>|" +
+            @"<mml:mspace\s+width=""([^""]+)""\s*(?:/>|></mml:mspace>)",
+            RegexOptions.Compiled);
+
         public bool IsInitialized => _isInitialized;
 
         public async Task InitializeAsync()
@@ -203,6 +209,9 @@ namespace TeXShift.Core.Math
             // Compact MathML: remove newlines and extra whitespace
             mathml = CompactMathML(mathml);
 
+            // Convert mspace width to Unicode space characters (OneNote doesn't support mspace width)
+            mathml = ConvertMspaceToUnicode(mathml);
+
             // Add fence="false" to brackets (verified fix for bracket/comma issues)
             mathml = AddFenceAttributeToBrackets(mathml);
 
@@ -240,6 +249,84 @@ namespace TeXShift.Core.Math
             var result = Regex.Replace(mathml, @"\s*\n\s*", "");
             result = Regex.Replace(result, @">\s+<", "><");
             return result.Trim();
+        }
+
+        /// <summary>
+        /// Converts mspace width attributes to Unicode space characters.
+        /// OneNote doesn't support mspace width, so we replace them with actual space characters.
+        /// </summary>
+        private string ConvertMspaceToUnicode(string mathml)
+        {
+            return MspaceRegex.Replace(mathml, match =>
+            {
+                // Group 1 is for mstyle-wrapped mspace, Group 2 is for bare mspace
+                var width = !string.IsNullOrEmpty(match.Groups[1].Value)
+                    ? match.Groups[1].Value
+                    : match.Groups[2].Value;
+
+                var spaceChars = GetUnicodeSpaceForWidth(width);
+                if (string.IsNullOrEmpty(spaceChars))
+                {
+                    return string.Empty; // Negative space or unknown width
+                }
+                return $"<mml:mtext>{spaceChars}</mml:mtext>";
+            });
+        }
+
+        /// <summary>
+        /// Returns Unicode space character(s) corresponding to the given em width.
+        /// </summary>
+        private string GetUnicodeSpaceForWidth(string width)
+        {
+            if (string.IsNullOrEmpty(width)) return null;
+
+            // Parse width value (e.g., "1em", "0.167em", "-0.167em")
+            var match = Regex.Match(width, @"^(-?\d+(?:\.\d+)?)em$");
+            if (!match.Success) return null;
+
+            if (!double.TryParse(match.Groups[1].Value, out var emValue))
+            {
+                return null;
+            }
+
+            // Negative space - ignore (cannot simulate in OneNote)
+            if (emValue < 0) return null;
+
+            // Map em values to Unicode space characters
+            // U+2003 = em space (1em)
+            // U+2004 = three-per-em space (~0.333em)
+            // U+2005 = four-per-em space (~0.25em)
+            // U+2009 = thin space (~0.167em)
+            // U+205F = medium mathematical space (~0.222em)
+
+            if (emValue >= 1.5)
+            {
+                // 2em (qquad) = two em spaces
+                return "\u2003\u2003";
+            }
+            if (emValue >= 0.8)
+            {
+                // 1em (quad) = one em space
+                return "\u2003";
+            }
+            if (emValue >= 0.25)
+            {
+                // ~0.278em (thickspace \;) = three-per-em space
+                return "\u2004";
+            }
+            if (emValue >= 0.2)
+            {
+                // ~0.222em (medspace \:) = medium mathematical space
+                return "\u205F";
+            }
+            if (emValue >= 0.1)
+            {
+                // ~0.167em (thinspace \,) = thin space
+                return "\u2009";
+            }
+
+            // Very small positive space - use thin space as minimum
+            return "\u2009";
         }
 
         /// <summary>
@@ -314,7 +401,7 @@ namespace TeXShift.Core.Math
         {
             // Try to load from embedded resource first
             var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = "TeXShift.Core.Resources.Math.mathjax-loader.html";
+            var resourceName = "TeXShift.TeXShift.Core.Resources.Math.mathjax-loader.html";
 
             using (var stream = assembly.GetManifestResourceStream(resourceName))
             {

@@ -101,10 +101,14 @@ namespace TeXShift.Core.Markdown
             // (e.g., &gt; → >, &lt; → <, &amp;lt; → &lt;)
             sanitizedMarkdown = WebUtility.HtmlDecode(sanitizedMarkdown);
 
-            // Step 3: Protect remaining HTML entities from being decoded again by Markdig
+            // Step 3: Convert LaTeX delimiters to Markdown math syntax
+            // (e.g., \(...\) → $...$, \[...\] → $$...$$)
+            sanitizedMarkdown = LatexDelimiterConverter.Convert(sanitizedMarkdown);
+
+            // Step 4: Protect remaining HTML entities from being decoded again by Markdig
             var (protectedMarkdown, entityMap) = _entityProtector.Protect(sanitizedMarkdown);
 
-            // Step 4: Parse Markdown with protected entities
+            // Step 5: Parse Markdown with protected entities
             var document = Markdig.Markdown.Parse(protectedMarkdown, _pipeline);
             var outline = new XElement(OneNoteNamespace + "Outline");
 
@@ -124,7 +128,7 @@ namespace TeXShift.Core.Markdown
             oeChildren.Add(elements);
             outline.Add(oeChildren);
 
-            // Step 5: Restore protected HTML entities to their original form
+            // Step 6: Restore protected HTML entities to their original form
             _entityProtector.Restore(outline, entityMap, OneNoteNamespace);
 
             return outline;
