@@ -136,6 +136,7 @@
     <Compile Include="TeXShift.Core\Markdown\ImageElementHelper.cs" />
     <Compile Include="TeXShift.Core\Markdown\MarkdownToOneNoteConverter.cs" />
     <Compile Include="TeXShift.Core\Markdown\Processing\HtmlEntityProtector.cs" />
+    <Compile Include="TeXShift.Core\Markdown\Processing\LatexDelimiterConverter.cs" />
     <Compile Include="TeXShift.Core\Markdown\Processing\MarkdownSanitizer.cs" />
     <Compile Include="TeXShift.Core\Math\IMathService.cs" />
     <Compile Include="TeXShift.Core\Math\MathService.cs" />

@@ -25,10 +25,31 @@
 <script>
     var mathJaxReady = false;
 
-    // Wait for MathJax to be ready
-    MathJax.startup.promise.then(function() {
-        mathJaxReady = true;
-    });
+    // Preload extensions that require async loading (e.g., boldsymbol)
+    function preloadExtensions() {
+        return new Promise(function(resolve) {
+            function tryPreload() {
+                try {
+                    MathJax.tex2mml('\\boldsymbol{x}', { display: false });
+                    resolve();
+                } catch (e) {
+                    if (e.retry && e.retry instanceof Promise) {
+                        e.retry.then(tryPreload).catch(resolve);
+                    } else {
+                        resolve();
+                    }
+                }
+            }
+            tryPreload();
+        });
+    }
+
+    // Wait for MathJax to be ready, then preload extensions
+    MathJax.startup.promise
+        .then(preloadExtensions)
+        .then(function() {
+            mathJaxReady = true;
+        });
 
     // Function to check if MathJax is ready (called from C#)
     function isMathJaxReady() {
@@ -40,7 +61,8 @@
         try {
             return MathJax.tex2mml(latex, { display: display });
         } catch (e) {
-            return '<math xmlns="http://www.w3.org/1998/Math/MathML"><merror><mtext>' + e.message + '</mtext></merror></math>';
+            return '<math xmlns="http://www.w3.org/1998/Math/MathML"><merror><mtext>' +
+                   (e.message || 'unknown') + '</mtext></merror></math>';
         }
     }
 </script>
