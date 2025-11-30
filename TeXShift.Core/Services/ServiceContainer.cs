@@ -100,9 +100,10 @@ namespace TeXShift.Core.Services
         /// Creates a new IDebugLogger instance.
         /// Transient lifetime: new instance per call.
         /// </summary>
-        public IDebugLogger CreateDebugLogger()
+        /// <param name="customOutputPath">Custom output directory path. If null or empty, uses default location.</param>
+        public IDebugLogger CreateDebugLogger(string customOutputPath = null)
         {
-            return new DebugLogger();
+            return new DebugLogger(customOutputPath);
         }
 
         /// <summary>

@@ -9,23 +9,30 @@
                             size="large"
                             onAction="OnConvertButtonClick"
                             imageMso="Repeat" />
+                </group>
+                <group id="grpDebugTools" label="调试工具" getVisible="GetDebugGroupVisible">
                     <button id="btnDebugConvert"
                             label="调试转换"
                             size="large"
                             onAction="OnDebugConvertButtonClick"
-                            imageMso="HappyFace" />
-                </group>
-                <group id="grpDebugTools" label="调试工具">
+                            imageMso="ScriptDebugger" />
                     <button id="btnDebugXml"
-                            label="查看整页XML"
+                            label="保存整页XML"
                             size="large"
                             onAction="OnDebugXmlButtonClick"
-                            imageMso="FileOpen" />
+                            imageMso="SaveSelectionToTableOfContentsGallery" />
                     <button id="btnDebugSelectionXml"
-                            label="查看选中XML"
+                            label="保存选中XML"
                             size="large"
                             onAction="OnDebugSelectionXmlButtonClick"
-                            imageMso="FileFind" />
+                            imageMso="SaveSelectionToHeaderGallery" />
+                </group>
+                <group id="grpSettings" label="设置">
+                    <button id="btnSettings"
+                            label="设置"
+                            size="large"
+                            onAction="OnSettingsButtonClick"
+                            imageMso="ComAddInsDialog" />
                 </group>
             </tab>
         </tabs>

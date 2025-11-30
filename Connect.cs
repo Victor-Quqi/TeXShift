@@ -7,13 +7,24 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Extensibility;
 using Microsoft.Office.Core;
+using TeXShift.Core.Configuration;
 using TeXShift.Core.Logging;
 using TeXShift.Core.OneNote;
 using TeXShift.Core.Services;
+using TeXShift.UI;
 using OneNote = Microsoft.Office.Interop.OneNote;
 
  namespace TeXShift
  {
+     /// <summary>
+     /// Helper class to wrap a window handle for use with WinForms dialogs.
+     /// </summary>
+     internal class Win32Window : IWin32Window
+     {
+         public IntPtr Handle { get; }
+         public Win32Window(IntPtr handle) => Handle = handle;
+     }
+
      /// <summary>
      /// OneNote COM Add-in entry point.
      /// </summary>
@@ -22,9 +33,14 @@ using OneNote = Microsoft.Office.Interop.OneNote;
      [ProgId("TeXShift.Connect")]
      public class Connect : IDTExtensibility2, IRibbonExtensibility
      {
+         [DllImport("user32.dll")]
+         private static extern IntPtr GetForegroundWindow();
+
          private OneNote.Application _oneNoteApp;
          private IRibbonUI ribbon;
          private ServiceContainer _serviceContainer;
+         private AppSettings _appSettings;
+         private SettingsManager _settingsManager;
  
          /// <summary>
          /// Called when the add-in is connected to OneNote.
@@ -33,8 +49,15 @@ using OneNote = Microsoft.Office.Interop.OneNote;
          {
              _oneNoteApp = (OneNote.Application)Application;
 
+             // Load settings from JSON file
+             _settingsManager = new SettingsManager();
+             _appSettings = _settingsManager.Load();
+
              // Initialize dependency injection container
              _serviceContainer = new ServiceContainer();
+
+             // Apply loaded settings to style configuration
+             ApplySettingsToStyleConfig();
          }
  
          /// <summary>
@@ -90,6 +113,91 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             this.ribbon = ribbonUI;
         }
 
+        #region Ribbon Visibility Callbacks
+
+        /// <summary>
+        /// Ribbon callback: Returns whether the debug tools group should be visible.
+        /// </summary>
+        public bool GetDebugGroupVisible(IRibbonControl control)
+        {
+            return _appSettings?.Debug?.ShowDebugButtons ?? false;
+        }
+
+        #endregion
+
+        #region Settings
+
+        /// <summary>
+        /// Settings button click handler. Opens the settings dialog.
+        /// </summary>
+        public void OnSettingsButtonClick(IRibbonControl control)
+        {
+            try
+            {
+                var owner = new Win32Window(GetForegroundWindow());
+                using (var dialog = new SettingsDialog(_appSettings))
+                {
+                    if (dialog.ShowDialog(owner) == DialogResult.OK)
+                    {
+                        _appSettings = dialog.GetUpdatedSettings();
+                        _settingsManager.Save(_appSettings);
+                        ApplySettingsToStyleConfig();
+
+                        // Refresh Ribbon to update button visibility
+                        ribbon?.Invalidate();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowTopMostMessageBox(
+                    $"打开设置失败:\n\n{ex.Message}",
+                    "TeXShift - 错误",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Applies the current AppSettings to the OneNoteStyleConfig singleton.
+        /// </summary>
+        private void ApplySettingsToStyleConfig()
+        {
+            if (_appSettings == null || _serviceContainer == null)
+                return;
+
+            var styleConfig = _serviceContainer.StyleConfig;
+
+            // Apply code block settings
+            var codeBlock = _appSettings.CodeBlock;
+            styleConfig.SetCodeBlockStyle(
+                codeBlock.BackgroundColor,
+                codeBlock.TextColor,
+                codeBlock.FontFamily,
+                codeBlock.FontSize,
+                codeBlock.LineHeight,
+                codeBlock.EnableSyntaxHighlight);
+
+            // Apply inline code settings
+            var inlineCode = _appSettings.InlineCode;
+            styleConfig.SetInlineCodeStyle(
+                inlineCode.FontFamily,
+                inlineCode.BackgroundColor);
+
+            // Apply quote block settings
+            var quoteBlock = _appSettings.QuoteBlock;
+            styleConfig.SetQuoteBlockStyle(quoteBlock.BackgroundColor);
+
+            // Apply heading settings
+            var headings = _appSettings.Headings;
+            for (int i = 1; i <= 6; i++)
+            {
+                styleConfig.SetHeadingFont(i, headings.GetFontSize(i));
+            }
+        }
+
+        #endregion
+
         /// <summary>
         /// Ribbon button click handler for conversion.
         /// Uses async void pattern for event handlers.
@@ -143,7 +251,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             if (!writeDebugFiles)
                 return null;
 
-            var logger = _serviceContainer.CreateDebugLogger();
+            var logger = _serviceContainer.CreateDebugLogger(_appSettings?.Debug?.DebugOutputPath);
             logger.StartSession();
             return logger;
         }
@@ -160,7 +268,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
 
             if (!readResult.IsSuccess)
             {
-                MessageBox.Show(readResult.ErrorMessage, "操作提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ShowTopMostMessageBox(readResult.ErrorMessage, "操作提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 throw new InvalidOperationException("Content extraction failed.");
             }
 
@@ -201,7 +309,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
         /// </summary>
         private void ShowSuccessMessage(ReadResult readResult, IDebugLogger logger)
         {
-            MessageBox.Show(
+            ShowTopMostMessageBox(
                 $"转换成功!\n\n" +
                 $"模式: {readResult.ModeAsString()}\n" +
                 $"处理了 {readResult.ExtractedText.Length} 个字符\n\n" +
@@ -220,7 +328,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             // Use fire-and-forget for logging to avoid secondary exceptions blocking the UI
             _ = logger?.LogErrorAsync(ex);
 
-            MessageBox.Show(
+            ShowTopMostMessageBox(
                 $"转换失败:\n\n{ex.Message}\n\n详细信息:\n{ex.StackTrace}",
                 "TeXShift - 错误",
                 MessageBoxButtons.OK,
@@ -260,17 +368,17 @@ using OneNote = Microsoft.Office.Interop.OneNote;
 
                 if (!result.IsSuccess)
                 {
-                    MessageBox.Show(result.ErrorMessage, "调试工具", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    ShowTopMostMessageBox(result.ErrorMessage, "调试工具", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
                 if (result.OriginalXmlNode == null)
                 {
-                    MessageBox.Show("未能获取选中内容的XML节点。", "调试工具", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    ShowTopMostMessageBox("未能获取选中内容的XML节点。", "调试工具", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                var logger = _serviceContainer.CreateDebugLogger();
+                var logger = _serviceContainer.CreateDebugLogger(_appSettings?.Debug?.DebugOutputPath);
                 logger.StartSession();
                 string savedPath = await logger.LogSelectionXmlAsync(result.OriginalXmlNode);
                 string formattedXml = System.Xml.Linq.XDocument.Parse(result.OriginalXmlNode.ToString()).ToString();
@@ -281,7 +389,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                 ShowTextInScrollableMessageBox(formattedXml, caption);
 
                 // Show success message
-                MessageBox.Show(
+                ShowTopMostMessageBox(
                     $"选中内容的XML已保存至：\n{savedPath}\n\n" +
                     $"模式: {result.ModeAsString()}\n" +
                     $"节点类型: {result.OriginalXmlNode.Name.LocalName}\n" +
@@ -292,7 +400,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("调试功能发生错误：\n" + ex.ToString(), "调试工具异常", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowTopMostMessageBox("调试功能发生错误：\n" + ex.ToString(), "调试工具异常", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -325,11 +433,11 @@ using OneNote = Microsoft.Office.Interop.OneNote;
 
                 if (string.IsNullOrEmpty(pageId) || string.IsNullOrEmpty(xmlContent))
                 {
-                    MessageBox.Show("无法获取当前页面内容。", "调试工具", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    ShowTopMostMessageBox("无法获取当前页面内容。", "调试工具", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                var logger = _serviceContainer.CreateDebugLogger();
+                var logger = _serviceContainer.CreateDebugLogger(_appSettings?.Debug?.DebugOutputPath);
                 logger.StartSession();
                 string savedPath = await logger.LogPageXmlAsync(xmlContent);
                 string formattedXml = System.Xml.Linq.XDocument.Parse(xmlContent).ToString();
@@ -339,7 +447,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                 ShowTextInScrollableMessageBox(formattedXml, caption);
 
                 // Show success message
-                MessageBox.Show(
+                ShowTopMostMessageBox(
                     $"XML已保存至：\n{savedPath}\n\n文件大小: {new FileInfo(savedPath).Length / 1024.0:F2} KB",
                     "调试工具 - 保存成功",
                     MessageBoxButtons.OK,
@@ -347,17 +455,27 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("调试功能发生错误：\n" + ex.ToString(), "调试工具异常", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowTopMostMessageBox("调试功能发生错误：\n" + ex.ToString(), "调试工具异常", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
 
 
         /// <summary>
+        /// Helper function: Shows a MessageBox that appears on top of all windows.
+        /// </summary>
+        private DialogResult ShowTopMostMessageBox(string text, string caption, MessageBoxButtons buttons, MessageBoxIcon icon)
+        {
+            var owner = new Win32Window(GetForegroundWindow());
+            return MessageBox.Show(owner, text, caption, buttons, icon);
+        }
+
+        /// <summary>
         /// Helper function: Creates a form with a scrollbar to display a large amount of text.
         /// </summary>
         private void ShowTextInScrollableMessageBox(string text, string caption)
         {
+            var owner = new Win32Window(GetForegroundWindow());
             using (Form form = new Form
             {
                 Text = caption,
@@ -375,7 +493,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                     Text = text
                 };
                 form.Controls.Add(textBox);
-                form.ShowDialog();
+                form.ShowDialog(owner);
             }
         }
 

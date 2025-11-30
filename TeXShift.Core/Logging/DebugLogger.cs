@@ -13,7 +13,17 @@ namespace TeXShift.Core.Logging
     public class DebugLogger : IDebugLogger
     {
         private string _sessionTimestamp;
+        private readonly string _customOutputPath;
         public string DebugSessionFolder { get; private set; }
+
+        /// <summary>
+        /// Creates a new DebugLogger instance.
+        /// </summary>
+        /// <param name="customOutputPath">Custom output directory path. If null or empty, uses default location.</param>
+        public DebugLogger(string customOutputPath = null)
+        {
+            _customOutputPath = customOutputPath;
+        }
 
         public void StartSession()
         {
@@ -91,10 +101,21 @@ namespace TeXShift.Core.Logging
 
         private string PrepareDebugFolder()
         {
-            string assemblyLocation = Assembly.GetExecutingAssembly().Location;
-            string currentDir = Path.GetDirectoryName(assemblyLocation);
-            string projectRoot = FindProjectRoot(currentDir) ?? currentDir;
-            string debugFolder = Path.Combine(projectRoot, "DebugOutput");
+            string debugFolder;
+
+            // Use custom path if provided and valid
+            if (!string.IsNullOrWhiteSpace(_customOutputPath))
+            {
+                debugFolder = _customOutputPath;
+            }
+            else
+            {
+                // Fall back to default: DebugOutput in project root
+                string assemblyLocation = Assembly.GetExecutingAssembly().Location;
+                string currentDir = Path.GetDirectoryName(assemblyLocation);
+                string projectRoot = FindProjectRoot(currentDir) ?? currentDir;
+                debugFolder = Path.Combine(projectRoot, "DebugOutput");
+            }
 
             if (!Directory.Exists(debugFolder))
             {

@@ -400,6 +400,22 @@ namespace TeXShift.Core.Configuration
         }
 
         /// <summary>
+        /// Allows customization of style for code blocks.
+        /// </summary>
+        public void SetCodeBlockStyle(string backgroundColor, string textColor, string fontFamily, double fontSize, double lineHeight, bool enableSyntaxHighlight)
+        {
+            _customCodeBlockStyle = new CodeBlockConfig(backgroundColor, textColor, fontFamily, fontSize, lineHeight, enableSyntaxHighlight);
+        }
+
+        /// <summary>
+        /// Allows customization of style for quote blocks.
+        /// </summary>
+        public void SetQuoteBlockStyle(string backgroundColor, double baseWidth = 534.0, double widthReduction = 13.52)
+        {
+            _customQuoteBlockStyle = new QuoteBlockConfig(backgroundColor, baseWidth, widthReduction);
+        }
+
+        /// <summary>
         /// Resets all spacing and font configurations to default values.
         /// </summary>
         public void ResetToDefaults()
