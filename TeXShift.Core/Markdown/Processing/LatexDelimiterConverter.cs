@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace TeXShift.Core.Markdown.Processing
@@ -9,19 +8,6 @@ namespace TeXShift.Core.Markdown.Processing
     /// </summary>
     internal static class LatexDelimiterConverter
     {
-        // Placeholder prefix using Unicode Private Use Area to avoid conflicts
-        private const string PlaceholderPrefix = "\uE000";
-        private const string PlaceholderSuffix = "\uE001";
-
-        // Regex patterns for code protection
-        private static readonly Regex FencedCodeBlockRegex = new Regex(
-            @"```[\s\S]*?```|~~~[\s\S]*?~~~",
-            RegexOptions.Compiled);
-
-        private static readonly Regex InlineCodeRegex = new Regex(
-            @"`[^`\r\n]+`",
-            RegexOptions.Compiled);
-
         // Regex patterns for LaTeX delimiters (non-greedy, supports multiline for block math)
         private static readonly Regex InlineMathRegex = new Regex(
             @"\\\((.+?)\\\)",
@@ -57,7 +43,7 @@ namespace TeXShift.Core.Markdown.Processing
             }
 
             // Step 1: Protect code blocks
-            var (protectedText, codeMap) = ProtectCodeBlocks(markdown);
+            var (protectedText, codeMap) = CodeBlockProtector.Protect(markdown);
 
             // Step 2: Convert LaTeX delimiters (\[...\] → $$...$$, \(...\) → $...$)
             var converted = ConvertDelimiters(protectedText);
@@ -66,7 +52,7 @@ namespace TeXShift.Core.Markdown.Processing
             converted = NormalizeMultilineMathBlocks(converted);
 
             // Step 4: Restore code blocks
-            var result = RestoreCodeBlocks(converted, codeMap);
+            var result = CodeBlockProtector.Restore(converted, codeMap);
 
             return result;
         }
@@ -75,30 +61,6 @@ namespace TeXShift.Core.Markdown.Processing
         {
             // Check for LaTeX delimiters or $$ math blocks
             return text.Contains(@"\(") || text.Contains(@"\[") || text.Contains("$$");
-        }
-
-        private static (string protectedText, Dictionary<string, string> codeMap) ProtectCodeBlocks(string text)
-        {
-            var codeMap = new Dictionary<string, string>();
-            var counter = 0;
-
-            // Protect fenced code blocks first (``` or ~~~)
-            text = FencedCodeBlockRegex.Replace(text, match =>
-            {
-                var placeholder = $"{PlaceholderPrefix}FENCE{counter++}{PlaceholderSuffix}";
-                codeMap[placeholder] = match.Value;
-                return placeholder;
-            });
-
-            // Protect inline code
-            text = InlineCodeRegex.Replace(text, match =>
-            {
-                var placeholder = $"{PlaceholderPrefix}CODE{counter++}{PlaceholderSuffix}";
-                codeMap[placeholder] = match.Value;
-                return placeholder;
-            });
-
-            return (text, codeMap);
         }
 
         private static string ConvertDelimiters(string text)
@@ -143,13 +105,5 @@ namespace TeXShift.Core.Markdown.Processing
             });
         }
 
-        private static string RestoreCodeBlocks(string text, Dictionary<string, string> codeMap)
-        {
-            foreach (var kvp in codeMap)
-            {
-                text = text.Replace(kvp.Key, kvp.Value);
-            }
-            return text;
-        }
     }
 }

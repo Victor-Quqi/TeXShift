@@ -1,25 +1,35 @@
 # HTML 实体处理方案
 
 ## 问题
-OneNote 存储的实体（`&gt;`, `&lt;`）需要被 Markdig 识别为 Markdown 语法（如 `>` 引用块），但用户输入的实体（`&lt;` → `<`）不能被二次解码。
+1. OneNote 存储的实体（`&gt;`, `&lt;`）需要被 Markdig 识别为 Markdown 语法
+2. LaTeX 公式中的 `&amp;` 需要解码为 `&` 才能被 MathJax 解析
+3. 代码块/行内代码中的实体应保持原样
 
-## 解决方案
-四步机制：HtmlDecode → 占位符保护 → Markdig 解析 → 恢复占位符
+## 解决方案：三阶段解码
+
+```
+Stage 1: Protect     →  Stage 2: Math Decode  →  Stage 3: Restore & Decode
+(实体→占位符)           (LaTeX 占位符解码)         (非代码解码,代码保留)
+```
 
 ## 关键代码
 
-### MarkdownConverter.cs
-- `HtmlEntityRegex`：正则表达式，匹配需要保护的 HTML 实体
-- `ConvertToOneNoteXml()`：实现四步处理流程
-- `ProtectHtmlEntities()`：用占位符（`\uFFFD{n}\uFFFD`）替换实体
-- `RestoreHtmlEntities()`：恢复占位符为原始实体
+### HtmlEntityProcessor.cs
+- `Protect()`: 用占位符替换 HTML 实体，返回 entityMap
+- `RestoreAndDecode()`: 遍历 XML，非代码内容解码，代码内容保留原实体
+- `DecodeForLatex()`: 静态方法，为 Math handlers 解码占位符
 
-### ContentReader.cs
-- `ProcessOE()`：删除了 `HtmlDecode` 调用（`XElement.Value` 已自动解码）
+### MarkdownToOneNoteConverter.cs
+- `_currentEntityMap`: 存储当前转换的 entityMap
+- `DecodeLatexEntities()`: 调用 `HtmlEntityProcessor.DecodeForLatex`
+- 设置 `_inlineRenderer.EntityDecoder` 委托
+
+### MathBlockHandler.cs / InlineRenderer.cs
+- MathJax 处理前调用 `context.DecodeLatexEntities(latex)`
 
 ## 维护注意事项
 
-1. **不要删除 HtmlDecode 步骤**：会导致 Markdown 语法（`>`, `#`, `-` 等）无法识别
-2. **不要删除占位符机制**：会导致用户输入的 HTML 实体被 Markdig 二次解码丢失
-3. **占位符冲突风险极低**：使用 Unicode 替换字符 (U+FFFD)，正常文本中罕见
-4. **修改支持的实体**：修改 `HtmlEntityRegex` 的正则表达式
+1. **不要删除占位符保护**：会导致 Markdig 解码实体，破坏语法检测
+2. **不要删除 Math 解码**：会导致 LaTeX 中的 `&` 无法被 MathJax 识别
+3. **代码块检测**：通过 `Cell.shadingColor` 属性判断是否在代码块内
+4. **占位符**：使用 Unicode 私有区域字符 (U+E100-U+F8FF)，冲突风险极低

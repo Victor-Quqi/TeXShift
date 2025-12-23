@@ -34,6 +34,9 @@ namespace TeXShift.Core.Markdown.Handlers
                 return System.Array.Empty<XElement>();
             }
 
+            // Decode HTML entity placeholders before passing to MathJax
+            latex = context.DecodeLatexEntities(latex);
+
             // Check if MathService is available
             if (_mathService == null)
             {

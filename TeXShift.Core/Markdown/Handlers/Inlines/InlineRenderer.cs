@@ -19,6 +19,8 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
         private readonly OneNoteStyleConfig _styleConfig;
         private readonly IMathService _mathService;
 
+        public System.Func<string, string> EntityDecoder { get; set; }
+
         public InlineRenderer(OneNoteStyleConfig styleConfig, IMathService mathService)
         {
             _styleConfig = styleConfig;
@@ -172,6 +174,11 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                 try
                 {
                     var latex = mathInline.Content.ToString();
+                    // Decode HTML entity placeholders before passing to MathJax
+                    if (EntityDecoder != null)
+                    {
+                        latex = EntityDecoder(latex);
+                    }
                     var mathml = _mathService.LatexToMathMLAsync(latex, displayMode: isDisplayMath).GetAwaiter().GetResult();
                     var wrappedMathml = _mathService.WrapMathMLForOneNote(mathml);
                     html.Append(wrappedMathml);

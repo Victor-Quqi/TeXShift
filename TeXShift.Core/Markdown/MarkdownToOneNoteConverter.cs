@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Markdig;
@@ -29,11 +28,12 @@ namespace TeXShift.Core.Markdown
         private readonly Dictionary<Type, IBlockHandler> _blockHandlers;
         private readonly FallbackHandler _fallbackHandler = new FallbackHandler();
         private readonly MarkdownPipeline _pipeline;
-        private readonly HtmlEntityProtector _entityProtector = new HtmlEntityProtector();
+        private readonly HtmlEntityProcessor _entityProcessor = new HtmlEntityProcessor();
         private readonly IInlineRenderer _inlineRenderer;
         private int _quoteNestingDepth = 0;
         private readonly Stack<double> _widthReservationStack = new Stack<double>();
         private readonly double _initialWidth;
+        private Dictionary<string, string> _currentEntityMap;  // Stored during conversion for Math handlers
 
         // Explicit implementation of IMarkdownConverterContext properties
         public XNamespace OneNoteNamespace { get; } = "http://schemas.microsoft.com/office/onenote/2013/onenote";
@@ -97,16 +97,18 @@ namespace TeXShift.Core.Markdown
             // Step 1: Sanitize text (remove OneNote formatting spans)
             var sanitizedMarkdown = MarkdownSanitizer.Sanitize(markdown);
 
-            // Step 2: HtmlDecode to restore Markdown syntax characters
+            // Step 2: Normalize block-level syntax markers with minimal decoding
             // (e.g., &gt; → >, &lt; → <, &amp;lt; → &lt;)
-            sanitizedMarkdown = WebUtility.HtmlDecode(sanitizedMarkdown);
+            sanitizedMarkdown = MarkdownPreprocessor.Normalize(sanitizedMarkdown);
 
             // Step 3: Convert LaTeX delimiters to Markdown math syntax
             // (e.g., \(...\) → $...$, \[...\] → $$...$$)
             sanitizedMarkdown = LatexDelimiterConverter.Convert(sanitizedMarkdown);
 
-            // Step 4: Protect remaining HTML entities from being decoded again by Markdig
-            var (protectedMarkdown, entityMap) = _entityProtector.Protect(sanitizedMarkdown);
+            // Step 4: Protect HTML entities from being decoded by Markdig
+            var (protectedMarkdown, entityMap) = _entityProcessor.Protect(sanitizedMarkdown);
+            _currentEntityMap = entityMap;  // Store for Math handlers to use
+            _inlineRenderer.EntityDecoder = DecodeLatexEntities;  // Set decoder for inline math
 
             // Step 5: Parse Markdown with protected entities
             var document = Markdig.Markdown.Parse(protectedMarkdown, _pipeline);
@@ -128,8 +130,8 @@ namespace TeXShift.Core.Markdown
             oeChildren.Add(elements);
             outline.Add(oeChildren);
 
-            // Step 6: Restore protected HTML entities to their original form
-            _entityProtector.Restore(outline, entityMap, OneNoteNamespace);
+            // Step 6: Restore and DECODE HTML entities (except in code blocks)
+            _entityProcessor.RestoreAndDecode(outline, entityMap, OneNoteNamespace);
 
             return outline;
         }
@@ -208,6 +210,11 @@ namespace TeXShift.Core.Markdown
             {
                 _widthReservationStack.Pop();
             }
+        }
+
+        public string DecodeLatexEntities(string latex)
+        {
+            return HtmlEntityProcessor.DecodeForLatex(latex, _currentEntityMap);
         }
 
         public string ConvertInlinesToHtml(ContainerInline container)

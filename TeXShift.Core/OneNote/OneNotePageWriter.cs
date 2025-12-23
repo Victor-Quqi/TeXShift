@@ -81,7 +81,8 @@ namespace TeXShift.Core.OneNote
             else // Selection mode: Replace OEs, not the entire Outline
             {
                 var newOEChildren = isNewContentOutline
-                    ? newOutlineXml.Descendants(ns + "OE").ToList()
+                    ? newOutlineXml.Element(ns + "OEChildren")?.Elements(ns + "OE").ToList()
+                        ?? new System.Collections.Generic.List<XElement>()
                     : new System.Collections.Generic.List<XElement> { newOutlineXml };
 
                 if (newOEChildren.Any())

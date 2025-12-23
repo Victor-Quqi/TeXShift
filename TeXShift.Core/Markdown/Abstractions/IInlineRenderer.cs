@@ -20,5 +20,11 @@ namespace TeXShift.Core.Markdown.Abstractions
         /// <param name="inlines">The collection of inline elements.</param>
         /// <returns>An HTML-formatted string.</returns>
         string Render(System.Collections.Generic.IEnumerable<Inline> inlines);
+
+        /// <summary>
+        /// Sets or gets the entity decoder function for decoding HTML entities in math content.
+        /// This should be set by the converter before rendering.
+        /// </summary>
+        System.Func<string, string> EntityDecoder { get; set; }
     }
 }
