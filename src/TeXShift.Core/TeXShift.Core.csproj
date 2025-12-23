@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <PlatformTarget>x64</PlatformTarget>
+    <RootNamespace>TeXShift.Core</RootNamespace>
+    <AssemblyName>TeXShift.Core</AssemblyName>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\texshift_key.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Framework references needed for .NET Framework 4.8 SDK-style project -->
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Net.Http" />
+    <!-- OneNote interop - must use EmbedInteropTypes to avoid strong name requirement -->
+    <Reference Include="Interop.Microsoft.Office.Interop.OneNote">
+      <HintPath>..\..\packages\Interop.Microsoft.Office.Interop.OneNote.1.1.0.2\lib\net40\Interop.Microsoft.Office.Interop.OneNote.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Markdig.Signed" Version="0.44.0" />
+    <PackageReference Include="ColorCode.Core" Version="2.0.15" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3595.46" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Math\mathjax-loader.html" />
+  </ItemGroup>
+</Project>

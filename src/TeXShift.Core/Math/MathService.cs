@@ -401,7 +401,7 @@ namespace TeXShift.Core.Math
         {
             // Try to load from embedded resource first
             var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = "TeXShift.TeXShift.Core.Resources.Math.mathjax-loader.html";
+            var resourceName = "TeXShift.Core.Resources.Math.mathjax-loader.html";
 
             using (var stream = assembly.GetManifestResourceStream(resourceName))
             {

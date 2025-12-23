@@ -5,7 +5,7 @@ using System.Threading;
 using System.Windows.Forms;
 using TeXShift.Core.Configuration;
 
-namespace TeXShift.UI
+namespace TeXShift.AddIn.UI
 {
     /// <summary>
     /// Settings dialog for TeXShift configuration.

@@ -11,10 +11,10 @@ using TeXShift.Core.Configuration;
 using TeXShift.Core.Logging;
 using TeXShift.Core.OneNote;
 using TeXShift.Core.Services;
-using TeXShift.UI;
+using TeXShift.AddIn.UI;
 using OneNote = Microsoft.Office.Interop.OneNote;
 
- namespace TeXShift
+ namespace TeXShift.AddIn
  {
      /// <summary>
      /// Helper class to wrap a window handle for use with WinForms dialogs.
@@ -30,7 +30,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
      /// </summary>
      [ComVisible(true)]
      [Guid("1EE8F914-ECBD-4709-92C0-E770851C4966")]
-     [ProgId("TeXShift.Connect")]
+     [ProgId("TeXShift.AddIn.Connect")]
      public class Connect : IDTExtensibility2, IRibbonExtensibility
      {
          [DllImport("user32.dll")]
@@ -105,7 +105,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
         /// </summary>
         public string GetCustomUI(string RibbonID)
         {
-            return GetResourceText("TeXShift.Ribbon.xml");
+            return GetResourceText("TeXShift.AddIn.Ribbon.xml");
         }
 
         public void OnRibbonLoad(IRibbonUI ribbonUI)
