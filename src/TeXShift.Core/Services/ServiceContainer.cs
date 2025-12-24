@@ -97,6 +97,30 @@ namespace TeXShift.Core.Services
         }
 
         /// <summary>
+        /// Creates a new OneNotePublisher instance.
+        /// Transient lifetime: new instance per call.
+        /// </summary>
+        public OneNotePublisher CreateOneNotePublisher(OneNoteApp.Application oneNoteApp)
+        {
+            if (oneNoteApp == null)
+                throw new ArgumentNullException(nameof(oneNoteApp));
+
+            return new OneNotePublisher(oneNoteApp);
+        }
+
+        /// <summary>
+        /// Creates a new ConversionOrchestrator instance.
+        /// Transient lifetime: new instance per call.
+        /// </summary>
+        public ConversionOrchestrator CreateConversionOrchestrator(OneNoteApp.Application oneNoteApp)
+        {
+            if (oneNoteApp == null)
+                throw new ArgumentNullException(nameof(oneNoteApp));
+
+            return new ConversionOrchestrator(this, oneNoteApp);
+        }
+
+        /// <summary>
         /// Creates a new IDebugLogger instance.
         /// Transient lifetime: new instance per call.
         /// </summary>

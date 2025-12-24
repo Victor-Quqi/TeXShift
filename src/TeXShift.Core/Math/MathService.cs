@@ -382,15 +382,24 @@ namespace TeXShift.Core.Math
                 return prodPath;
             }
 
-            // Development: Walk up to find project root with Lib folder
+            // Development: Walk up to find project root, then check known locations
             var dir = new DirectoryInfo(assemblyDir);
             while (dir != null)
             {
+                // Check direct Lib folder (Add-in project structure)
                 var devPath = Path.Combine(dir.FullName, "Lib", "mathjax");
                 if (Directory.Exists(devPath))
                 {
                     return devPath;
                 }
+
+                // Check src/TeXShift.AddIn/Lib (for E2E tests and other projects)
+                var addInLibPath = Path.Combine(dir.FullName, "src", "TeXShift.AddIn", "Lib", "mathjax");
+                if (Directory.Exists(addInLibPath))
+                {
+                    return addInLibPath;
+                }
+
                 dir = dir.Parent;
             }
 

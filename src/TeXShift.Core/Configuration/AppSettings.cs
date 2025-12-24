@@ -64,6 +64,13 @@ namespace TeXShift.Core.Configuration
         public bool ShowDebugButtons { get; set; } = false;
 
         /// <summary>
+        /// Whether to export the converted page as PDF to the debug output folder.
+        /// Default: true.
+        /// </summary>
+        [DataMember]
+        public bool ExportPdf { get; set; } = true;
+
+        /// <summary>
         /// Custom output path for debug files.
         /// Empty string means use default (DebugOutput folder in project root).
         /// </summary>

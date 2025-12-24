@@ -21,6 +21,7 @@ namespace TeXShift.AddIn.UI
 
         // Debug settings
         private CheckBox _showDebugButtonsCheckBox;
+        private CheckBox _exportPdfCheckBox;
         private TextBox _debugOutputPathTextBox;
         private Button _browseDebugPathButton;
 
@@ -138,29 +139,39 @@ namespace TeXShift.AddIn.UI
                 AutoSize = true
             };
 
+            // Export PDF
+            _exportPdfCheckBox = new CheckBox
+            {
+                Text = "导出 PDF 到调试输出目录",
+                Location = new Point(20, 55),
+                Size = new Size(400, 24),
+                AutoSize = true
+            };
+
             // Debug output path
             var debugPathLabel = new Label
             {
                 Text = "调试输出目录 (留空使用默认):",
-                Location = new Point(20, 65),
+                Location = new Point(20, 95),
                 AutoSize = true
             };
 
             _debugOutputPathTextBox = new TextBox
             {
-                Location = new Point(20, 90),
+                Location = new Point(20, 120),
                 Size = new Size(340, 23)
             };
 
             _browseDebugPathButton = new Button
             {
                 Text = "浏览...",
-                Location = new Point(365, 89),
+                Location = new Point(365, 119),
                 Size = new Size(70, 25)
             };
             _browseDebugPathButton.Click += BrowseDebugPath_Click;
 
             tab.Controls.Add(_showDebugButtonsCheckBox);
+            tab.Controls.Add(_exportPdfCheckBox);
             tab.Controls.Add(debugPathLabel);
             tab.Controls.Add(_debugOutputPathTextBox);
             tab.Controls.Add(_browseDebugPathButton);
@@ -359,6 +370,7 @@ namespace TeXShift.AddIn.UI
         {
             // Debug settings
             _showDebugButtonsCheckBox.Checked = _currentSettings.Debug.ShowDebugButtons;
+            _exportPdfCheckBox.Checked = _currentSettings.Debug.ExportPdf;
             _debugOutputPathTextBox.Text = _currentSettings.Debug.DebugOutputPath;
 
             // Code block settings
@@ -386,6 +398,7 @@ namespace TeXShift.AddIn.UI
         {
             // Debug settings
             _currentSettings.Debug.ShowDebugButtons = _showDebugButtonsCheckBox.Checked;
+            _currentSettings.Debug.ExportPdf = _exportPdfCheckBox.Checked;
             _currentSettings.Debug.DebugOutputPath = _debugOutputPathTextBox.Text.Trim();
 
             // Code block settings
@@ -502,6 +515,7 @@ namespace TeXShift.AddIn.UI
                 Debug = new DebugSettings
                 {
                     ShowDebugButtons = source.Debug.ShowDebugButtons,
+                    ExportPdf = source.Debug.ExportPdf,
                     DebugOutputPath = source.Debug.DebugOutputPath
                 },
                 CodeBlock = new CodeBlockStyleSettings
