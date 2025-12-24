@@ -122,10 +122,8 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
-    <None Include="texshift_key.snk" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resources\T&amp;MtoN_512.png" />
     <EmbeddedResource Include="Ribbon.xml" />
   </ItemGroup>
   <!-- Copy MathJax files to output directory -->

@@ -19,14 +19,14 @@
 
 3. **生成解决方案**：右键解决方案 → 重新生成解决方案
 
-4. **MSI 输出位置**：`TeXShiftSetup\Release\TeXShift.msi`
+4. **MSI 输出位置**：`misc/repos/TeXShiftSetup/Release/TeXShiftSetup.msi`
 
 ## Setup 项目配置说明
 
 Application Folder 包含两个项目输出：
 
-- **Primary Output from TeXShift**：主 DLL 及依赖
-- **Content Files from TeXShift**：MathJax 资源文件（通过 csproj 中的 Content Include 自动包含）
+- **Primary Output from TeXShift.AddIn**：主 DLL 及依赖
+- **Content Files from TeXShift.AddIn**：MathJax 资源文件（通过 csproj 中的 Content Include 自动包含）
 
 ## 关键属性（F4 属性窗口）
 
@@ -39,5 +39,5 @@ Application Folder 包含两个项目输出：
 
 ## 注意事项
 
-- MathJax 文件通过 `TeXShift.csproj` 的 Content 配置自动复制到输出目录
+- MathJax 文件通过 `src/TeXShift.AddIn/TeXShift.AddIn.csproj` 的 Content 配置自动复制到输出目录
 - 修改 MSI 文件名：右键 TeXShiftSetup → 属性 → Build → Output file name
