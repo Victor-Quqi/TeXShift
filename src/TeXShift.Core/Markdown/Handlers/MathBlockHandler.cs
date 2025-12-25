@@ -52,7 +52,7 @@ namespace TeXShift.Core.Markdown.Handlers
             {
                 try
                 {
-                    _mathService.InitializeAsync().GetAwaiter().GetResult();
+                    _mathService.InitializeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                 }
                 catch
                 {
@@ -69,7 +69,7 @@ namespace TeXShift.Core.Markdown.Handlers
             try
             {
                 // Use displayMode: true for block-level math
-                mathml = _mathService.LatexToMathMLAsync(latex, displayMode: true).GetAwaiter().GetResult();
+                mathml = _mathService.LatexToMathMLAsync(latex, displayMode: true).ConfigureAwait(false).GetAwaiter().GetResult();
             }
             catch
             {

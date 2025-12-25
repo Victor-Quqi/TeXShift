@@ -160,7 +160,7 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                 {
                     try
                     {
-                        _mathService.InitializeAsync().GetAwaiter().GetResult();
+                        _mathService.InitializeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                     }
                     catch
                     {
@@ -179,7 +179,7 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                     {
                         latex = EntityDecoder(latex);
                     }
-                    var mathml = _mathService.LatexToMathMLAsync(latex, displayMode: isDisplayMath).GetAwaiter().GetResult();
+                    var mathml = _mathService.LatexToMathMLAsync(latex, displayMode: isDisplayMath).ConfigureAwait(false).GetAwaiter().GetResult();
                     var wrappedMathml = _mathService.WrapMathMLForOneNote(mathml);
                     html.Append(wrappedMathml);
                 }

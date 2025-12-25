@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
 using OneNoteInterop = Microsoft.Office.Interop.OneNote;
+using TeXShift.Core.Utils;
 
 namespace TeXShift.Tests.E2E
 {
@@ -176,7 +177,7 @@ namespace TeXShift.Tests.E2E
             foreach (var line in lines)
             {
                 var oe = new XElement(ns + "OE");
-                var text = new XElement(ns + "T", new XCData(line));
+                var text = new XElement(ns + "T", new XCData(HtmlEscaper.Escape(line)));
                 oe.Add(text);
                 oeChildren.Add(oe);
             }
@@ -205,7 +206,7 @@ namespace TeXShift.Tests.E2E
         /// <summary>
         /// Polls GetPageContent until the specified OE has a 'selected' attribute, or timeout.
         /// </summary>
-        private void WaitForSelection(string pageId, string targetOeId, int timeoutMs = 3000, int pollIntervalMs = 100)
+        private void WaitForSelection(string pageId, string targetOeId, int timeoutMs = 10000, int pollIntervalMs = 100)
         {
             var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
 
@@ -233,8 +234,8 @@ namespace TeXShift.Tests.E2E
                 Thread.Sleep(pollIntervalMs);
             }
 
-            // Timeout reached - log but don't fail (conversion might still work)
-            System.Diagnostics.Debug.WriteLine($"WaitForSelection: Timeout waiting for selection on OE {targetOeId}");
+            // Timeout reached - fail fast to avoid flaky follow-up steps
+            throw new TimeoutException($"WaitForSelection: Timeout waiting for selection on OE {targetOeId}");
         }
 
         private void DeletePage(string pageId)
