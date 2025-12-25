@@ -32,6 +32,7 @@ namespace TeXShift.AddIn.UI
         private Button _codeBlockTextColorButton;
         private ComboBox _codeBlockFontComboBox;
         private NumericUpDown _codeBlockFontSizeNumeric;
+        private NumericUpDown _codeBlockSpaceBetweenNumeric;
         private CheckBox _enableSyntaxHighlightCheckBox;
 
         // Inline code settings
@@ -233,6 +234,21 @@ namespace TeXShift.AddIn.UI
             tab.Controls.Add(_codeBlockFontSizeNumeric);
             y += 35;
 
+            // Space between lines
+            var spaceBetweenLabel = new Label { Text = "行距 (pt):", Location = new Point(20, y + 4), AutoSize = true };
+            _codeBlockSpaceBetweenNumeric = new NumericUpDown
+            {
+                Location = new Point(120, y),
+                Size = new Size(80, 23),
+                Minimum = 12,
+                Maximum = 36,
+                DecimalPlaces = 1,
+                Increment = 0.5m
+            };
+            tab.Controls.Add(spaceBetweenLabel);
+            tab.Controls.Add(_codeBlockSpaceBetweenNumeric);
+            y += 35;
+
             // Syntax highlight
             _enableSyntaxHighlightCheckBox = new CheckBox
             {
@@ -377,7 +393,8 @@ namespace TeXShift.AddIn.UI
             _codeBlockBgColorPanel.BackColor = ColorFromHex(_currentSettings.CodeBlock.BackgroundColor);
             _codeBlockTextColorPanel.BackColor = ColorFromHex(_currentSettings.CodeBlock.TextColor);
             SelectOrAddItem(_codeBlockFontComboBox, _currentSettings.CodeBlock.FontFamily);
-            _codeBlockFontSizeNumeric.Value = (decimal)_currentSettings.CodeBlock.FontSize;
+            SafeSetNumericValue(_codeBlockFontSizeNumeric, (decimal)_currentSettings.CodeBlock.FontSize);
+            SafeSetNumericValue(_codeBlockSpaceBetweenNumeric, (decimal)_currentSettings.CodeBlock.SpaceBetween);
             _enableSyntaxHighlightCheckBox.Checked = _currentSettings.CodeBlock.EnableSyntaxHighlight;
 
             // Inline code settings
@@ -390,8 +407,19 @@ namespace TeXShift.AddIn.UI
             // Heading settings
             for (int i = 0; i < 6; i++)
             {
-                _headingFontSizeNumerics[i].Value = (decimal)_currentSettings.Headings.GetFontSize(i + 1);
+                SafeSetNumericValue(_headingFontSizeNumerics[i], (decimal)_currentSettings.Headings.GetFontSize(i + 1));
             }
+        }
+
+        /// <summary>
+        /// Safely sets a NumericUpDown value, clamping to valid range if needed.
+        /// Handles legacy configs with missing or out-of-range values.
+        /// </summary>
+        private static void SafeSetNumericValue(NumericUpDown numeric, decimal value)
+        {
+            value = Math.Max(value, numeric.Minimum);
+            value = Math.Min(value, numeric.Maximum);
+            numeric.Value = value;
         }
 
         private void SaveControlsToSettings()
@@ -406,6 +434,7 @@ namespace TeXShift.AddIn.UI
             _currentSettings.CodeBlock.TextColor = ColorToHex(_codeBlockTextColorPanel.BackColor);
             _currentSettings.CodeBlock.FontFamily = _codeBlockFontComboBox.Text;
             _currentSettings.CodeBlock.FontSize = (double)_codeBlockFontSizeNumeric.Value;
+            _currentSettings.CodeBlock.SpaceBetween = (double)_codeBlockSpaceBetweenNumeric.Value;
             _currentSettings.CodeBlock.EnableSyntaxHighlight = _enableSyntaxHighlightCheckBox.Checked;
 
             // Inline code settings
@@ -524,7 +553,7 @@ namespace TeXShift.AddIn.UI
                     TextColor = source.CodeBlock.TextColor,
                     FontFamily = source.CodeBlock.FontFamily,
                     FontSize = source.CodeBlock.FontSize,
-                    LineHeight = source.CodeBlock.LineHeight,
+                    SpaceBetween = source.CodeBlock.SpaceBetween,
                     EnableSyntaxHighlight = source.CodeBlock.EnableSyntaxHighlight
                 },
                 InlineCode = new InlineCodeStyleSettings

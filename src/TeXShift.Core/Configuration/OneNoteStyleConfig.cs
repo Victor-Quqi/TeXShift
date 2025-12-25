@@ -94,7 +94,7 @@ namespace TeXShift.Core.Configuration
             public string DefaultTextColor { get; set; }
             public string FontFamily { get; set; }
             public double FontSize { get; set; }
-            public double LineHeight { get; set; }
+            public double SpaceBetween { get; set; }
             public bool EnableSyntaxHighlight { get; set; }
 
             // GitHub Dark Theme Defaults
@@ -103,14 +103,14 @@ namespace TeXShift.Core.Configuration
                 string defaultTextColor = "#C9D1D9",
                 string fontFamily = "Consolas",
                 double fontSize = 11.0,
-                double lineHeight = 16.0,
+                double spaceBetween = 16.0,
                 bool enableSyntaxHighlight = true)
             {
                 BackgroundColor = backgroundColor;
                 DefaultTextColor = defaultTextColor;
                 FontFamily = fontFamily;
                 FontSize = fontSize;
-                LineHeight = lineHeight;
+                SpaceBetween = spaceBetween;
                 EnableSyntaxHighlight = enableSyntaxHighlight;
             }
 
@@ -119,7 +119,15 @@ namespace TeXShift.Core.Configuration
             /// </summary>
             public string GetOEStyle()
             {
-                return $"line-height:{LineHeight:F1}pt;font-family:'{FontFamily}';font-size:{FontSize:F1}pt;color:{DefaultTextColor}";
+                return $"font-family:'{FontFamily}';font-size:{FontSize:F1}pt;color:{DefaultTextColor}";
+            }
+
+            /// <summary>
+            /// Get the spaceBetween attribute value for code line OE elements
+            /// </summary>
+            public string GetSpaceBetween()
+            {
+                return SpaceBetween.ToString("F1");
             }
         }
 
@@ -402,9 +410,9 @@ namespace TeXShift.Core.Configuration
         /// <summary>
         /// Allows customization of style for code blocks.
         /// </summary>
-        public void SetCodeBlockStyle(string backgroundColor, string textColor, string fontFamily, double fontSize, double lineHeight, bool enableSyntaxHighlight)
+        public void SetCodeBlockStyle(string backgroundColor, string textColor, string fontFamily, double fontSize, double spaceBetween, bool enableSyntaxHighlight)
         {
-            _customCodeBlockStyle = new CodeBlockConfig(backgroundColor, textColor, fontFamily, fontSize, lineHeight, enableSyntaxHighlight);
+            _customCodeBlockStyle = new CodeBlockConfig(backgroundColor, textColor, fontFamily, fontSize, spaceBetween, enableSyntaxHighlight);
         }
 
         /// <summary>

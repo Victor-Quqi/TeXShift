@@ -175,7 +175,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                 codeBlock.TextColor,
                 codeBlock.FontFamily,
                 codeBlock.FontSize,
-                codeBlock.LineHeight,
+                codeBlock.SpaceBetween,
                 codeBlock.EnableSyntaxHighlight);
 
             // Apply inline code settings

@@ -75,6 +75,7 @@ namespace TeXShift.Core.Markdown.Handlers
 
                 var lineOe = new XElement(ns + "OE",
                     new XAttribute("style", oeStyle),
+                    new XAttribute("spaceBetween", codeConfig.GetSpaceBetween()),
                     new XElement(ns + "T", new XCData(highlightedContent)));
 
                 oeChildren.Add(lineOe);
@@ -85,6 +86,7 @@ namespace TeXShift.Core.Markdown.Handlers
             {
                 var emptyOe = new XElement(ns + "OE",
                     new XAttribute("style", oeStyle),
+                    new XAttribute("spaceBetween", codeConfig.GetSpaceBetween()),
                     new XElement(ns + "T", new XCData("&nbsp;")));
                 oeChildren.Add(emptyOe);
             }

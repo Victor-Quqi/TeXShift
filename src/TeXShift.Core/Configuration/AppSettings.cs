@@ -109,10 +109,10 @@ namespace TeXShift.Core.Configuration
         public double FontSize { get; set; } = 11.0;
 
         /// <summary>
-        /// Line height in points.
+        /// Space between lines in points (OneNote spaceBetween attribute).
         /// </summary>
         [DataMember]
-        public double LineHeight { get; set; } = 16.0;
+        public double SpaceBetween { get; set; } = 16.0;
 
         /// <summary>
         /// Whether to enable syntax highlighting.
