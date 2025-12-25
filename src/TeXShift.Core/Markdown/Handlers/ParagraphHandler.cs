@@ -22,7 +22,7 @@ namespace TeXShift.Core.Markdown.Handlers
             var singleImage = ImageElementHelper.GetSingleImage(paragraph);
             if (singleImage != null)
             {
-                return new[] { ImageElementHelper.CreateImageOE(singleImage, ns) };
+                return new[] { ImageElementHelper.CreateImageOE(singleImage, ns, context) };
             }
 
             // Check if paragraph contains display math ($$...$$) that should be split into separate blocks
@@ -187,7 +187,7 @@ namespace TeXShift.Core.Markdown.Handlers
             {
                 var latex = mathInline.Content.ToString();
                 // Decode HTML entity placeholders before passing to MathJax
-                latex = context.DecodeLatexEntities(latex);
+                latex = context.DecodeEntityPlaceholders(latex);
                 var mathml = mathService.LatexToMathMLAsync(latex, displayMode: true).GetAwaiter().GetResult();
                 return mathService.WrapMathMLForOneNote(mathml);
             }
@@ -327,7 +327,7 @@ namespace TeXShift.Core.Markdown.Handlers
                 if (segment.IsImage)
                 {
                     // Handle as standalone image using shared helper
-                    results.Add(ImageElementHelper.CreateImageOE(segment.ImageLink, ns));
+                    results.Add(ImageElementHelper.CreateImageOE(segment.ImageLink, ns, context));
                 }
                 else
                 {

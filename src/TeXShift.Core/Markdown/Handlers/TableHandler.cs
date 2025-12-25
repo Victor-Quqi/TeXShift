@@ -62,7 +62,7 @@ namespace TeXShift.Core.Markdown.Handlers
                     if (singleImage != null)
                     {
                         // Use shared helper to create image OE
-                        var imageOe = ImageElementHelper.CreateImageOE(singleImage, ns);
+                        var imageOe = ImageElementHelper.CreateImageOE(singleImage, ns, context);
                         ApplyAlignment(imageOe, alignment);
                         oeChildren.Add(imageOe);
                     }

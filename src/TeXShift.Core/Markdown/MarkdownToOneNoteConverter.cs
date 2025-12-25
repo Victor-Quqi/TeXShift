@@ -108,7 +108,7 @@ namespace TeXShift.Core.Markdown
             // Step 4: Protect HTML entities from being decoded by Markdig
             var (protectedMarkdown, entityMap) = _entityProcessor.Protect(sanitizedMarkdown);
             _currentEntityMap = entityMap;  // Store for Math handlers to use
-            _inlineRenderer.EntityDecoder = DecodeLatexEntities;  // Set decoder for inline math
+            _inlineRenderer.EntityDecoder = DecodeEntityPlaceholders;  // Set decoder for inline math
 
             // Step 5: Parse Markdown with protected entities
             var document = Markdig.Markdown.Parse(protectedMarkdown, _pipeline);
@@ -212,9 +212,9 @@ namespace TeXShift.Core.Markdown
             }
         }
 
-        public string DecodeLatexEntities(string latex)
+        public string DecodeEntityPlaceholders(string text)
         {
-            return HtmlEntityProcessor.DecodeForLatex(latex, _currentEntityMap);
+            return HtmlEntityProcessor.DecodeForLatex(text, _currentEntityMap);
         }
 
         public string ConvertInlinesToHtml(ContainerInline container)

@@ -103,7 +103,7 @@ namespace TeXShift.Core.Markdown.Handlers
                 if (singleImage != null)
                 {
                     // Handle as standalone image
-                    var imageElement = ImageElementHelper.CreateImageElement(singleImage, ns);
+                    var imageElement = ImageElementHelper.CreateImageElement(singleImage, ns, context);
                     if (imageElement != null)
                     {
                         oe.Add(imageElement);

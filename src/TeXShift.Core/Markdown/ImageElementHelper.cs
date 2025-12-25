@@ -4,6 +4,7 @@ using Markdig.Syntax.Inlines;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
+using TeXShift.Core.Markdown.Abstractions;
 using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.Markdown
@@ -46,11 +47,19 @@ namespace TeXShift.Core.Markdown
         /// </summary>
         /// <param name="imageLink">The image link to process.</param>
         /// <param name="ns">The OneNote XML namespace.</param>
+        /// <param name="context">The converter context for decoding HTML entity placeholders in URLs.</param>
         /// <returns>An Image XElement, or null if loading fails.</returns>
-        public static XElement CreateImageElement(LinkInline imageLink, XNamespace ns)
+        public static XElement CreateImageElement(LinkInline imageLink, XNamespace ns, IMarkdownConverterContext context = null)
         {
             var url = imageLink?.Url ?? "";
             var altText = GetAltText(imageLink);
+
+            // Decode HTML entity placeholders in URL before loading
+            // This handles cases where &amp; was protected as a placeholder during markdown parsing
+            if (context != null)
+            {
+                url = context.DecodeEntityPlaceholders(url);
+            }
 
             var result = ImageLoader.LoadImage(url);
             if (!result.Success)
@@ -90,10 +99,11 @@ namespace TeXShift.Core.Markdown
         /// </summary>
         /// <param name="imageLink">The image link to process.</param>
         /// <param name="ns">The OneNote XML namespace.</param>
+        /// <param name="context">The converter context for decoding HTML entity placeholders in URLs.</param>
         /// <returns>An OE XElement with image or fallback content.</returns>
-        public static XElement CreateImageOE(LinkInline imageLink, XNamespace ns)
+        public static XElement CreateImageOE(LinkInline imageLink, XNamespace ns, IMarkdownConverterContext context = null)
         {
-            var imageElement = CreateImageElement(imageLink, ns);
+            var imageElement = CreateImageElement(imageLink, ns, context);
             if (imageElement != null)
             {
                 return new XElement(ns + "OE", imageElement);

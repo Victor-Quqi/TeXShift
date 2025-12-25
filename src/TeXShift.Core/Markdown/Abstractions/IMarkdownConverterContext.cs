@@ -95,11 +95,11 @@ namespace TeXShift.Core.Markdown.Abstractions
         void PopWidthReservation();
 
         /// <summary>
-        /// Decodes HTML entity placeholders in LaTeX content before passing to MathJax.
-        /// This is necessary because Math content is processed before the final XML restore.
+        /// Decodes HTML entity placeholders back to their original entities.
+        /// Used for content processed before the final XML restore (e.g., Math, image URLs).
         /// </summary>
-        /// <param name="latex">The LaTeX string potentially containing placeholders.</param>
-        /// <returns>The LaTeX string with entities decoded.</returns>
-        string DecodeLatexEntities(string latex);
+        /// <param name="text">The string potentially containing placeholders.</param>
+        /// <returns>The string with placeholders decoded to original entities.</returns>
+        string DecodeEntityPlaceholders(string text);
     }
 }
