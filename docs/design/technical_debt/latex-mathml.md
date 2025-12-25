@@ -13,6 +13,8 @@ LaTeX 到 MathML 转换使用 MathJax 实现，但 OneNote 对 MathML 的支持�
 | 逗号消失 | 同上（阻止 mfenced 转换） | ✅ 有效 |
 | OneNote API 阻塞 | 移除 `stretchy="false"` | ✅ 必须（不移除会导致 API 无响应）|
 | 页面更新时函数名变斜体 | 预先拆分多字符标识符为单字符 `<mml:mi>sin</mml:mi>` → `<mml:mrow><mml:mi>s</mml:mi>...</mml:mrow>` | ✅ 有效 |
+| 矩阵/分数括号不拉伸 | 检测高内容并转换 `<mo>` 为 `<mfenced>` | ✅ 有效 |
+| 间距命令无效 | `<mspace>` 转换为 Unicode 空格字符 | ✅ 有效（精度有限）|
 
 ## 未解决的问题
 
@@ -43,13 +45,21 @@ LaTeX 到 MathML 转换使用 MathJax 实现，但 OneNote 对 MathML 的支持�
 
 **结论**：可能是 OneNote API 对连续 munderover 的限制，暂无解决方案
 
-### 2. 空格/间距控制
+### 2. LaTeX 换行符 `\\`
 
-**现象**：`\quad`, `\qquad` 等空格命令无法精确映射
+**现象**：非矩阵环境中的 `\\` 换行符不生效，`a \\ b` 显示为 `ab`
 
-**原因**：OneNote 不支持 `mspace` 元素，会统一转换为单个空格
+**原因**：
+- MathJax 将 `\\` 转换为 `<mspace linebreak="newline"/>`
+- OneNote 不支持 `linebreak` 属性
 
-**状态**：低优先级，影响较小
+**可能的解决方案**：
+- 将 `<mspace linebreak="newline"/>` 转换为 `<mtable>` 结构
+- 复杂度高，可能影响公式对齐
+
+**当前状态**：接受限制，建议用户使用多个公式块代替
+
+**注意**：矩阵内的 `\\` 正常工作，因为矩阵使用 `<mtr>` 行元素
 
 ### 3. 页面其他公式变化
 
@@ -72,11 +82,13 @@ LaTeX 到 MathML 转换使用 MathJax 实现，但 OneNote 对 MathML 的支持�
 - 极限（无上标）：`\lim_{x \to 0}`
 - 简单括号组合：`(a, b, c)`, `[a, b]`
 - 单个求和/求积：`\sum_{i=1}^{n} i`, `\prod_{i=1}^{n} i`
+- 矩阵：`pmatrix`, `bmatrix`, `vmatrix` 等（括号自动拉伸）
+- 自动拉伸括号：`\left( \frac{a}{b} \right)` 等
 
 ## 不支持/有问题的公式类型
 
 - 连续多个带上下标的大运算符：`\sum_{i=1}^{n} \sum_{j=1}^{m}`
-- 精确空格控制
+- 非矩阵环境的换行：`a \\ b`
 
 ## 建议
 
@@ -88,3 +100,5 @@ LaTeX 到 MathML 转换使用 MathJax 实现，但 OneNote 对 MathML 的支持�
 
 - `TeXShift.Core/Math/MathService.cs` - MathML 后处理
 - `TeXShift.Core/Resources/Math/mathjax-loader.html` - MathJax 配置
+- `docs/design/bracket-stretching.md` - 括号拉伸方案
+- `docs/design/mspace-unicode.md` - 间距转换方案

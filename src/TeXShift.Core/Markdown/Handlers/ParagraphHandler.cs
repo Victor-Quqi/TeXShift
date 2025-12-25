@@ -186,6 +186,8 @@ namespace TeXShift.Core.Markdown.Handlers
             try
             {
                 var latex = mathInline.Content.ToString();
+                // Decode HTML entity placeholders before passing to MathJax
+                latex = context.DecodeLatexEntities(latex);
                 var mathml = mathService.LatexToMathMLAsync(latex, displayMode: true).GetAwaiter().GetResult();
                 return mathService.WrapMathMLForOneNote(mathml);
             }

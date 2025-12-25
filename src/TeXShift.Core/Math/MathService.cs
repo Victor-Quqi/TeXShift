@@ -212,6 +212,10 @@ namespace TeXShift.Core.Math
             // Convert mspace width to Unicode space characters (OneNote doesn't support mspace width)
             mathml = ConvertMspaceToUnicode(mathml);
 
+            // Convert matrix brackets to mfenced (for automatic stretching)
+            // Must be done BEFORE AddFenceAttributeToBrackets
+            mathml = ConvertMatrixBracketsToMfenced(mathml);
+
             // Add fence="false" to brackets (verified fix for bracket/comma issues)
             mathml = AddFenceAttributeToBrackets(mathml);
 
@@ -327,6 +331,55 @@ namespace TeXShift.Core.Math
 
             // Very small positive space - use thin space as minimum
             return "\u2009";
+        }
+
+        /// <summary>
+        /// Converts brackets around tall content from mo elements to mfenced, which stretches automatically.
+        /// Handles matrices, fractions, roots, etc.
+        /// MathJax outputs: <mrow><mo>(</mo><mfrac>...</mfrac><mo>)</mo></mrow>
+        /// OneNote needs: <mfenced><mrow><mfrac>...</mfrac></mrow></mfenced>
+        /// </summary>
+        private string ConvertMatrixBracketsToMfenced(string mathml)
+        {
+            // Map opening brackets to their closing counterparts
+            var bracketPairs = new[]
+            {
+                ("(", ")"),   // pmatrix, \left( \right)
+                ("[", "]"),   // bmatrix, \left[ \right]
+                ("{", "}"),   // Bmatrix, \left\{ \right\}
+                ("|", "|"),   // vmatrix, \left| \right|
+            };
+
+            // Tall elements that should trigger bracket stretching
+            // mtable (matrices), mfrac (fractions), msqrt/mroot (roots), munder/mover (limits)
+            // mfenced included for nested brackets like \left( \left[ \frac{}{} \right] \right)
+            var tallElements = "mtable|mfrac|msqrt|mroot|munder|mover|munderover|mfenced";
+
+            foreach (var (open, close) in bracketPairs)
+            {
+                var escapedOpen = Regex.Escape(open);
+                var escapedClose = Regex.Escape(close);
+
+                // Pattern: <mrow><mo>BRACKET</mo>...CONTENT...<mo>BRACKET</mo></mrow>
+                // The mrow wrapper is typical for \left...\right constructs
+                var pattern = $@"<mml:mrow><mml:mo>{escapedOpen}</mml:mo>(.*?)<mml:mo>{escapedClose}</mml:mo></mml:mrow>";
+
+                mathml = Regex.Replace(mathml, pattern, match =>
+                {
+                    var content = match.Groups[1].Value;
+                    // Only convert to mfenced if content contains tall elements
+                    if (Regex.IsMatch(content, $@"<mml:({tallElements})"))
+                    {
+                        var openAttr = open == "(" ? "" : $" open=\"{open}\"";
+                        var closeAttr = close == ")" ? "" : $" close=\"{close}\"";
+                        return $"<mml:mfenced{openAttr}{closeAttr}><mml:mrow>{content}</mml:mrow></mml:mfenced>";
+                    }
+                    // Keep original for non-tall content
+                    return match.Value;
+                }, RegexOptions.Singleline);
+            }
+
+            return mathml;
         }
 
         /// <summary>
