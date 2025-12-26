@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Interop;
 using Extensibility;
 using Microsoft.Office.Core;
 using TeXShift.Core.Configuration;
@@ -12,6 +13,7 @@ using TeXShift.Core.Logging;
 using TeXShift.Core.OneNote;
 using TeXShift.Core.Services;
 using TeXShift.AddIn.UI;
+using TeXShift.AddIn.UI.WPF;
 using OneNote = Microsoft.Office.Interop.OneNote;
 
  namespace TeXShift.AddIn
@@ -19,7 +21,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
      /// <summary>
      /// Helper class to wrap a window handle for use with WinForms dialogs.
      /// </summary>
-     internal class Win32Window : IWin32Window
+     internal class Win32Window : System.Windows.Forms.IWin32Window
      {
          public IntPtr Handle { get; }
          public Win32Window(IntPtr handle) => Handle = handle;
@@ -35,6 +37,39 @@ using OneNote = Microsoft.Office.Interop.OneNote;
      {
          [DllImport("user32.dll")]
          private static extern IntPtr GetForegroundWindow();
+
+         [DllImport("user32.dll")]
+         private static extern bool EnableWindow(IntPtr hWnd, bool bEnable);
+
+         [DllImport("user32.dll")]
+         private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+         private static readonly string _addInDirectory;
+
+         /// <summary>
+         /// Static constructor to set up assembly resolution for COM Add-in.
+         /// </summary>
+         static Connect()
+         {
+             _addInDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+             AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
+         }
+
+         /// <summary>
+         /// Handles assembly resolution for dependencies that can't be found in the default probe paths.
+         /// </summary>
+         private static Assembly OnAssemblyResolve(object sender, ResolveEventArgs args)
+         {
+             var assemblyName = new AssemblyName(args.Name);
+             var assemblyPath = Path.Combine(_addInDirectory, assemblyName.Name + ".dll");
+
+             if (File.Exists(assemblyPath))
+             {
+                 return Assembly.LoadFrom(assemblyPath);
+             }
+
+             return null;
+         }
 
          private OneNote.Application _oneNoteApp;
          private IRibbonUI ribbon;
@@ -134,27 +169,113 @@ using OneNote = Microsoft.Office.Interop.OneNote;
         {
             try
             {
-                var owner = new Win32Window(GetForegroundWindow());
-                using (var dialog = new SettingsDialog(_appSettings))
-                {
-                    if (dialog.ShowDialog(owner) == DialogResult.OK)
-                    {
-                        _appSettings = dialog.GetUpdatedSettings();
-                        _settingsManager.Save(_appSettings);
-                        ApplySettingsToStyleConfig();
-
-                        // Refresh Ribbon to update button visibility
-                        ribbon?.Invalidate();
-                    }
-                }
+                ShowWpfSettingsDialog();
             }
             catch (Exception ex)
             {
+                // 临时显示 WPF 错误，便于调试
                 ShowTopMostMessageBox(
-                    $"打开设置失败:\n\n{ex.Message}",
-                    "TeXShift - 错误",
+                    $"WPF 对话框失败，回退到 WinForms:\n\n{ex.Message}\n\n{ex.StackTrace}",
+                    "TeXShift - WPF 错误",
                     MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    MessageBoxIcon.Warning);
+
+                try
+                {
+                    ShowWinFormsSettingsDialog();
+                }
+                catch (Exception ex2)
+                {
+                    ShowTopMostMessageBox(
+                        $"打开设置失败:\n\n{ex2.Message}",
+                        "TeXShift - 错误",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Shows the WPF Material Design settings dialog.
+        /// </summary>
+        private void ShowWpfSettingsDialog()
+        {
+            var parentHwnd = GetForegroundWindow();
+            AppSettings updatedSettings = null;
+            bool dialogResult = false;
+            Exception threadException = null;
+
+            // WPF 需要 STA 线程
+            var thread = new System.Threading.Thread(() =>
+            {
+                try
+                {
+                    var dialog = new SettingsWindow(_appSettings);
+
+                    // Set WPF window's Owner to OneNote window
+                    var helper = new WindowInteropHelper(dialog);
+                    helper.Owner = parentHwnd;
+
+                    if (dialog.ShowDialog() == true)
+                    {
+                        updatedSettings = dialog.GetUpdatedSettings();
+                        dialogResult = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    threadException = ex;
+                }
+                finally
+                {
+                    // 确保 WPF Dispatcher 正确关闭，释放资源
+                    var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+                    dispatcher.InvokeShutdown();
+                }
+            });
+
+            thread.SetApartmentState(System.Threading.ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+
+            // 强制 GC 清理 WPF 资源
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            // 恢复焦点到 OneNote 窗口
+            SetForegroundWindow(parentHwnd);
+
+            if (threadException != null)
+                throw threadException;
+
+            if (dialogResult && updatedSettings != null)
+            {
+                _appSettings = updatedSettings;
+                _settingsManager.Save(_appSettings);
+                ApplySettingsToStyleConfig();
+
+                // Refresh Ribbon to update button visibility
+                ribbon?.Invalidate();
+            }
+        }
+
+        /// <summary>
+        /// Fallback: Shows the WinForms settings dialog.
+        /// </summary>
+        private void ShowWinFormsSettingsDialog()
+        {
+            var owner = new Win32Window(GetForegroundWindow());
+            using (var dialog = new SettingsDialog(_appSettings))
+            {
+                if (dialog.ShowDialog(owner) == DialogResult.OK)
+                {
+                    _appSettings = dialog.GetUpdatedSettings();
+                    _settingsManager.Save(_appSettings);
+                    ApplySettingsToStyleConfig();
+
+                    // Refresh Ribbon to update button visibility
+                    ribbon?.Invalidate();
+                }
             }
         }
 
