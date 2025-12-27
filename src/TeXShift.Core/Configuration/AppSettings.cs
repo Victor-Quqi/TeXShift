@@ -57,7 +57,7 @@ namespace TeXShift.Core.Configuration
     public class DebugSettings
     {
         /// <summary>
-        /// Whether to show debug buttons in the Ribbon (调试转换, 查看XML).
+        /// Whether to show debug buttons in the Ribbon (Test Conversion, View XML).
         /// Default: false (hidden).
         /// </summary>
         [DataMember]

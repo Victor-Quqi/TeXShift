@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:converters="clr-namespace:TeXShift.AddIn.UI.WPF.Converters"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
         Title="TeXShift 设置"
         Width="540" Height="620"
         WindowStartupLocation="CenterScreen"
@@ -33,10 +34,32 @@
                 <Setter Property="Margin" Value="0,0,0,12"/>
             </Style>
 
-            <!-- 小型按钮样式 -->
+            <!-- Small button style -->
             <Style x:Key="SmallOutlinedButton" TargetType="Button" BasedOn="{StaticResource MaterialDesignOutlinedButton}">
-                <Setter Property="Height" Value="28"/>
                 <Setter Property="Padding" Value="12,0"/>
+                <Setter Property="MinWidth" Value="76"/>
+                <Setter Property="MinHeight" Value="32"/>
+                <Setter Property="HorizontalAlignment" Value="Left"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+
+            <!-- Compact outlined fields: avoid explicit Height to prevent clipping/preview issues -->
+            <sys:Double x:Key="CompactFieldMinHeight">32</sys:Double>
+
+            <Style x:Key="CompactOutlinedTextBox" TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
+                <Setter Property="MinHeight" Value="{StaticResource CompactFieldMinHeight}"/>
+                <Setter Property="Padding" Value="10,0"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="materialDesign:TextFieldAssist.TextBoxViewMargin" Value="0"/>
+                <Setter Property="materialDesign:TextFieldAssist.DecorationVisibility" Value="Collapsed"/>
+            </Style>
+
+            <Style x:Key="CompactOutlinedComboBox" TargetType="ComboBox" BasedOn="{StaticResource MaterialDesignOutlinedComboBox}">
+                <Setter Property="MinHeight" Value="{StaticResource CompactFieldMinHeight}"/>
+                <Setter Property="Padding" Value="10,0"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="materialDesign:TextFieldAssist.TextBoxViewMargin" Value="0"/>
+                <Setter Property="materialDesign:TextFieldAssist.DecorationVisibility" Value="Collapsed"/>
             </Style>
         </ResourceDictionary>
     </Window.Resources>
@@ -63,7 +86,7 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="背景颜色" Style="{StaticResource SettingsLabel}"/>
-                                    <Border Grid.Column="1" Width="50" Height="28" CornerRadius="4" BorderBrush="Gray" BorderThickness="1"
+                                    <Border Grid.Column="1" Width="50" CornerRadius="4" BorderBrush="Gray" BorderThickness="1"
                                             Background="{Binding QuoteBlockBackgroundColor, Converter={StaticResource ColorToBrushConverter}}" Margin="0,0,8,0"/>
                                     <Button Grid.Column="2" Content="选择..." Click="PickQuoteBlockBgColor_Click" Style="{StaticResource SmallOutlinedButton}"/>
                                 </Grid>
@@ -153,7 +176,7 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="背景颜色" Style="{StaticResource SettingsLabel}"/>
-                                    <Border Grid.Column="1" Width="50" Height="28" CornerRadius="4" BorderBrush="Gray" BorderThickness="1"
+                                    <Border Grid.Column="1" Width="50" CornerRadius="4" BorderBrush="Gray" BorderThickness="1"
                                             Background="{Binding CodeBlockBackgroundColor, Converter={StaticResource ColorToBrushConverter}}" Margin="0,0,8,0"/>
                                     <Button Grid.Column="2" Content="选择..." Click="PickCodeBlockBgColor_Click" Style="{StaticResource SmallOutlinedButton}"/>
                                 </Grid>
@@ -165,7 +188,7 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="文字颜色" Style="{StaticResource SettingsLabel}"/>
-                                    <Border Grid.Column="1" Width="50" Height="28" CornerRadius="4" BorderBrush="Gray" BorderThickness="1"
+                                    <Border Grid.Column="1" Width="50" CornerRadius="4" BorderBrush="Gray" BorderThickness="1"
                                             Background="{Binding CodeBlockTextColor, Converter={StaticResource ColorToBrushConverter}}" Margin="0,0,8,0"/>
                                     <Button Grid.Column="2" Content="选择..." Click="PickCodeBlockTextColor_Click" Style="{StaticResource SmallOutlinedButton}"/>
                                 </Grid>
@@ -177,7 +200,7 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="字体" Style="{StaticResource SettingsLabel}"/>
                                     <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding CodeBlockFontFamily}"
-                                              Width="180" HorizontalAlignment="Left" Style="{StaticResource MaterialDesignOutlinedComboBox}">
+                                              Width="180" HorizontalAlignment="Left" Style="{StaticResource CompactOutlinedComboBox}">
                                         <ComboBox.ItemTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding}" FontFamily="{Binding}"/>
@@ -223,7 +246,7 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="背景颜色" Style="{StaticResource SettingsLabel}"/>
-                                    <Border Grid.Column="1" Width="50" Height="28" CornerRadius="4" BorderBrush="Gray" BorderThickness="1"
+                                    <Border Grid.Column="1" Width="50" CornerRadius="4" BorderBrush="Gray" BorderThickness="1"
                                             Background="{Binding InlineCodeBackgroundColor, Converter={StaticResource ColorToBrushConverter}}" Margin="0,0,8,0"/>
                                     <Button Grid.Column="2" Content="选择..." Click="PickInlineCodeBgColor_Click" Style="{StaticResource SmallOutlinedButton}"/>
                                 </Grid>
@@ -235,7 +258,7 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="字体" Style="{StaticResource SettingsLabel}"/>
                                     <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding InlineCodeFontFamily}"
-                                              Width="180" HorizontalAlignment="Left" Style="{StaticResource MaterialDesignOutlinedComboBox}">
+                                              Width="180" HorizontalAlignment="Left" Style="{StaticResource CompactOutlinedComboBox}">
                                         <ComboBox.ItemTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding}" FontFamily="{Binding}"/>
@@ -263,7 +286,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox Grid.Column="0" Text="{Binding DebugOutputPath, UpdateSourceTrigger=PropertyChanged}"
-                                         Style="{StaticResource MaterialDesignOutlinedTextBox}" Margin="0,0,8,0"/>
+                                         Style="{StaticResource CompactOutlinedTextBox}" Margin="0,0,8,0"/>
                                 <Button Grid.Column="1" Content="浏览..." Click="BrowseFolder_Click"
                                         Style="{StaticResource SmallOutlinedButton}"/>
                             </Grid>

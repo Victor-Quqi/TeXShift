@@ -214,7 +214,7 @@ namespace TeXShift.AddIn.UI
                 Size = new Size(150, 23),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            _codeBlockFontComboBox.Items.AddRange(new[] { "Consolas", "Courier New", "Source Code Pro", "Fira Code", "JetBrains Mono" });
+            _codeBlockFontComboBox.Items.AddRange(FontPresets.MonospaceFonts);
             tab.Controls.Add(fontLabel);
             tab.Controls.Add(_codeBlockFontComboBox);
             y += 35;
@@ -288,7 +288,7 @@ namespace TeXShift.AddIn.UI
                 Size = new Size(150, 23),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            _inlineCodeFontComboBox.Items.AddRange(new[] { "Consolas", "Courier New", "Source Code Pro", "Fira Code", "JetBrains Mono" });
+            _inlineCodeFontComboBox.Items.AddRange(FontPresets.MonospaceFonts);
             tab.Controls.Add(inlineFontLabel);
             tab.Controls.Add(_inlineCodeFontComboBox);
 

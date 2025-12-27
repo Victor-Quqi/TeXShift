@@ -57,6 +57,29 @@
 - .NET Framework 4.8
 - WebView2 Runtime（用于 LaTeX 渲染）
 
+## 从源码构建
+
+对于想要从源码构建 TeXShift 的开发者：
+
+1. **克隆仓库**
+   ```bash
+   git clone https://github.com/Victor-Quqi/TeXShift.git
+   cd TeXShift
+   ```
+
+2. **配置 MathJax**（仅首次需要）
+   ```powershell
+   .\setup-mathjax.ps1
+   ```
+   此脚本从 npm 下载 MathJax（约 23 MB）。需要安装 Node.js 和 npm。
+
+3. **构建项目**
+   - **完整解决方案**（插件）：在 Visual Studio 中打开 → 生成 → 重新生成解决方案（Debug|x64）
+   - **仅核心库和测试**：
+     ```powershell
+     .\build.ps1 -Target Build -Configuration Debug
+     ```
+
 ## 安装
 
 项目仍在开发中，暂未发布稳定版本。

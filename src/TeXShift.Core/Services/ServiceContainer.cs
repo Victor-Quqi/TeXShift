@@ -1,6 +1,5 @@
 using System;
 using Markdig;
-using Markdig.Extensions.Mathematics;
 using TeXShift.Core.Abstractions;
 using TeXShift.Core.Configuration;
 using TeXShift.Core.Logging;

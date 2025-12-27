@@ -75,6 +75,12 @@ artifacts/
 *.svclog
 *.scc
 
+# Agent configuration
+.claude/
+nul
+AGENTS.md
+CLAUDE.md
+
 # Chutzpah Test files
 _Chutzpah*
 
@@ -203,6 +209,8 @@ ClientBin/
 *.publishsettings
 orleans.codegen.cs
 
+misc/
+
 # Since there are multiple workflows, uncomment next line to ignore bower_components
 # (https://github.com/github/gitignore/pull/1529#issuecomment-104372622)
 #bower_components/
@@ -288,10 +296,9 @@ __pycache__/
 *.odx.cs
 *.xsd.cs
 
-misc/
+# Debug outputs
 DebugLogs/
 DebugOutput/
-.claude/
-nul
-AGENTS.md
-CLAUDE.md
+
+# MathJax - downloaded from npm during setup
+src/TeXShift.AddIn/Lib/mathjax/

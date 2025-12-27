@@ -57,6 +57,29 @@ English | [简体中文](README.zh-CN.md)
 - .NET Framework 4.8
 - WebView2 Runtime (for LaTeX rendering)
 
+## Building from Source
+
+For developers who want to build TeXShift from source:
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Victor-Quqi/TeXShift.git
+   cd TeXShift
+   ```
+
+2. **Setup MathJax** (first time only)
+   ```powershell
+   .\setup-mathjax.ps1
+   ```
+   This downloads MathJax from npm (~23 MB). Requires Node.js and npm.
+
+3. **Build the project**
+   - **Full solution** (Add-in): Open in Visual Studio → Build → Rebuild Solution (Debug|x64)
+   - **Core + Tests only**:
+     ```powershell
+     .\build.ps1 -Target Build -Configuration Debug
+     ```
+
 ## Installation
 
 The project is still under active development. No stable release yet.

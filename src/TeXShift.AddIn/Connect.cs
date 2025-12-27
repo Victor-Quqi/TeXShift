@@ -173,7 +173,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             }
             catch (Exception ex)
             {
-                // 临时显示 WPF 错误，便于调试
+                // Temporarily show WPF error for debugging
                 ShowTopMostMessageBox(
                     $"WPF 对话框失败，回退到 WinForms:\n\n{ex.Message}\n\n{ex.StackTrace}",
                     "TeXShift - WPF 错误",
@@ -205,7 +205,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             bool dialogResult = false;
             Exception threadException = null;
 
-            // WPF 需要 STA 线程
+            // WPF requires STA thread
             var thread = new System.Threading.Thread(() =>
             {
                 try
@@ -228,7 +228,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                 }
                 finally
                 {
-                    // 确保 WPF Dispatcher 正确关闭，释放资源
+                    // Ensure WPF Dispatcher is closed correctly to release resources
                     var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
                     dispatcher.InvokeShutdown();
                 }
@@ -238,11 +238,11 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             thread.Start();
             thread.Join();
 
-            // 强制 GC 清理 WPF 资源
+            // Force GC to clean up WPF resources
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            // 恢复焦点到 OneNote 窗口
+            // Restore focus to OneNote window
             SetForegroundWindow(parentHwnd);
 
             if (threadException != null)

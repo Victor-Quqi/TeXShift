@@ -159,17 +159,8 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
 
         #region Font Options
 
-        public ObservableCollection<string> AvailableFonts { get; } = new ObservableCollection<string>
-        {
-            "Consolas",
-            "Courier New",
-            "Source Code Pro",
-            "Fira Code",
-            "JetBrains Mono",
-            "Cascadia Code",
-            "Monaco",
-            "Menlo"
-        };
+        public ObservableCollection<string> AvailableFonts { get; } =
+            new ObservableCollection<string>(FontPresets.MonospaceFonts);
 
         #endregion
 

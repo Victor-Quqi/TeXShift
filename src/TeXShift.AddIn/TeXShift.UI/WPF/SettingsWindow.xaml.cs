@@ -48,7 +48,7 @@ namespace TeXShift.AddIn.UI.WPF
             };
             this.Closing += (s, e) =>
             {
-                // 在窗口关闭前，主动将焦点设置回 Owner，避免焦点闪烁
+                // Set focus back to Owner before closing to avoid focus flash
                 if (_ownerHandle != IntPtr.Zero)
                 {
                     SetForegroundWindow(_ownerHandle);

@@ -216,12 +216,12 @@ namespace TeXShift.Core.Configuration
         // Default font size configurations for headings
         private static readonly Dictionary<string, FontConfig> DefaultFonts = new Dictionary<string, FontConfig>
         {
-            { "h1", new FontConfig(22.0, true) },    // 一级标题：22pt 粗体
-            { "h2", new FontConfig(20.0, true) },    // 二级标题：20pt 粗体
-            { "h3", new FontConfig(18.0, true) },    // 三级标题：18pt 粗体
-            { "h4", new FontConfig(16.0, true) },    // 四级标题：16pt 粗体
-            { "h5", new FontConfig(14.0, true) },    // 五级标题：14pt 粗体
-            { "h6", new FontConfig(11.0, true) }     // 六级标题：11pt 粗体
+            { "h1", new FontConfig(22.0, true) },    // Level 1 heading: 22pt bold
+            { "h2", new FontConfig(20.0, true) },    // Level 2 heading: 20pt bold
+            { "h3", new FontConfig(18.0, true) },    // Level 3 heading: 18pt bold
+            { "h4", new FontConfig(16.0, true) },    // Level 4 heading: 16pt bold
+            { "h5", new FontConfig(14.0, true) },    // Level 5 heading: 14pt bold
+            { "h6", new FontConfig(11.0, true) }     // Level 6 heading: 11pt bold
        };
 
        // Default style for inline code
