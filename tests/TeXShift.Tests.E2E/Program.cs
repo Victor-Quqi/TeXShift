@@ -21,41 +21,48 @@ namespace TeXShift.Tests.E2E
         [STAThread]
         private static int Main(string[] args)
         {
-            var rootCommand = new RootCommand("TeXShift E2E Test Runner");
-            var convertCommand = new Command("convert", "Convert markdown and export results");
-
-            var inputOption = new Option<FileInfo>(
-                aliases: new[] { "--input", "-i" },
-                description: "Markdown file path");
-
-            var markdownOption = new Option<string>(
-                aliases: new[] { "--markdown", "-m" },
-                description: "Inline markdown string");
-
-            var outputOption = new Option<DirectoryInfo>(
-                aliases: new[] { "--output", "-o" },
-                description: "Output directory (required)")
-            { IsRequired = true };
-
-            var cleanupOption = new Option<bool>(
-                "--cleanup",
-                description: "Clean up test page and notebook after conversion (default: true)",
-                getDefaultValue: () => true);
-
-            convertCommand.AddOption(inputOption);
-            convertCommand.AddOption(markdownOption);
-            convertCommand.AddOption(outputOption);
-            convertCommand.AddOption(cleanupOption);
-
-            convertCommand.SetHandler(async (input, markdown, output, cleanup) =>
+            var inputOption = new Option<FileInfo>("--input", "-i")
             {
-                Environment.ExitCode = await RunConvert(input, markdown, output, cleanup).ConfigureAwait(false);
-            }, inputOption, markdownOption, outputOption, cleanupOption);
+                Description = "Markdown file path"
+            };
 
-            rootCommand.AddCommand(convertCommand);
+            var markdownOption = new Option<string>("--markdown", "-m")
+            {
+                Description = "Inline markdown string"
+            };
 
-            int parseExitCode = rootCommand.InvokeAsync(args).GetAwaiter().GetResult();
-            return Environment.ExitCode != 0 ? Environment.ExitCode : parseExitCode;
+            var outputOption = new Option<DirectoryInfo>("--output", "-o")
+            {
+                Description = "Output directory (required)",
+                Required = true
+            };
+
+            var cleanupOption = new Option<bool>("--cleanup")
+            {
+                Description = "Clean up test page and notebook after conversion (default: true)",
+                DefaultValueFactory = _ => true
+            };
+
+            var convertCommand = new Command("convert", "Convert markdown and export results");
+            convertCommand.Options.Add(inputOption);
+            convertCommand.Options.Add(markdownOption);
+            convertCommand.Options.Add(outputOption);
+            convertCommand.Options.Add(cleanupOption);
+
+            convertCommand.SetAction(async (parseResult, cancellationToken) =>
+            {
+                var input = parseResult.GetValue(inputOption);
+                var markdown = parseResult.GetValue(markdownOption);
+                var output = parseResult.GetValue(outputOption);
+                var cleanup = parseResult.GetValue(cleanupOption);
+
+                return await RunConvert(input, markdown, output, cleanup).ConfigureAwait(false);
+            });
+
+            var rootCommand = new RootCommand("TeXShift E2E Test Runner");
+            rootCommand.Subcommands.Add(convertCommand);
+
+            return rootCommand.Parse(args).Invoke();
         }
 
         private static async Task<int> RunConvert(FileInfo input, string markdown, DirectoryInfo output, bool cleanup)
