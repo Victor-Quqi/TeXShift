@@ -1,280 +1,193 @@
-using ColorCode;
-using ColorCode.Compilation;
-using ColorCode.Compilation.Languages;
-using ColorCode.Parsing;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using TeXShift.Core.Configuration;
 using TeXShift.Core.Utils;
+using TextMateSharp.Grammars;
+using TextMateSharp.Registry;
+using TextMateSharp.Themes;
 
 namespace TeXShift.Core.Syntax
 {
     /// <summary>
-    /// Syntax highlighter that outputs OneNote-compatible inline styles.
-    /// Inherits from CodeColorizerBase to use ColorCode's parsing infrastructure.
+    /// Syntax highlighter using TextMateSharp that outputs OneNote-compatible inline styles.
+    /// Uses VS Code grammars for accurate syntax highlighting across 40+ languages.
     /// </summary>
-    internal class OneNoteCodeHighlighter : CodeColorizerBase, ISyntaxHighlighter
+    internal class OneNoteCodeHighlighter : ISyntaxHighlighter
     {
         private readonly OneNoteStyleConfig.CodeBlockConfig _config;
-        private readonly Dictionary<string, string> _scopeColors;
-        private StringBuilder _outputBuffer;
+        private readonly Registry _registry;
+        private readonly RegistryOptions _registryOptions;
+        private readonly Theme _theme;
+
+        // Cache loaded grammars for performance
+        private readonly Dictionary<string, IGrammar> _grammarCache;
+
+        // Language aliases for unsupported languages (fallback to similar syntax)
+        private static readonly Dictionary<string, string> LanguageAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "kotlin", "java" },
+            { "kt", "java" },
+            { "scala", "java" },
+            { "tsx", "typescriptbasics" },
+            { "jsx", "javascript" },
+            { "sh", "shellscript" },
+            { "bash", "shellscript" },
+            { "zsh", "shellscript" },
+            { "ps1", "powershell" },
+            { "yml", "yaml" },
+            { "md", "markdownbasics" },
+            { "cs", "csharp" },
+            { "fs", "fsharp" },
+            { "ts", "typescriptbasics" },
+            { "js", "javascript" },
+            { "py", "python" },
+            { "rb", "ruby" },
+            { "rs", "rust" },
+        };
 
         public OneNoteCodeHighlighter(OneNoteStyleConfig.CodeBlockConfig config)
-            : base(null, null)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _scopeColors = CreateGitHubDarkTheme();
+            _grammarCache = new Dictionary<string, IGrammar>(StringComparer.OrdinalIgnoreCase);
+
+            // Use built-in Dark Plus theme (similar to GitHub Dark)
+            _registryOptions = new RegistryOptions(ThemeName.DarkPlus);
+            _registry = new Registry(_registryOptions);
+            _theme = _registry.GetTheme();
         }
 
-        public string HighlightLine(string line, string language)
+        public IList<string> HighlightBlock(IList<string> lines, string language)
         {
-            if (string.IsNullOrEmpty(line))
+            if (lines == null || lines.Count == 0)
             {
-                return string.Empty;
+                return new List<string>();
             }
 
+            // No highlighting: just escape HTML
             if (!_config.EnableSyntaxHighlight || string.IsNullOrEmpty(language))
             {
-                return HtmlEscaper.Escape(line);
+                return lines.Select(l => HtmlEscaper.Escape(l ?? "")).ToList();
             }
 
-            var lang = FindLanguage(language);
-            if (lang == null)
+            var grammar = GetOrLoadGrammar(language);
+            if (grammar == null)
             {
-                return HtmlEscaper.Escape(line);
+                return lines.Select(l => HtmlEscaper.Escape(l ?? "")).ToList();
             }
 
-            try
-            {
-                _outputBuffer = new StringBuilder();
-                languageParser.Parse(line, lang, (parsedCode, scopes) => Write(parsedCode, scopes));
-                return _outputBuffer.ToString();
-            }
-            catch
-            {
-                return HtmlEscaper.Escape(line);
-            }
-        }
+            var result = new List<string>(lines.Count);
+            IStateStack ruleStack = null;  // Cross-line state for multi-line comments/strings
 
-        protected override void Write(string parsedSourceCode, IList<Scope> scopes)
-        {
-            if (scopes == null || scopes.Count == 0)
+            foreach (var line in lines)
             {
-                _outputBuffer.Append(HtmlEscaper.Escape(parsedSourceCode));
-                return;
-            }
-
-            var styleInsertions = new List<TextInsertion>();
-            foreach (var scope in scopes)
-            {
-                GetStyleInsertions(parsedSourceCode, scope, styleInsertions);
-            }
-
-            styleInsertions.Sort((a, b) => a.Index.CompareTo(b.Index));
-
-            int offset = 0;
-            foreach (var insertion in styleInsertions)
-            {
-                var text = parsedSourceCode.Substring(offset, insertion.Index - offset);
-                _outputBuffer.Append(HtmlEscaper.Escape(text));
-                _outputBuffer.Append(insertion.Text);
-                offset = insertion.Index;
-            }
-
-            // Write remaining text
-            if (offset < parsedSourceCode.Length)
-            {
-                _outputBuffer.Append(HtmlEscaper.Escape(parsedSourceCode.Substring(offset)));
-            }
-        }
-
-        private void GetStyleInsertions(string parsedSourceCode, Scope scope, List<TextInsertion> styleInsertions)
-        {
-            var color = GetColorForScope(scope.Name);
-
-            // Opening tag
-            styleInsertions.Add(new TextInsertion
-            {
-                Index = scope.Index,
-                Text = color != _config.DefaultTextColor
-                    ? $"<span style='color:{color}'>"
-                    : ""
-            });
-
-            // Process children recursively
-            if (scope.Children != null)
-            {
-                foreach (var child in scope.Children)
+                if (string.IsNullOrEmpty(line))
                 {
-                    GetStyleInsertions(parsedSourceCode, child, styleInsertions);
+                    result.Add(string.Empty);
+                    continue;
+                }
+
+                try
+                {
+                    var tokenResult = grammar.TokenizeLine(line, ruleStack, TimeSpan.MaxValue);
+                    ruleStack = tokenResult.RuleStack;  // Preserve state for next line
+                    result.Add(TokenizeResultToHtml(line, tokenResult));
+                }
+                catch
+                {
+                    result.Add(HtmlEscaper.Escape(line));
                 }
             }
 
-            // Closing tag
-            styleInsertions.Add(new TextInsertion
-            {
-                Index = scope.Index + scope.Length,
-                Text = color != _config.DefaultTextColor ? "</span>" : ""
-            });
+            return result;
         }
 
-        private string GetColorForScope(string scopeName)
+        private string TokenizeResultToHtml(string line, ITokenizeLineResult tokenResult)
         {
-            if (_scopeColors.TryGetValue(scopeName, out var color))
+            var output = new StringBuilder();
+
+            foreach (var token in tokenResult.Tokens)
             {
-                return color;
+                int start = System.Math.Min(token.StartIndex, line.Length);
+                int end = System.Math.Min(token.EndIndex, line.Length);
+
+                if (start >= end)
+                {
+                    continue;  // Skip empty tokens
+                }
+
+                string text = line.Substring(start, end - start);
+                string color = GetTokenColor(token.Scopes);
+
+                if (!string.IsNullOrEmpty(color) && !color.Equals(_config.DefaultTextColor, StringComparison.OrdinalIgnoreCase))
+                {
+                    output.Append($"<span style='color:{color}'>");
+                    output.Append(HtmlEscaper.Escape(text));
+                    output.Append("</span>");
+                }
+                else
+                {
+                    output.Append(HtmlEscaper.Escape(text));
+                }
             }
-            return _config.DefaultTextColor;
+
+            return output.ToString();
+        }
+
+        private string GetTokenColor(IReadOnlyList<string> scopes)
+        {
+            // Match scopes in reverse order (most specific first)
+            for (int i = scopes.Count - 1; i >= 0; i--)
+            {
+                var rules = _theme.Match(new string[] { scopes[i] });
+                foreach (var rule in rules)
+                {
+                    if (rule.foreground != 0)
+                    {
+                        return _theme.GetColor(rule.foreground);
+                    }
+                }
+            }
+            return null;
         }
 
         public bool IsLanguageSupported(string language)
         {
-            return FindLanguage(language) != null;
+            return GetOrLoadGrammar(language) != null;
         }
 
-        private ILanguage FindLanguage(string language)
+        private IGrammar GetOrLoadGrammar(string language)
         {
             if (string.IsNullOrEmpty(language))
             {
                 return null;
             }
 
-            // Try direct lookup first
-            var lang = Languages.FindById(language);
-            if (lang != null)
+            if (_grammarCache.TryGetValue(language, out var cached))
             {
-                return lang;
+                return cached;
             }
 
-            // Try common aliases
-            var lowerLang = language.ToLowerInvariant();
-            switch (lowerLang)
+            // Try alias first if direct language not found
+            string effectiveLanguage = language;
+            if (LanguageAliases.TryGetValue(language, out var alias))
             {
-                case "js":
-                case "javascript":
-                    return Languages.JavaScript;
-                case "ts":
-                case "typescript":
-                    return Languages.Typescript;
-                case "py":
-                case "python":
-                    return Languages.Python;
-                case "cs":
-                case "c#":
-                case "csharp":
-                    return Languages.CSharp;
-                case "cpp":
-                case "c++":
-                case "c":
-                    return Languages.Cpp;
-                case "sh":
-                case "bash":
-                case "shell":
-                case "powershell":
-                    return Languages.PowerShell;
-                case "md":
-                case "markdown":
-                    return Languages.Markdown;
-                case "xml":
-                    return Languages.Xml;
-                case "html":
-                case "htm":
-                    return Languages.Html;
-                case "css":
-                    return Languages.Css;
-                case "sql":
-                    return Languages.Sql;
-                case "java":
-                    return Languages.Java;
-                case "php":
-                    return Languages.Php;
-                case "vb":
-                case "vbnet":
-                    return Languages.VbDotNet;
-                case "fs":
-                case "fsharp":
-                    return Languages.FSharp;
-                case "hs":
-                case "haskell":
-                    return Languages.Haskell;
-                case "fortran":
-                    return Languages.Fortran;
-                case "matlab":
-                    return Languages.MATLAB;
-                // JSON uses JavaScript highlighting (JSON is a subset of JS object literals)
-                case "json":
-                    return Languages.JavaScript;
-                // Languages without ColorCode support - return null for plain text display
-                // Go, Rust, Kotlin, Swift, Ruby, Lua, R, Scala, etc.
-                default:
-                    return null;
+                effectiveLanguage = alias;
             }
-        }
 
-        private Dictionary<string, string> CreateGitHubDarkTheme()
-        {
-            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            // RegistryOptions handles language ID -> scope mapping internally
+            string scopeName = _registryOptions.GetScopeByLanguageId(effectiveLanguage);
+
+            if (string.IsNullOrEmpty(scopeName))
             {
-                // Keywords
-                { "Keyword", "#FF7B72" },
+                _grammarCache[language] = null;
+                return null;
+            }
 
-                // Strings
-                { "String", "#A5D6FF" },
-
-                // Comments
-                { "Comment", "#8B949E" },
-
-                // Numbers
-                { "Number", "#79C0FF" },
-
-                // Built-in functions (Python: print, len, abs, etc.)
-                { "Intrinsic", "#FFA657" },
-
-                // Types and classes
-                { "Type", "#FFA657" },
-                { "TypeVariable", "#FFA657" },
-                { "NameSpace", "#FFA657" },
-                { "ClassName", "#FFA657" },
-
-                // HTML/XML
-                { "HtmlComment", "#8B949E" },
-                { "HtmlTagDelimiter", "#7EE787" },
-                { "HtmlElementName", "#7EE787" },
-                { "HtmlAttributeName", "#79C0FF" },
-                { "HtmlAttributeValue", "#A5D6FF" },
-                { "HtmlOperator", "#C9D1D9" },
-                { "HtmlEntity", "#79C0FF" },
-                { "XmlDelimiter", "#7EE787" },
-                { "XmlName", "#7EE787" },
-                { "XmlAttribute", "#79C0FF" },
-                { "XmlAttributeQuotes", "#A5D6FF" },
-                { "XmlAttributeValue", "#A5D6FF" },
-                { "XmlCDataSection", "#C9D1D9" },
-                { "XmlComment", "#8B949E" },
-
-                // CSS
-                { "CssPropertyName", "#79C0FF" },
-                { "CssPropertyValue", "#A5D6FF" },
-                { "CssSelector", "#7EE787" },
-
-                // SQL
-                { "SqlSystemFunction", "#D2A8FF" },
-
-                // Preprocessor
-                { "PreprocessorKeyword", "#FF7B72" },
-
-                // Others
-                { "Operator", "#FF7B72" },
-                { "Punctuation", "#C9D1D9" },
-                { "PlainText", "#C9D1D9" }
-            };
-        }
-
-        private class TextInsertion
-        {
-            public int Index { get; set; }
-            public string Text { get; set; }
+            var grammar = _registry.LoadGrammar(scopeName);
+            _grammarCache[language] = grammar;
+            return grammar;
         }
     }
 }

@@ -170,4 +170,14 @@
     <Error Condition="!Exists('..\..\packages\MaterialDesignThemes.5.3.0\build\MaterialDesignThemes.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\MaterialDesignThemes.5.3.0\build\MaterialDesignThemes.targets'))" />
   </Target>
   <Import Project="..\..\packages\MaterialDesignThemes.5.3.0\build\MaterialDesignThemes.targets" Condition="Exists('..\..\packages\MaterialDesignThemes.5.3.0\build\MaterialDesignThemes.targets')" />
+  <!-- Copy ALL dependencies from Core output (SDK-style project dependencies not auto-copied to traditional csproj) -->
+  <Target Name="CopyCoreDependencies" AfterTargets="Build">
+    <ItemGroup>
+      <CoreDependencies Include="..\TeXShift.Core\bin\$(Platform)\$(Configuration)\net48\*.dll"
+                        Exclude="..\TeXShift.Core\bin\$(Platform)\$(Configuration)\net48\TeXShift.Core.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(CoreDependencies)"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>

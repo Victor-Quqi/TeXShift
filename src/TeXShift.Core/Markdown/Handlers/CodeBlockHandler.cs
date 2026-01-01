@@ -58,25 +58,26 @@ namespace TeXShift.Core.Markdown.Handlers
             // Get code content as lines
             var codeLines = GetCodeLines(codeBlock);
 
-            // Create syntax highlighter
+            // Decode HTML entity placeholders before syntax highlighting
+            // This converts placeholders (from HtmlEntityProcessor.Protect) back to original characters
+            // so that TextMateSharp can correctly tokenize code (e.g., recognize string delimiters)
+            var decodedLines = codeLines.Select(line => context.DecodeEntityPlaceholders(line)).ToList();
+
+            // Create syntax highlighter and highlight entire block with cross-line state
             var highlighter = new OneNoteCodeHighlighter(codeConfig);
+            var highlightedLines = highlighter.HighlightBlock(decodedLines, language);
             var oeStyle = codeConfig.GetOEStyle();
 
             // Create an OE for each line of code
-            foreach (var line in codeLines)
+            foreach (var highlightedContent in highlightedLines)
             {
-                var highlightedContent = highlighter.HighlightLine(line, language);
-
                 // If line is empty, use a non-breaking space to maintain line height
-                if (string.IsNullOrEmpty(highlightedContent))
-                {
-                    highlightedContent = "&nbsp;";
-                }
+                var content = string.IsNullOrEmpty(highlightedContent) ? "&nbsp;" : highlightedContent;
 
                 var lineOe = new XElement(ns + "OE",
                     new XAttribute("style", oeStyle),
                     new XAttribute("spaceBetween", codeConfig.GetSpaceBetween()),
-                    new XElement(ns + "T", new XCData(highlightedContent)));
+                    new XElement(ns + "T", new XCData(content)));
 
                 oeChildren.Add(lineOe);
             }

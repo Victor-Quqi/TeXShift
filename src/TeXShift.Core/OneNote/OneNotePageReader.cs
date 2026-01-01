@@ -182,13 +182,9 @@ namespace TeXShift.Core.OneNote
             var sb = new StringBuilder();
             var topLevelOEs = parentOEs.Where(oe => oe.Parent?.Parent != null && !parentOEs.Contains(oe.Parent.Parent)).ToList();
 
-            for (int i = 0; i < topLevelOEs.Count; i++)
+            foreach (var oe in topLevelOEs)
             {
-                ProcessOE(topLevelOEs[i], ns, sb, 0);
-                if (i < topLevelOEs.Count - 1)
-                {
-                    sb.AppendLine();
-                }
+                ProcessOE(oe, ns, sb, 0);
             }
 
             return sb.ToString();

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace TeXShift.Core.Syntax
 {
     /// <summary>
@@ -6,13 +8,13 @@ namespace TeXShift.Core.Syntax
     public interface ISyntaxHighlighter
     {
         /// <summary>
-        /// Highlights a line of code and returns OneNote-compatible HTML.
-        /// The output uses only inline styles (e.g., &lt;span style='color:#xxx'&gt;).
+        /// Highlights an entire code block with proper cross-line state preservation.
+        /// This is the preferred method for code blocks with multi-line comments or strings.
         /// </summary>
-        /// <param name="line">The line of code to highlight.</param>
+        /// <param name="lines">The lines of code to highlight.</param>
         /// <param name="language">The programming language identifier (e.g., "csharp", "javascript").</param>
-        /// <returns>HTML string with syntax highlighting spans.</returns>
-        string HighlightLine(string line, string language);
+        /// <returns>List of HTML strings with syntax highlighting spans, one per input line.</returns>
+        IList<string> HighlightBlock(IList<string> lines, string language);
 
         /// <summary>
         /// Checks if the specified language is supported for syntax highlighting.
