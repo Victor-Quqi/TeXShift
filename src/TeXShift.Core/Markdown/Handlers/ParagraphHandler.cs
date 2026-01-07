@@ -218,51 +218,70 @@ namespace TeXShift.Core.Markdown.Handlers
 
             for (int i = 0; i < inlines.Count; i++)
             {
-                var inline = inlines[i];
-
-                if (inline is LineBreakInline lineBreak && !lineBreak.IsHard)
-                {
-                    // Check if this soft break is followed by a standalone image
-                    if (i + 1 < inlines.Count && IsStandaloneImageLine(inlines, i + 1, out var imageLink, out var endIndex))
-                    {
-                        // Save current text segment if not empty
-                        if (currentTextInlines.Any(IsNonEmptyInline))
-                        {
-                            segments.Add(new ParagraphSegment { IsImage = false, TextInlines = new List<Inline>(currentTextInlines) });
-                        }
-                        currentTextInlines.Clear();
-
-                        // Add image segment
-                        segments.Add(new ParagraphSegment { IsImage = true, ImageLink = imageLink });
-
-                        // Skip to after the image line
-                        i = endIndex;
-                        continue;
-                    }
-                    else
-                    {
-                        currentTextInlines.Add(inline);
-                    }
-                }
-                else if (i == 0 && IsStandaloneImageLine(inlines, 0, out var firstImageLink, out var firstEndIndex))
-                {
-                    // Paragraph starts with a standalone image
-                    segments.Add(new ParagraphSegment { IsImage = true, ImageLink = firstImageLink });
-                    i = firstEndIndex;
-                }
-                else
-                {
-                    currentTextInlines.Add(inline);
-                }
+                i = ProcessInlineForImageSplit(inlines, i, segments, currentTextInlines);
             }
 
             // Add remaining text segment if not empty
-            if (currentTextInlines.Any(IsNonEmptyInline))
-            {
-                segments.Add(new ParagraphSegment { IsImage = false, TextInlines = currentTextInlines });
-            }
+            AddTextSegmentIfNotEmpty(segments, currentTextInlines);
 
             return segments;
+        }
+
+        /// <summary>
+        /// Processes a single inline element during image splitting. Returns the new index position.
+        /// </summary>
+        private int ProcessInlineForImageSplit(List<Inline> inlines, int i, List<ParagraphSegment> segments, List<Inline> currentTextInlines)
+        {
+            var inline = inlines[i];
+
+            // Check for soft break followed by standalone image
+            if (inline is LineBreakInline lineBreak && !lineBreak.IsHard)
+            {
+                if (TryAddStandaloneImageAfterBreak(inlines, i, segments, currentTextInlines, out var endIndex))
+                {
+                    return endIndex;
+                }
+                currentTextInlines.Add(inline);
+                return i;
+            }
+
+            // Check for standalone image at paragraph start
+            if (i == 0 && IsStandaloneImageLine(inlines, 0, out var firstImageLink, out var firstEndIndex))
+            {
+                segments.Add(new ParagraphSegment { IsImage = true, ImageLink = firstImageLink });
+                return firstEndIndex;
+            }
+
+            currentTextInlines.Add(inline);
+            return i;
+        }
+
+        /// <summary>
+        /// Tries to add a standalone image segment after a soft break. Returns true if successful.
+        /// </summary>
+        private bool TryAddStandaloneImageAfterBreak(List<Inline> inlines, int breakIndex, List<ParagraphSegment> segments, List<Inline> currentTextInlines, out int endIndex)
+        {
+            endIndex = breakIndex;
+
+            if (breakIndex + 1 >= inlines.Count) return false;
+            if (!IsStandaloneImageLine(inlines, breakIndex + 1, out var imageLink, out endIndex)) return false;
+
+            AddTextSegmentIfNotEmpty(segments, currentTextInlines);
+            currentTextInlines.Clear();
+            segments.Add(new ParagraphSegment { IsImage = true, ImageLink = imageLink });
+
+            return true;
+        }
+
+        /// <summary>
+        /// Adds a text segment to the list if it contains non-empty inlines.
+        /// </summary>
+        private void AddTextSegmentIfNotEmpty(List<ParagraphSegment> segments, List<Inline> textInlines)
+        {
+            if (textInlines.Any(IsNonEmptyInline))
+            {
+                segments.Add(new ParagraphSegment { IsImage = false, TextInlines = new List<Inline>(textInlines) });
+            }
         }
 
         /// <summary>
