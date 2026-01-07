@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
+using TeXShift.Core.Errors;
+using TeXShift.Core.Localization;
 
 namespace TeXShift.Core.Math
 {
@@ -44,35 +46,44 @@ namespace TeXShift.Core.Math
             try
             {
                 if (_isInitialized) return;
-
-                // Start dedicated STA thread for WebView2
-                _staReady = new TaskCompletionSource<bool>();
-                _staThread = new Thread(StaThreadStart);
-                _staThread.SetApartmentState(ApartmentState.STA);
-                _staThread.IsBackground = true;
-                _staThread.Name = "TeXShift_WebView2_STA";
-                _staThread.Start();
-
-                // Wait for STA thread to be ready
-                await _staReady.Task.ConfigureAwait(false);
-
-                // Initialize WebView2 on STA thread
-                var initTcs = new TaskCompletionSource<bool>();
-                _staSyncContext.Post(async _ =>
+                try
                 {
-                    try
-                    {
-                        await InitializeWebView2Async().ConfigureAwait(false);
-                        initTcs.SetResult(true);
-                    }
-                    catch (Exception ex)
-                    {
-                        initTcs.SetException(ex);
-                    }
-                }, null);
+                    // Start dedicated STA thread for WebView2
+                    _staReady = new TaskCompletionSource<bool>();
+                    _staThread = new Thread(StaThreadStart);
+                    _staThread.SetApartmentState(ApartmentState.STA);
+                    _staThread.IsBackground = true;
+                    _staThread.Name = "TeXShift_WebView2_STA";
+                    _staThread.Start();
 
-                await initTcs.Task.ConfigureAwait(false);
-                _isInitialized = true;
+                    // Wait for STA thread to be ready
+                    await _staReady.Task.ConfigureAwait(false);
+
+                    // Initialize WebView2 on STA thread
+                    var initTcs = new TaskCompletionSource<bool>();
+                    _staSyncContext.Post(async _ =>
+                    {
+                        try
+                        {
+                            await InitializeWebView2Async().ConfigureAwait(false);
+                            initTcs.SetResult(true);
+                        }
+                        catch (Exception ex)
+                        {
+                            initTcs.SetException(ex);
+                        }
+                    }, null);
+
+                    await initTcs.Task.ConfigureAwait(false);
+                    _isInitialized = true;
+                }
+                catch (Exception ex) when (!(ex is TeXShiftException))
+                {
+                    throw new MathConversionException(
+                        Resources.GetString("Error_MathInitFailed"),
+                        ex.Message,
+                        ex);
+                }
             }
             finally
             {
@@ -144,7 +155,9 @@ namespace TeXShift.Core.Math
         {
             if (!_isInitialized)
             {
-                throw new InvalidOperationException("MathService not initialized. Call InitializeAsync first.");
+                throw new MathConversionException(
+                    Resources.GetString("Error_MathInitFailed"),
+                    "MathService not initialized. Call InitializeAsync first.");
             }
 
             if (string.IsNullOrWhiteSpace(latex))
@@ -152,22 +165,32 @@ namespace TeXShift.Core.Math
                 return string.Empty;
             }
 
-            // Execute on STA thread
-            var tcs = new TaskCompletionSource<string>();
-            _staSyncContext.Post(async _ =>
+            try
             {
-                try
+                // Execute on STA thread
+                var tcs = new TaskCompletionSource<string>();
+                _staSyncContext.Post(async _ =>
                 {
-                    var result = await ConvertLatexAsync(latex, displayMode).ConfigureAwait(false);
-                    tcs.SetResult(result);
-                }
-                catch (Exception ex)
-                {
-                    tcs.SetException(ex);
-                }
-            }, null);
+                    try
+                    {
+                        var result = await ConvertLatexAsync(latex, displayMode).ConfigureAwait(false);
+                        tcs.SetResult(result);
+                    }
+                    catch (Exception ex)
+                    {
+                        tcs.SetException(ex);
+                    }
+                }, null);
 
-            return await tcs.Task.ConfigureAwait(false);
+                return await tcs.Task.ConfigureAwait(false);
+            }
+            catch (Exception ex) when (!(ex is TeXShiftException))
+            {
+                throw new MathConversionException(
+                    Resources.GetString("Error_MathConversionFailed"),
+                    ex.Message,
+                    ex);
+            }
         }
 
         private async Task<string> ConvertLatexAsync(string latex, bool displayMode)

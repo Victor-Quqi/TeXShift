@@ -9,11 +9,14 @@ using System.Windows.Interop;
 using Extensibility;
 using Microsoft.Office.Core;
 using TeXShift.Core.Configuration;
+using TeXShift.Core.Errors;
+using TeXShift.Core.Localization;
 using TeXShift.Core.Logging;
 using TeXShift.Core.OneNote;
 using TeXShift.Core.Services;
 using TeXShift.AddIn.UI;
 using TeXShift.AddIn.UI.WPF;
+using TeXShift.AddIn.UI.WPF.ViewModels;
 using OneNote = Microsoft.Office.Interop.OneNote;
 
  namespace TeXShift.AddIn
@@ -85,11 +88,14 @@ using OneNote = Microsoft.Office.Interop.OneNote;
              _oneNoteApp = (OneNote.Application)Application;
 
              // Load settings from JSON file
-             _settingsManager = new SettingsManager();
-             _appSettings = _settingsManager.Load();
+            _settingsManager = new SettingsManager();
+            _appSettings = _settingsManager.Load();
 
-             // Initialize dependency injection container
-             _serviceContainer = new ServiceContainer();
+            // Initialize localization based on settings or system culture
+            LocalizationManager.Initialize(_appSettings?.Language);
+
+            // Initialize dependency injection container
+            _serviceContainer = new ServiceContainer();
 
              // Apply loaded settings to style configuration
              ApplySettingsToStyleConfig();
@@ -252,6 +258,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
             {
                 _appSettings = updatedSettings;
                 _settingsManager.Save(_appSettings);
+                LocalizationManager.Initialize(_appSettings?.Language);
                 ApplySettingsToStyleConfig();
 
                 // Refresh Ribbon to update button visibility
@@ -271,6 +278,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                 {
                     _appSettings = dialog.GetUpdatedSettings();
                     _settingsManager.Save(_appSettings);
+                    LocalizationManager.Initialize(_appSettings?.Language);
                     ApplySettingsToStyleConfig();
 
                     // Refresh Ribbon to update button visibility
@@ -364,7 +372,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                     }
                     else
                     {
-                        HandleConversionError(result.Error, null);
+                        HandleConversionError(result.Error, result.DebugOutputFolder);
                     }
                     return;
                 }
@@ -399,17 +407,117 @@ using OneNote = Microsoft.Office.Interop.OneNote;
         /// <summary>
         /// Handles and displays conversion errors.
         /// </summary>
-        private void HandleConversionError(Exception ex, IDebugLogger logger)
+        private void HandleConversionError(Exception ex, string debugFolderPath)
         {
-            // Use fire-and-forget for logging to avoid secondary exceptions blocking the UI
-            _ = logger?.LogErrorAsync(ex);
+            var userMessage = ErrorMessages.GetUserFriendlyMessage(ex);
+            var resolvedDebugFolder = ResolveDebugFolderPath(debugFolderPath);
+            var technicalDetails = BuildTechnicalDetails(ex, resolvedDebugFolder);
 
-            ShowTopMostMessageBox(
-                $"转换失败:\n\n{ex.Message}\n\n详细信息:\n{ex.StackTrace}",
-                "TeXShift - 错误",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error
-            );
+            try
+            {
+                ShowWpfErrorDialog(userMessage, technicalDetails, resolvedDebugFolder);
+            }
+            catch
+            {
+                ShowTopMostMessageBox(
+                    $"{userMessage}\n\n{technicalDetails}",
+                    Resources.GetString("Dialog_ErrorTitle"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+            }
+        }
+
+        private string ResolveDebugFolderPath(string debugFolderPath)
+        {
+            if (!string.IsNullOrWhiteSpace(debugFolderPath))
+            {
+                return debugFolderPath;
+            }
+
+            return DebugLogger.ResolveDebugOutputFolder(_appSettings?.Debug?.DebugOutputPath);
+        }
+
+        private string BuildTechnicalDetails(Exception ex, string debugFolderPath)
+        {
+            if (ex == null)
+            {
+                return string.Empty;
+            }
+
+            var builder = new StringBuilder();
+
+            if (ex is TeXShiftException texShiftException)
+            {
+                builder.AppendLine($"{Resources.GetString("Dialog_ErrorCodeLabel")}: {texShiftException.ErrorCode}");
+                if (!string.IsNullOrWhiteSpace(texShiftException.UserMessage))
+                {
+                    builder.AppendLine($"{Resources.GetString("Dialog_UserMessageLabel")}: {texShiftException.UserMessage}");
+                }
+            }
+
+            if (ex is COMException comEx)
+            {
+                builder.AppendLine($"{Resources.GetString("Dialog_ComHResultLabel")}: 0x{comEx.HResult:X}");
+            }
+            else if (ex.HResult != 0)
+            {
+                builder.AppendLine($"{Resources.GetString("Dialog_HResultLabel")}: 0x{ex.HResult:X}");
+            }
+
+            builder.AppendLine();
+            builder.AppendLine(ex.ToString());
+
+            if (!string.IsNullOrWhiteSpace(debugFolderPath))
+            {
+                builder.AppendLine();
+                builder.AppendLine($"{Resources.GetString("Dialog_DebugFolderLabel")}: {debugFolderPath}");
+            }
+
+            return builder.ToString();
+        }
+
+        private void ShowWpfErrorDialog(string userMessage, string technicalDetails, string debugFolderPath)
+        {
+            var parentHwnd = GetForegroundWindow();
+            Exception threadException = null;
+
+            var thread = new System.Threading.Thread(() =>
+            {
+                try
+                {
+                    var viewModel = new ErrorDialogViewModel(userMessage, technicalDetails, debugFolderPath);
+                    var dialog = new ErrorDialog(viewModel);
+
+                    var helper = new WindowInteropHelper(dialog);
+                    helper.Owner = parentHwnd;
+
+                    dialog.ShowDialog();
+                }
+                catch (Exception ex)
+                {
+                    threadException = ex;
+                }
+                finally
+                {
+                    var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+                    dispatcher.InvokeShutdown();
+                }
+            });
+
+            thread.SetApartmentState(System.Threading.ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            SetForegroundWindow(parentHwnd);
+
+            if (threadException != null)
+            {
+                throw threadException;
+            }
         }
 
         /// <summary>

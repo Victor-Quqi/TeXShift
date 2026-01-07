@@ -101,12 +101,17 @@ namespace TeXShift.Core.Logging
 
         private string PrepareDebugFolder()
         {
+            return ResolveDebugOutputFolder(_customOutputPath);
+        }
+
+        public static string ResolveDebugOutputFolder(string customOutputPath)
+        {
             string debugFolder;
 
             // Use custom path if provided and valid
-            if (!string.IsNullOrWhiteSpace(_customOutputPath))
+            if (!string.IsNullOrWhiteSpace(customOutputPath))
             {
-                debugFolder = _customOutputPath;
+                debugFolder = customOutputPath;
             }
             else
             {
@@ -124,7 +129,7 @@ namespace TeXShift.Core.Logging
             return debugFolder;
         }
 
-        private string FindProjectRoot(string startPath)
+        private static string FindProjectRoot(string startPath)
         {
             DirectoryInfo dir = new DirectoryInfo(startPath);
             while (dir != null)

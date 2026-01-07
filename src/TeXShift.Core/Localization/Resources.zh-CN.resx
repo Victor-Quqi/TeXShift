@@ -1,0 +1,160 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Error_GenericUnexpected" xml:space="preserve">
+    <value>发生意外错误。请查看详细信息或联系支持。</value>
+  </data>
+  <data name="Error_ComCommunication" xml:space="preserve">
+    <value>OneNote 通信失败。请确保 OneNote 正在运行且未被锁定。</value>
+  </data>
+  <data name="Error_Timeout" xml:space="preserve">
+    <value>操作超时。请稍后重试。</value>
+  </data>
+  <data name="Error_Io" xml:space="preserve">
+    <value>文件操作失败。请检查文件权限或磁盘空间。</value>
+  </data>
+  <data name="Error_OneNote_MalformedXml" xml:space="preserve">
+    <value>XML 格式不正确</value>
+  </data>
+  <data name="Error_OneNote_InvalidXml" xml:space="preserve">
+    <value>XML 无效</value>
+  </data>
+  <data name="Error_OneNote_PageNotFound" xml:space="preserve">
+    <value>页面不存在</value>
+  </data>
+  <data name="Error_OneNote_SectionReadOnly" xml:space="preserve">
+    <value>部分是只读的</value>
+  </data>
+  <data name="Error_OneNote_PageReadOnly" xml:space="preserve">
+    <value>页面是只读的</value>
+  </data>
+  <data name="Error_OneNote_PageModified" xml:space="preserve">
+    <value>页面已被其他人修改，请刷新后重试</value>
+  </data>
+  <data name="Error_OneNote_NoActiveSelection" xml:space="preserve">
+    <value>没有选中任何内容。请先选中文字或将光标点入文本框</value>
+  </data>
+  <data name="Error_OneNote_ObjectNotFound" xml:space="preserve">
+    <value>对象不存在</value>
+  </data>
+  <data name="Error_OneNote_SectionEncrypted" xml:space="preserve">
+    <value>部分已加密并锁定，请先解锁</value>
+  </data>
+  <data name="Error_OneNote_NotYetSynchronized" xml:space="preserve">
+    <value>OneNote 尚未同步完成，请稍后重试</value>
+  </data>
+  <data name="Error_OneNote_TimeOut" xml:space="preserve">
+    <value>操作超时</value>
+  </data>
+  <data name="Error_OneNote_ModalDialog" xml:space="preserve">
+    <value>OneNote 正在显示对话框，请先关闭</value>
+  </data>
+  <data name="Error_MathInitFailed" xml:space="preserve">
+    <value>数学引擎初始化失败。请确认 MathJax 已正确安装。</value>
+  </data>
+  <data name="Error_MathConversionFailed" xml:space="preserve">
+    <value>公式转换失败。请检查 LaTeX 表达式。</value>
+  </data>
+  <data name="UI_LanguageTitle" xml:space="preserve">
+    <value>语言</value>
+  </data>
+  <data name="UI_LanguageLabel" xml:space="preserve">
+    <value>语言</value>
+  </data>
+  <data name="UI_Language_System" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
+  <data name="UI_Language_Chinese" xml:space="preserve">
+    <value>中文</value>
+  </data>
+  <data name="UI_Language_English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Dialog_ErrorTitle" xml:space="preserve">
+    <value>TeXShift - 错误</value>
+  </data>
+  <data name="Dialog_CopyDetails" xml:space="preserve">
+    <value>复制详情</value>
+  </data>
+  <data name="Dialog_OpenDebugFolder" xml:space="preserve">
+    <value>打开调试文件夹</value>
+  </data>
+  <data name="Dialog_Ok" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="Dialog_TechnicalDetails" xml:space="preserve">
+    <value>技术详情</value>
+  </data>
+  <data name="Dialog_DebugFolderLabel" xml:space="preserve">
+    <value>调试文件夹</value>
+  </data>
+  <data name="Dialog_ErrorCodeLabel" xml:space="preserve">
+    <value>错误代码</value>
+  </data>
+  <data name="Dialog_UserMessageLabel" xml:space="preserve">
+    <value>用户消息</value>
+  </data>
+  <data name="Dialog_ComHResultLabel" xml:space="preserve">
+    <value>COM 错误码</value>
+  </data>
+  <data name="Dialog_HResultLabel" xml:space="preserve">
+    <value>HResult</value>
+  </data>
+</root>

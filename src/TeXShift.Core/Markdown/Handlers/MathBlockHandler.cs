@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using Markdig.Extensions.Mathematics;
@@ -54,12 +55,12 @@ namespace TeXShift.Core.Markdown.Handlers
                 {
                     _mathService.InitializeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                 }
-                catch
+                catch (Exception ex)
                 {
                     var initErrorOe = new XElement(context.OneNoteNamespace + "OE",
                         new XAttribute("alignment", "center"),
                         new XElement(context.OneNoteNamespace + "T",
-                            new XCData($"[MathService Init Error] $${latex}$$")));
+                            new XCData($"[MathService Init Error: {ex.Message}] $${latex}$$")));
                     return new[] { initErrorOe };
                 }
             }
@@ -71,12 +72,12 @@ namespace TeXShift.Core.Markdown.Handlers
                 // Use displayMode: true for block-level math
                 mathml = _mathService.LatexToMathMLAsync(latex, displayMode: true).ConfigureAwait(false).GetAwaiter().GetResult();
             }
-            catch
+            catch (Exception ex)
             {
                 // On conversion error, show the LaTeX source as plain text
                 var errorOe = new XElement(context.OneNoteNamespace + "OE",
                     new XElement(context.OneNoteNamespace + "T",
-                        new XCData($"[LaTeX Error: {latex}]")));
+                        new XCData($"[LaTeX Error: {ex.Message}] {latex}")));
                 return new[] { errorOe };
             }
 

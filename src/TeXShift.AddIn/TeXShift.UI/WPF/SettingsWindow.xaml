@@ -275,23 +275,41 @@
             <!-- Debug Tab -->
             <TabItem Header="调试">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16">
-                    <materialDesign:Card Padding="16">
-                        <StackPanel>
-                            <CheckBox Content="显示调试按钮 (调试转换、查看XML)" IsChecked="{Binding ShowDebugButtons}" Margin="0,0,0,12"/>
-                            <CheckBox Content="导出 PDF 到调试输出目录" IsChecked="{Binding ExportPdf}" Margin="0,0,0,16"/>
-                            <TextBlock Text="调试输出目录 (留空使用默认):" Margin="0,0,0,8"/>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBox Grid.Column="0" Text="{Binding DebugOutputPath, UpdateSourceTrigger=PropertyChanged}"
-                                         Style="{StaticResource CompactOutlinedTextBox}" Margin="0,0,8,0"/>
-                                <Button Grid.Column="1" Content="浏览..." Click="BrowseFolder_Click"
-                                        Style="{StaticResource SmallOutlinedButton}"/>
-                            </Grid>
-                        </StackPanel>
-                    </materialDesign:Card>
+                    <StackPanel>
+                        <materialDesign:Card Padding="16" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="{Binding LanguageSectionTitle}" Style="{StaticResource SectionTitle}"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding LanguageLabel}" Style="{StaticResource SettingsLabel}"/>
+                                    <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding SelectedLanguage}"
+                                              DisplayMemberPath="DisplayName" Width="180" HorizontalAlignment="Left"
+                                              Style="{StaticResource CompactOutlinedComboBox}"/>
+                                </Grid>
+                            </StackPanel>
+                        </materialDesign:Card>
+
+                        <materialDesign:Card Padding="16">
+                            <StackPanel>
+                                <CheckBox Content="显示调试按钮 (调试转换、查看XML)" IsChecked="{Binding ShowDebugButtons}" Margin="0,0,0,12"/>
+                                <CheckBox Content="导出 PDF 到调试输出目录" IsChecked="{Binding ExportPdf}" Margin="0,0,0,16"/>
+                                <TextBlock Text="调试输出目录 (留空使用默认):" Margin="0,0,0,8"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0" Text="{Binding DebugOutputPath, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource CompactOutlinedTextBox}" Margin="0,0,8,0"/>
+                                    <Button Grid.Column="1" Content="浏览..." Click="BrowseFolder_Click"
+                                            Style="{StaticResource SmallOutlinedButton}"/>
+                                </Grid>
+                            </StackPanel>
+                        </materialDesign:Card>
+                    </StackPanel>
                 </ScrollViewer>
             </TabItem>
         </TabControl>

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Abstractions;
+using TeXShift.Core.Errors;
 using OneNoteInterop = Microsoft.Office.Interop.OneNote;
 
 namespace TeXShift.Core.OneNote
@@ -107,9 +108,9 @@ namespace TeXShift.Core.OneNote
             }
             catch (System.Runtime.InteropServices.COMException comEx)
             {
-                throw new InvalidOperationException(
-                    $"无法更新 OneNote 页面内容。可能的原因：页面被锁定、权限不足或 OneNote 未响应。\n\nCOM 错误代码: 0x{comEx.HResult:X}",
-                    comEx);
+                var userMessage = ErrorMessages.GetUserFriendlyMessage(comEx);
+                var technicalMessage = $"UpdatePageContent failed. HResult=0x{comEx.HResult:X}. {comEx.Message}";
+                throw new ContentWriteException(userMessage, technicalMessage, comEx);
             }
             catch (Exception ex)
             {

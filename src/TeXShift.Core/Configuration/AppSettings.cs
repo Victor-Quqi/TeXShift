@@ -30,6 +30,12 @@ namespace TeXShift.Core.Configuration
         [DataMember]
         public ImageSettings Image { get; set; }
 
+        /// <summary>
+        /// Preferred UI language (e.g., "zh-CN", "en-US"). Empty means follow system language.
+        /// </summary>
+        [DataMember]
+        public string Language { get; set; } = "";
+
         public AppSettings()
         {
             Debug = new DebugSettings();

@@ -1,0 +1,160 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Error_GenericUnexpected" xml:space="preserve">
+    <value>An unexpected error occurred. Please view details or contact support.</value>
+  </data>
+  <data name="Error_ComCommunication" xml:space="preserve">
+    <value>Failed to communicate with OneNote. Please ensure OneNote is running and not locked.</value>
+  </data>
+  <data name="Error_Timeout" xml:space="preserve">
+    <value>The operation timed out. Please try again.</value>
+  </data>
+  <data name="Error_Io" xml:space="preserve">
+    <value>File operation failed. Please check permissions or disk space.</value>
+  </data>
+  <data name="Error_OneNote_MalformedXml" xml:space="preserve">
+    <value>XML format is invalid.</value>
+  </data>
+  <data name="Error_OneNote_InvalidXml" xml:space="preserve">
+    <value>XML is invalid.</value>
+  </data>
+  <data name="Error_OneNote_PageNotFound" xml:space="preserve">
+    <value>The page does not exist.</value>
+  </data>
+  <data name="Error_OneNote_SectionReadOnly" xml:space="preserve">
+    <value>The section is read-only.</value>
+  </data>
+  <data name="Error_OneNote_PageReadOnly" xml:space="preserve">
+    <value>The page is read-only.</value>
+  </data>
+  <data name="Error_OneNote_PageModified" xml:space="preserve">
+    <value>The page was modified by someone else. Please refresh and try again.</value>
+  </data>
+  <data name="Error_OneNote_NoActiveSelection" xml:space="preserve">
+    <value>No content selected. Please select text or place the cursor in a text box first.</value>
+  </data>
+  <data name="Error_OneNote_ObjectNotFound" xml:space="preserve">
+    <value>The object does not exist.</value>
+  </data>
+  <data name="Error_OneNote_SectionEncrypted" xml:space="preserve">
+    <value>The section is encrypted and locked. Please unlock it first.</value>
+  </data>
+  <data name="Error_OneNote_NotYetSynchronized" xml:space="preserve">
+    <value>OneNote has not finished syncing. Please try again later.</value>
+  </data>
+  <data name="Error_OneNote_TimeOut" xml:space="preserve">
+    <value>The operation timed out.</value>
+  </data>
+  <data name="Error_OneNote_ModalDialog" xml:space="preserve">
+    <value>OneNote is showing a dialog. Please close it first.</value>
+  </data>
+  <data name="Error_MathInitFailed" xml:space="preserve">
+    <value>Failed to initialize the math engine. Please ensure MathJax is installed.</value>
+  </data>
+  <data name="Error_MathConversionFailed" xml:space="preserve">
+    <value>Failed to convert the formula. Please check the LaTeX expression.</value>
+  </data>
+  <data name="UI_LanguageTitle" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="UI_LanguageLabel" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="UI_Language_System" xml:space="preserve">
+    <value>Follow system</value>
+  </data>
+  <data name="UI_Language_Chinese" xml:space="preserve">
+    <value>中文</value>
+  </data>
+  <data name="UI_Language_English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Dialog_ErrorTitle" xml:space="preserve">
+    <value>TeXShift - Error</value>
+  </data>
+  <data name="Dialog_CopyDetails" xml:space="preserve">
+    <value>Copy Details</value>
+  </data>
+  <data name="Dialog_OpenDebugFolder" xml:space="preserve">
+    <value>Open Debug Folder</value>
+  </data>
+  <data name="Dialog_Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Dialog_TechnicalDetails" xml:space="preserve">
+    <value>Technical details</value>
+  </data>
+  <data name="Dialog_DebugFolderLabel" xml:space="preserve">
+    <value>Debug Folder</value>
+  </data>
+  <data name="Dialog_ErrorCodeLabel" xml:space="preserve">
+    <value>Error Code</value>
+  </data>
+  <data name="Dialog_UserMessageLabel" xml:space="preserve">
+    <value>User Message</value>
+  </data>
+  <data name="Dialog_ComHResultLabel" xml:space="preserve">
+    <value>COM HResult</value>
+  </data>
+  <data name="Dialog_HResultLabel" xml:space="preserve">
+    <value>HResult</value>
+  </data>
+</root>

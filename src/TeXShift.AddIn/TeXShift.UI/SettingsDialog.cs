@@ -585,7 +585,8 @@ namespace TeXShift.AddIn.UI
                 {
                     DownloadTimeoutSeconds = source.Image.DownloadTimeoutSeconds,
                     MaxFileSizeBytes = source.Image.MaxFileSizeBytes
-                }
+                },
+                Language = source.Language
             };
         }
     }

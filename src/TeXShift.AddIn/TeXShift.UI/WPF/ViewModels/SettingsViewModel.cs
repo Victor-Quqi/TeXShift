@@ -1,8 +1,10 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Input;
 using System.Windows.Media;
 using TeXShift.Core.Configuration;
+using TeXShift.Core.Localization;
 
 namespace TeXShift.AddIn.UI.WPF.ViewModels
 {
@@ -157,6 +159,28 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
 
         #endregion
 
+        #region Language Settings
+
+        private LanguageOption _selectedLanguage;
+        public LanguageOption SelectedLanguage
+        {
+            get => _selectedLanguage;
+            set => SetProperty(ref _selectedLanguage, value);
+        }
+
+        public ObservableCollection<LanguageOption> AvailableLanguages { get; } =
+            new ObservableCollection<LanguageOption>
+            {
+                new LanguageOption("auto", Resources.GetString("UI_Language_System")),
+                new LanguageOption("zh-CN", Resources.GetString("UI_Language_Chinese")),
+                new LanguageOption("en-US", Resources.GetString("UI_Language_English"))
+            };
+
+        public string LanguageSectionTitle { get; } = Resources.GetString("UI_LanguageTitle");
+        public string LanguageLabel { get; } = Resources.GetString("UI_LanguageLabel");
+
+        #endregion
+
         #region Font Options
 
         public ObservableCollection<string> AvailableFonts { get; } =
@@ -290,6 +314,12 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
             _layoutSettings = CloneLayoutSettings(settings.Layout);
             _imageSettings = CloneImageSettings(settings.Image);
 
+            // Language
+            var languageCode = string.IsNullOrWhiteSpace(settings.Language) ? "auto" : settings.Language;
+            SelectedLanguage = AvailableLanguages.FirstOrDefault(option =>
+                string.Equals(option.Code, languageCode, StringComparison.OrdinalIgnoreCase))
+                ?? AvailableLanguages.First();
+
             // Update Color properties for ColorPicker
             CodeBlockBgColor = HexToColor(CodeBlockBackgroundColor);
             CodeBlockTxtColor = HexToColor(CodeBlockTextColor);
@@ -346,7 +376,8 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
                     H6FontSize = H6FontSize
                 },
                 Layout = CloneLayoutSettings(_layoutSettings),
-                Image = CloneImageSettings(_imageSettings)
+                Image = CloneImageSettings(_imageSettings),
+                Language = SelectedLanguage?.Code == "auto" ? string.Empty : SelectedLanguage?.Code
             };
         }
 
@@ -418,6 +449,18 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
             }
             catch { }
             return Colors.White;
+        }
+
+        public class LanguageOption
+        {
+            public LanguageOption(string code, string displayName)
+            {
+                Code = code;
+                DisplayName = displayName;
+            }
+
+            public string Code { get; }
+            public string DisplayName { get; }
         }
     }
 }
