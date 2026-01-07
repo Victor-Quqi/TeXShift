@@ -15,6 +15,7 @@ using TeXShift.Core.Markdown.Handlers;
 using TeXShift.Core.Markdown.Handlers.Inlines;
 using TeXShift.Core.Markdown.Processing;
 using TeXShift.Core.Math;
+using TeXShift.Core.Mermaid;
 
 namespace TeXShift.Core.Markdown
 {
@@ -39,6 +40,7 @@ namespace TeXShift.Core.Markdown
         public XNamespace OneNoteNamespace { get; } = "http://schemas.microsoft.com/office/onenote/2013/onenote";
         public OneNoteStyleConfig StyleConfig { get; }
         public IMathService MathService { get; }
+        public IMermaidService MermaidService { get; }
         public int QuoteNestingDepth => _quoteNestingDepth;
         public double? SourceOutlineWidth { get; }
 
@@ -56,11 +58,17 @@ namespace TeXShift.Core.Markdown
             }
         }
 
-        public MarkdownToOneNoteConverter(OneNoteStyleConfig styleConfig, MarkdownPipeline pipeline, IMathService mathService, double? sourceOutlineWidth = null)
+        public MarkdownToOneNoteConverter(
+            OneNoteStyleConfig styleConfig,
+            MarkdownPipeline pipeline,
+            IMathService mathService,
+            IMermaidService mermaidService,
+            double? sourceOutlineWidth = null)
         {
             StyleConfig = styleConfig ?? throw new ArgumentNullException(nameof(styleConfig));
             _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
             MathService = mathService;
+            MermaidService = mermaidService;
             SourceOutlineWidth = sourceOutlineWidth;
             _initialWidth = sourceOutlineWidth ?? StyleConfig.GetQuoteBlockStyle().BaseWidth;
 
@@ -180,6 +188,16 @@ namespace TeXShift.Core.Markdown
         private IEnumerable<XElement> HandleBlock(Block block)
         {
             if (block is LinkReferenceDefinitionGroup) return Enumerable.Empty<XElement>();
+
+            if (block is FencedCodeBlock fenced)
+            {
+                var info = (fenced.Info ?? "").Trim();
+                var language = info.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+                if (string.Equals(language, "mermaid", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new MermaidBlockHandler(MermaidService).Handle(block, this);
+                }
+            }
 
             IBlockHandler handler;
             if (!_blockHandlers.TryGetValue(block.GetType(), out handler))

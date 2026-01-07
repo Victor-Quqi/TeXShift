@@ -205,4 +205,19 @@
   <data name="Debug_ExceptionTitle" xml:space="preserve">
     <value>Debug Tools Error</value>
   </data>
+  <data name="Settings_Tab_Mermaid" xml:space="preserve">
+    <value>Mermaid</value>
+  </data>
+  <data name="Settings_Section_Mermaid" xml:space="preserve">
+    <value>Mermaid Diagram</value>
+  </data>
+  <data name="Settings_Label_Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="Settings_Label_MaxWidth" xml:space="preserve">
+    <value>Max width (px)</value>
+  </data>
+  <data name="Settings_Label_MaxHeight" xml:space="preserve">
+    <value>Max height (px)</value>
+  </data>
 </root>

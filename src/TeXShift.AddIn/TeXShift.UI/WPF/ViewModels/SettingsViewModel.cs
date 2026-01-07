@@ -160,6 +160,34 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
 
         #endregion
 
+        #region Mermaid Settings
+
+        private string _mermaidTheme;
+        public string MermaidTheme
+        {
+            get => _mermaidTheme;
+            set => SetProperty(ref _mermaidTheme, value);
+        }
+
+        private int _mermaidMaxWidth;
+        public int MermaidMaxWidth
+        {
+            get => _mermaidMaxWidth;
+            set => SetProperty(ref _mermaidMaxWidth, value);
+        }
+
+        private int _mermaidMaxHeight;
+        public int MermaidMaxHeight
+        {
+            get => _mermaidMaxHeight;
+            set => SetProperty(ref _mermaidMaxHeight, value);
+        }
+
+        public ObservableCollection<string> AvailableMermaidThemes { get; } =
+            new ObservableCollection<string> { "default", "dark", "forest", "neutral" };
+
+        #endregion
+
         #region Language Settings
 
         private LanguageOption _selectedLanguage;
@@ -188,18 +216,23 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
 
         public string TabStyleHeader => UIResources.GetString("Settings_Tab_Style");
         public string TabCodeBlockHeader => UIResources.GetString("Settings_Tab_CodeBlock");
+        public string TabMermaidHeader => UIResources.GetString("Settings_Tab_Mermaid");
         public string TabDebugHeader => UIResources.GetString("Settings_Tab_Debug");
 
         public string QuoteBlockSectionTitle => UIResources.GetString("Settings_Section_QuoteBlock");
         public string HeadingSizeSectionTitle => UIResources.GetString("Settings_Section_HeadingSize");
         public string CodeBlockSectionTitle => UIResources.GetString("Settings_Section_CodeBlock");
         public string InlineCodeSectionTitle => UIResources.GetString("Settings_Section_InlineCode");
+        public string MermaidSectionTitle => UIResources.GetString("Settings_Section_Mermaid");
 
         public string BackgroundColorLabel => UIResources.GetString("Settings_Label_BackgroundColor");
         public string TextColorLabel => UIResources.GetString("Settings_Label_TextColor");
         public string FontLabel => UIResources.GetString("Settings_Label_Font");
         public string FontSizeLabel => UIResources.GetString("Settings_Label_FontSize");
         public string LineSpacingLabel => UIResources.GetString("Settings_Label_LineSpacing");
+        public string ThemeLabel => UIResources.GetString("Settings_Label_Theme");
+        public string MaxWidthLabel => UIResources.GetString("Settings_Label_MaxWidth");
+        public string MaxHeightLabel => UIResources.GetString("Settings_Label_MaxHeight");
 
         public string SelectButtonText => UIResources.GetString("Settings_Button_Select");
         public string BrowseButtonText => UIResources.GetString("Settings_Button_Browse");
@@ -310,6 +343,7 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
             var inlineCodeSettings = settings.InlineCode ?? new InlineCodeStyleSettings();
             var quoteBlockSettings = settings.QuoteBlock ?? new QuoteBlockStyleSettings();
             var headingSettings = settings.Headings ?? new HeadingStyleSettings();
+            var mermaidSettings = settings.Mermaid ?? new MermaidSettings();
 
             var codeBlockFontFamily = string.IsNullOrWhiteSpace(codeBlockSettings.FontFamily) ? "Consolas" : codeBlockSettings.FontFamily;
             var inlineCodeFontFamily = string.IsNullOrWhiteSpace(inlineCodeSettings.FontFamily) ? "Consolas" : inlineCodeSettings.FontFamily;
@@ -343,6 +377,11 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
             H4FontSize = headingSettings.H4FontSize;
             H5FontSize = headingSettings.H5FontSize;
             H6FontSize = headingSettings.H6FontSize;
+
+            // Mermaid
+            MermaidTheme = string.IsNullOrWhiteSpace(mermaidSettings.Theme) ? "default" : mermaidSettings.Theme;
+            MermaidMaxWidth = mermaidSettings.MaxWidth;
+            MermaidMaxHeight = mermaidSettings.MaxHeight;
 
             // Preserve Layout/Image settings
             _layoutSettings = CloneLayoutSettings(settings.Layout);
@@ -408,6 +447,12 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
                     H4FontSize = H4FontSize,
                     H5FontSize = H5FontSize,
                     H6FontSize = H6FontSize
+                },
+                Mermaid = new MermaidSettings
+                {
+                    Theme = string.IsNullOrWhiteSpace(MermaidTheme) ? "default" : MermaidTheme,
+                    MaxWidth = MermaidMaxWidth > 0 ? MermaidMaxWidth : 1920,
+                    MaxHeight = MermaidMaxHeight > 0 ? MermaidMaxHeight : 1080
                 },
                 Layout = CloneLayoutSettings(_layoutSettings),
                 Image = CloneImageSettings(_imageSettings),

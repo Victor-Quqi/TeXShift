@@ -272,6 +272,51 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- Mermaid Tab -->
+            <TabItem Header="{Binding TabMermaidHeader}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16">
+                    <StackPanel>
+                        <materialDesign:Card Padding="16">
+                            <StackPanel>
+                                <TextBlock Text="{Binding MermaidSectionTitle}" Style="{StaticResource SectionTitle}"/>
+
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding ThemeLabel}" Style="{StaticResource SettingsLabel}"/>
+                                    <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableMermaidThemes}" SelectedItem="{Binding MermaidTheme}"
+                                              Width="180" HorizontalAlignment="Left" Style="{StaticResource CompactOutlinedComboBox}"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding MaxWidthLabel}" Style="{StaticResource SettingsLabel}"/>
+                                    <Slider Grid.Column="1" Minimum="640" Maximum="3840" Value="{Binding MermaidMaxWidth}" TickFrequency="64" IsSnapToTickEnabled="True"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding MermaidMaxWidth}" VerticalAlignment="Center" Margin="8,0,0,0" Width="50"/>
+                                </Grid>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding MaxHeightLabel}" Style="{StaticResource SettingsLabel}"/>
+                                    <Slider Grid.Column="1" Minimum="480" Maximum="2160" Value="{Binding MermaidMaxHeight}" TickFrequency="48" IsSnapToTickEnabled="True"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding MermaidMaxHeight}" VerticalAlignment="Center" Margin="8,0,0,0" Width="50"/>
+                                </Grid>
+                            </StackPanel>
+                        </materialDesign:Card>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <!-- Debug Tab -->
             <TabItem Header="{Binding TabDebugHeader}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16">

@@ -172,6 +172,7 @@
     <Content Include="Lib\mathjax\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <EmbeddedResource Include="Lib\mermaid\mermaid.min.js" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TeXShift.Core\TeXShift.Core.csproj">
@@ -190,11 +191,8 @@
   <!-- Copy ALL dependencies from Core output (SDK-style project dependencies not auto-copied to traditional csproj) -->
   <Target Name="CopyCoreDependencies" AfterTargets="Build">
     <ItemGroup>
-      <CoreDependencies Include="..\TeXShift.Core\bin\$(Platform)\$(Configuration)\net48\*.dll"
-                        Exclude="..\TeXShift.Core\bin\$(Platform)\$(Configuration)\net48\TeXShift.Core.dll" />
+      <CoreDependencies Include="..\TeXShift.Core\bin\$(Platform)\$(Configuration)\net48\*.dll" Exclude="..\TeXShift.Core\bin\$(Platform)\$(Configuration)\net48\TeXShift.Core.dll" />
     </ItemGroup>
-    <Copy SourceFiles="@(CoreDependencies)"
-          DestinationFolder="$(OutputPath)"
-          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(CoreDependencies)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
   </Target>
 </Project>

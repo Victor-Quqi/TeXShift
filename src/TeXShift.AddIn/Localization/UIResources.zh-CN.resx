@@ -205,4 +205,19 @@
   <data name="Debug_ExceptionTitle" xml:space="preserve">
     <value>调试工具异常</value>
   </data>
+  <data name="Settings_Tab_Mermaid" xml:space="preserve">
+    <value>Mermaid</value>
+  </data>
+  <data name="Settings_Section_Mermaid" xml:space="preserve">
+    <value>Mermaid 图表</value>
+  </data>
+  <data name="Settings_Label_Theme" xml:space="preserve">
+    <value>主题</value>
+  </data>
+  <data name="Settings_Label_MaxWidth" xml:space="preserve">
+    <value>最大宽度 (px)</value>
+  </data>
+  <data name="Settings_Label_MaxHeight" xml:space="preserve">
+    <value>最大高度 (px)</value>
+  </data>
 </root>

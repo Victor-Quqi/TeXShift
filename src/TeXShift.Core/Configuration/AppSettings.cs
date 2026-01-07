@@ -30,6 +30,9 @@ namespace TeXShift.Core.Configuration
         [DataMember]
         public ImageSettings Image { get; set; }
 
+        [DataMember]
+        public MermaidSettings Mermaid { get; set; }
+
         /// <summary>
         /// Preferred UI language (e.g., "zh-CN", "en-US"). Empty means follow system language.
         /// </summary>
@@ -45,6 +48,7 @@ namespace TeXShift.Core.Configuration
             Headings = new HeadingStyleSettings();
             Layout = new LayoutSettings();
             Image = new ImageSettings();
+            Mermaid = new MermaidSettings();
         }
 
         /// <summary>
@@ -265,5 +269,30 @@ namespace TeXShift.Core.Configuration
         /// </summary>
         [DataMember]
         public long MaxFileSizeBytes { get; set; } = 10 * 1024 * 1024;
+    }
+
+    /// <summary>
+    /// Mermaid diagram rendering settings.
+    /// </summary>
+    [DataContract]
+    public class MermaidSettings
+    {
+        /// <summary>
+        /// Maximum width of rendered PNG in pixels.
+        /// </summary>
+        [DataMember]
+        public int MaxWidth { get; set; } = 1920;
+
+        /// <summary>
+        /// Maximum height of rendered PNG in pixels.
+        /// </summary>
+        [DataMember]
+        public int MaxHeight { get; set; } = 1080;
+
+        /// <summary>
+        /// Mermaid theme name (e.g., "default", "dark", "neutral").
+        /// </summary>
+        [DataMember]
+        public string Theme { get; set; } = "default";
     }
 }

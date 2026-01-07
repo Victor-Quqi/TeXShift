@@ -112,6 +112,12 @@
   <data name="Error_MathConversionFailed" xml:space="preserve">
     <value>Failed to convert the formula. Please check the LaTeX expression.</value>
   </data>
+  <data name="Error_MermaidInitFailed" xml:space="preserve">
+    <value>Failed to initialize Mermaid diagram engine.</value>
+  </data>
+  <data name="Error_MermaidConversionFailed" xml:space="preserve">
+    <value>Failed to render Mermaid diagram. Please check the syntax.</value>
+  </data>
   <data name="Error_EmptyTextBox" xml:space="preserve">
     <value>The text box is empty. No content to convert.</value>
   </data>

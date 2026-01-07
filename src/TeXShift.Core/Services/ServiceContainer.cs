@@ -5,6 +5,7 @@ using TeXShift.Core.Configuration;
 using TeXShift.Core.Logging;
 using TeXShift.Core.Markdown;
 using TeXShift.Core.Math;
+using TeXShift.Core.Mermaid;
 using TeXShift.Core.OneNote;
 using OneNoteApp = Microsoft.Office.Interop.OneNote;
 
@@ -20,6 +21,7 @@ namespace TeXShift.Core.Services
         private readonly Lazy<OneNoteStyleConfig> _styleConfig;
         private readonly Lazy<MarkdownPipeline> _markdownPipeline;
         private readonly Lazy<IMathService> _mathService;
+        private readonly Lazy<IMermaidService> _mermaidService;
         private bool _disposed;
 
         public ServiceContainer()
@@ -42,6 +44,14 @@ namespace TeXShift.Core.Services
                 // This is handled in CreateMarkdownConverter
                 return service;
             });
+
+            _mermaidService = new Lazy<IMermaidService>(() =>
+            {
+                var service = new MermaidService();
+                // Note: InitializeAsync() should be called before first use
+                // This is handled in MermaidBlockHandler
+                return service;
+            });
         }
 
         /// <summary>
@@ -62,6 +72,12 @@ namespace TeXShift.Core.Services
         public IMathService MathService => _mathService.Value;
 
         /// <summary>
+        /// Gets the shared MermaidService instance for Mermaid diagram rendering.
+        /// Thread-safe and requires WebView2 initialization, so we cache it.
+        /// </summary>
+        public IMermaidService MermaidService => _mermaidService.Value;
+
+        /// <summary>
         /// Creates a new IContentReader instance.
         /// Transient lifetime: new instance per call.
         /// </summary>
@@ -80,7 +96,7 @@ namespace TeXShift.Core.Services
         /// </summary>
         public IMarkdownConverter CreateMarkdownConverter(double? sourceOutlineWidth = null)
         {
-            return new MarkdownToOneNoteConverter(StyleConfig, MarkdownPipeline, MathService, sourceOutlineWidth);
+            return new MarkdownToOneNoteConverter(StyleConfig, MarkdownPipeline, MathService, MermaidService, sourceOutlineWidth);
         }
 
         /// <summary>
@@ -141,6 +157,12 @@ namespace TeXShift.Core.Services
             if (_mathService.IsValueCreated && _mathService.Value is IDisposable disposable)
             {
                 disposable.Dispose();
+            }
+
+            // Dispose MermaidService if it was created
+            if (_mermaidService.IsValueCreated && _mermaidService.Value is IDisposable mermaidDisposable)
+            {
+                mermaidDisposable.Dispose();
             }
         }
     }
