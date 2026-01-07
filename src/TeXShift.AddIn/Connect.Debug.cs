@@ -1,0 +1,146 @@
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using Microsoft.Office.Core;
+using TeXShift.AddIn.Localization;
+using TeXShift.Core.Localization;
+using OneNote = Microsoft.Office.Interop.OneNote;
+
+namespace TeXShift.AddIn
+{
+    /// <summary>
+    /// Partial class containing debug tools functionality.
+    /// </summary>
+    public partial class Connect
+    {
+        #region Debug Button Handlers
+
+        /// <summary>
+        /// Debug button: Shows and saves the selected content's XML structure only.
+        /// </summary>
+        public async void OnDebugSelectionXmlButtonClick(IRibbonControl control)
+        {
+            try
+            {
+                var reader = _serviceContainer.CreateContentReader(_oneNoteApp);
+                var result = await reader.ExtractContentAsync();
+
+                if (!result.IsSuccess)
+                {
+                    ShowTopMostMessageBox(result.ErrorMessage, UIResources.GetString("Debug_Title"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (result.OriginalXmlNode == null)
+                {
+                    ShowTopMostMessageBox(UIResources.GetString("Debug_NoXmlNode"), UIResources.GetString("Debug_Title"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var logger = _serviceContainer.CreateDebugLogger(_appSettings?.Debug?.DebugOutputPath);
+                logger.StartSession();
+                string savedPath = await logger.LogSelectionXmlAsync(result.OriginalXmlNode);
+                string formattedXml = System.Xml.Linq.XDocument.Parse(result.OriginalXmlNode.ToString()).ToString();
+
+
+                // Show in dialog
+                string caption = string.Format(
+                    UIResources.GetString("Debug_SelectionXmlCaption"),
+                    GetDetectionModeLabel(result.Mode),
+                    Path.GetFileName(savedPath));
+                ShowTextInScrollableMessageBox(formattedXml, caption);
+
+                // Show success message
+                var savedMessage = string.Format(
+                    UIResources.GetString("Debug_SelectionXmlSaved"),
+                    savedPath,
+                    GetDetectionModeLabel(result.Mode),
+                    result.OriginalXmlNode.Name.LocalName);
+
+                if (result.TargetObjectIds != null && result.TargetObjectIds.Count > 0)
+                {
+                    savedMessage += $"{Environment.NewLine}ObjectIDs: {string.Join(", ", result.TargetObjectIds)}";
+                }
+
+                ShowTopMostMessageBox(
+                    savedMessage,
+                    UIResources.GetString("Debug_SaveSuccess"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                ShowTopMostMessageBox(
+                    string.Format(UIResources.GetString("Debug_Exception"), ex.ToString()),
+                    UIResources.GetString("Debug_ExceptionTitle"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Debug button: Shows and saves the raw OneNote XML structure for entire page.
+        /// </summary>
+        public async void OnDebugXmlButtonClick(IRibbonControl control)
+        {
+            try
+            {
+                var (pageId, xmlContent) = await Task.Run(() =>
+                {
+                    OneNote.Windows windows = null;
+                    OneNote.Window window = null;
+                    try
+                    {
+                        windows = _oneNoteApp.Windows;
+                        window = windows.CurrentWindow;
+                        string id = window?.CurrentPageId;
+                        if (string.IsNullOrEmpty(id)) return (null, null);
+                        _oneNoteApp.GetPageContent(id, out string xml, OneNote.PageInfo.piAll);
+                        return (id, xml);
+                    }
+                    finally
+                    {
+                        SafeReleaseComObject(window);
+                        SafeReleaseComObject(windows);
+                    }
+                });
+
+                if (string.IsNullOrEmpty(pageId) || string.IsNullOrEmpty(xmlContent))
+                {
+                    ShowTopMostMessageBox(UIResources.GetString("Debug_NoPageContent"), UIResources.GetString("Debug_Title"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var logger = _serviceContainer.CreateDebugLogger(_appSettings?.Debug?.DebugOutputPath);
+                logger.StartSession();
+                string savedPath = await logger.LogPageXmlAsync(xmlContent);
+                string formattedXml = System.Xml.Linq.XDocument.Parse(xmlContent).ToString();
+
+                // Show in dialog
+                string caption = string.Format(UIResources.GetString("Debug_PageXmlCaption"), Path.GetFileName(savedPath));
+                ShowTextInScrollableMessageBox(formattedXml, caption);
+
+                // Show success message
+                ShowTopMostMessageBox(
+                    string.Format(
+                        UIResources.GetString("Debug_PageXmlSaved"),
+                        savedPath,
+                        new FileInfo(savedPath).Length / 1024.0),
+                    UIResources.GetString("Debug_SaveSuccess"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                ShowTopMostMessageBox(
+                    string.Format(UIResources.GetString("Debug_Exception"), ex.ToString()),
+                    UIResources.GetString("Debug_ExceptionTitle"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
+        #endregion
+    }
+}

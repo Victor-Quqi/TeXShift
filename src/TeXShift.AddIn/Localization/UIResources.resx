@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Ribbon_Tab_TeXShift" xml:space="preserve">
+    <value>TeXShift</value>
+  </data>
+  <data name="Ribbon_Group_ConvertTools" xml:space="preserve">
+    <value>Convert Tools</value>
+  </data>
+  <data name="Ribbon_Group_DebugTools" xml:space="preserve">
+    <value>Debug Tools</value>
+  </data>
+  <data name="Ribbon_Group_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Ribbon_Button_Convert" xml:space="preserve">
+    <value>Convert</value>
+  </data>
+  <data name="Ribbon_Button_DebugConvert" xml:space="preserve">
+    <value>Debug Convert</value>
+  </data>
+  <data name="Ribbon_Button_SavePageXml" xml:space="preserve">
+    <value>Save Page XML</value>
+  </data>
+  <data name="Ribbon_Button_SaveSelectionXml" xml:space="preserve">
+    <value>Save Selection XML</value>
+  </data>
+  <data name="Ribbon_Button_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Settings_Title" xml:space="preserve">
+    <value>TeXShift Settings</value>
+  </data>
+  <data name="Settings_Tab_Style" xml:space="preserve">
+    <value>Style</value>
+  </data>
+  <data name="Settings_Tab_CodeBlock" xml:space="preserve">
+    <value>Code Blocks</value>
+  </data>
+  <data name="Settings_Tab_Debug" xml:space="preserve">
+    <value>Debug</value>
+  </data>
+  <data name="Settings_Section_QuoteBlock" xml:space="preserve">
+    <value>Quote Block</value>
+  </data>
+  <data name="Settings_Section_HeadingSize" xml:space="preserve">
+    <value>Heading Sizes (pt)</value>
+  </data>
+  <data name="Settings_Section_CodeBlock" xml:space="preserve">
+    <value>Code Block</value>
+  </data>
+  <data name="Settings_Section_InlineCode" xml:space="preserve">
+    <value>Inline Code</value>
+  </data>
+  <data name="Settings_Label_BackgroundColor" xml:space="preserve">
+    <value>Background color</value>
+  </data>
+  <data name="Settings_Label_TextColor" xml:space="preserve">
+    <value>Text color</value>
+  </data>
+  <data name="Settings_Label_Font" xml:space="preserve">
+    <value>Font</value>
+  </data>
+  <data name="Settings_Label_FontSize" xml:space="preserve">
+    <value>Font size</value>
+  </data>
+  <data name="Settings_Label_LineSpacing" xml:space="preserve">
+    <value>Line spacing</value>
+  </data>
+  <data name="Settings_Button_Select" xml:space="preserve">
+    <value>Select...</value>
+  </data>
+  <data name="Settings_Button_Browse" xml:space="preserve">
+    <value>Browse...</value>
+  </data>
+  <data name="Settings_Button_ResetDefaults" xml:space="preserve">
+    <value>Restore defaults</value>
+  </data>
+  <data name="Settings_Button_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Settings_Button_Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Settings_Checkbox_EnableSyntaxHighlight" xml:space="preserve">
+    <value>Enable syntax highlighting</value>
+  </data>
+  <data name="Settings_Checkbox_ShowDebugButtons" xml:space="preserve">
+    <value>Show debug buttons (Debug convert, view XML)</value>
+  </data>
+  <data name="Settings_Checkbox_ExportPdf" xml:space="preserve">
+    <value>Export PDF to debug output folder</value>
+  </data>
+  <data name="Settings_Description_DebugOutputPath" xml:space="preserve">
+    <value>Debug output folder (leave blank for default):</value>
+  </data>
+  <data name="Dialog_Confirm_ResetSettings" xml:space="preserve">
+    <value>Are you sure you want to restore all settings to defaults?</value>
+  </data>
+  <data name="Dialog_Confirm_ResetTitle" xml:space="preserve">
+    <value>Restore defaults</value>
+  </data>
+  <data name="Dialog_Title_BrowseFolder" xml:space="preserve">
+    <value>Select debug output folder</value>
+  </data>
+  <data name="Message_Error_WpfFallback" xml:space="preserve">
+    <value>WPF dialog failed, falling back to WinForms:&#xA;&#xA;{0}&#xA;&#xA;{1}</value>
+  </data>
+  <data name="Message_Error_OpenSettings" xml:space="preserve">
+    <value>Failed to open settings:&#xA;&#xA;{0}</value>
+  </data>
+  <data name="Message_Title_WpfError" xml:space="preserve">
+    <value>TeXShift - WPF Error</value>
+  </data>
+  <data name="Message_Success_ConversionComplete" xml:space="preserve">
+    <value>Conversion succeeded!&#xA;&#xA;Mode: {0}&#xA;Processed {1} characters&#xA;&#xA;Debug files saved to:&#xA;{2}</value>
+  </data>
+  <data name="Message_Title_ConversionComplete" xml:space="preserve">
+    <value>TeXShift - Conversion complete</value>
+  </data>
+  <data name="Debug_Title" xml:space="preserve">
+    <value>Debug Tools</value>
+  </data>
+  <data name="Debug_NoXmlNode" xml:space="preserve">
+    <value>Failed to get the selected content XML node.</value>
+  </data>
+  <data name="Debug_NoPageContent" xml:space="preserve">
+    <value>Unable to get current page content.</value>
+  </data>
+  <data name="Debug_SelectionXmlCaption" xml:space="preserve">
+    <value>Selection XML structure - {0} (saved to: {1})</value>
+  </data>
+  <data name="Debug_SelectionXmlSaved" xml:space="preserve">
+    <value>Selection XML saved to:&#xA;{0}&#xA;&#xA;Mode: {1}&#xA;Node type: {2}</value>
+  </data>
+  <data name="Debug_PageXmlCaption" xml:space="preserve">
+    <value>OneNote XML structure (saved to: {0})</value>
+  </data>
+  <data name="Debug_PageXmlSaved" xml:space="preserve">
+    <value>XML saved to:&#xA;{0}&#xA;&#xA;File size: {1:F2} KB</value>
+  </data>
+  <data name="Debug_SaveSuccess" xml:space="preserve">
+    <value>Debug Tools - Save successful</value>
+  </data>
+  <data name="Debug_Exception" xml:space="preserve">
+    <value>An error occurred in debug tools:&#xA;{0}</value>
+  </data>
+  <data name="Debug_ExceptionTitle" xml:space="preserve">
+    <value>Debug Tools Error</value>
+  </data>
+</root>

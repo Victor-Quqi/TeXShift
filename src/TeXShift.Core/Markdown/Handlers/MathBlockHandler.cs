@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Xml.Linq;
 using Markdig.Extensions.Mathematics;
 using Markdig.Syntax;
+using TeXShift.Core.Errors;
+using TeXShift.Core.Localization;
 using TeXShift.Core.Markdown.Abstractions;
 using TeXShift.Core.Math;
 
@@ -55,13 +57,12 @@ namespace TeXShift.Core.Markdown.Handlers
                 {
                     _mathService.InitializeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (!(ex is MathConversionException))
                 {
-                    var initErrorOe = new XElement(context.OneNoteNamespace + "OE",
-                        new XAttribute("alignment", "center"),
-                        new XElement(context.OneNoteNamespace + "T",
-                            new XCData($"[MathService Init Error: {ex.Message}] $${latex}$$")));
-                    return new[] { initErrorOe };
+                    throw new MathConversionException(
+                        Resources.GetString("Error_MathInitFailed"),
+                        $"MathService initialization failed in MathBlockHandler. {ex.GetType().Name}: {ex.Message}",
+                        ex);
                 }
             }
 
@@ -72,13 +73,12 @@ namespace TeXShift.Core.Markdown.Handlers
                 // Use displayMode: true for block-level math
                 mathml = _mathService.LatexToMathMLAsync(latex, displayMode: true).ConfigureAwait(false).GetAwaiter().GetResult();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!(ex is MathConversionException))
             {
-                // On conversion error, show the LaTeX source as plain text
-                var errorOe = new XElement(context.OneNoteNamespace + "OE",
-                    new XElement(context.OneNoteNamespace + "T",
-                        new XCData($"[LaTeX Error: {ex.Message}] {latex}")));
-                return new[] { errorOe };
+                throw new MathConversionException(
+                    Resources.GetString("Error_MathConversionFailed"),
+                    $"LaTeX conversion failed for block math: {latex}. {ex.GetType().Name}: {ex.Message}",
+                    ex);
             }
 
             // Wrap MathML for OneNote

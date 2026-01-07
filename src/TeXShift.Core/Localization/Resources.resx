@@ -115,6 +115,42 @@
   <data name="Error_EmptyTextBox" xml:space="preserve">
     <value>The text box is empty. No content to convert.</value>
   </data>
+  <data name="Error_NoPageId" xml:space="preserve">
+    <value>Unable to get the current page ID.</value>
+  </data>
+  <data name="Error_GetPageContentFailed" xml:space="preserve">
+    <value>Failed to get page content.</value>
+  </data>
+  <data name="Error_NoSelection" xml:space="preserve">
+    <value>No content selected.&#xA;&#xA;Please select some text or place the cursor in a text box first.</value>
+  </data>
+  <data name="Error_NoTextBoxContainer" xml:space="preserve">
+    <value>Error: Could not find the text box container where the cursor is located.</value>
+  </data>
+  <data name="Error_NoValidTextContainer" xml:space="preserve">
+    <value>Successfully located the selection, but could not find a valid text container.</value>
+  </data>
+  <data name="Error_NoValidTextContent" xml:space="preserve">
+    <value>Successfully located the selection, but could not extract valid text content.</value>
+  </data>
+  <data name="Error_UpdatePageFailed" xml:space="preserve">
+    <value>An error occurred while updating OneNote page content: {0}</value>
+  </data>
+  <data name="OneNote_TodoTag" xml:space="preserve">
+    <value>To Do</value>
+  </data>
+  <data name="Mode_Cursor" xml:space="preserve">
+    <value>Cursor mode (replace entire text box)</value>
+  </data>
+  <data name="Mode_Selection" xml:space="preserve">
+    <value>Selection mode (replace selected text only)</value>
+  </data>
+  <data name="Mode_Unknown" xml:space="preserve">
+    <value>Unknown mode</value>
+  </data>
+  <data name="Debug_ConversionFailed" xml:space="preserve">
+    <value>Conversion failed&#xA;&#xA;Time: {0}&#xA;&#xA;Error message:&#xA;{1}&#xA;&#xA;Stack trace:&#xA;{2}</value>
+  </data>
   <data name="UI_LanguageTitle" xml:space="preserve">
     <value>Language</value>
   </data>
@@ -159,5 +195,23 @@
   </data>
   <data name="Dialog_HResultLabel" xml:space="preserve">
     <value>HResult</value>
+  </data>
+  <data name="Error_Image_EmptySource" xml:space="preserve">
+    <value>Empty image source</value>
+  </data>
+  <data name="Error_Image_FileNotFound" xml:space="preserve">
+    <value>Image file not found</value>
+  </data>
+  <data name="Error_Image_FileTooLarge" xml:space="preserve">
+    <value>Image file too large</value>
+  </data>
+  <data name="Error_Image_UnsupportedFormat" xml:space="preserve">
+    <value>Unsupported image format</value>
+  </data>
+  <data name="Error_Image_RequestTimeout" xml:space="preserve">
+    <value>Image request timeout</value>
+  </data>
+  <data name="Error_Image_LoadFailed" xml:space="preserve">
+    <value>Failed to load image</value>
   </data>
 </root>

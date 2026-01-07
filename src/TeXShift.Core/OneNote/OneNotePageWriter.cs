@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Abstractions;
 using TeXShift.Core.Errors;
+using TeXShift.Core.Localization;
 using OneNoteInterop = Microsoft.Office.Interop.OneNote;
 
 namespace TeXShift.Core.OneNote
@@ -114,7 +115,9 @@ namespace TeXShift.Core.OneNote
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"更新 OneNote 页面内容时发生错误: {ex.Message}", ex);
+                var userMessage = Resources.GetString("Error_UpdatePageFailed");
+                var technicalMessage = $"UpdatePageContent failed unexpectedly. {ex.GetType().Name}: {ex.Message}";
+                throw new ContentWriteException(userMessage, technicalMessage, ex);
             }
         }
 
@@ -201,7 +204,7 @@ namespace TeXShift.Core.OneNote
                     new XAttribute("symbol", "3"),
                     new XAttribute("fontColor", "automatic"),
                     new XAttribute("highlightColor", "none"),
-                    new XAttribute("name", "待办事项"));
+                    new XAttribute("name", Resources.GetString("OneNote_TodoTag")));
 
                 // Insert TagDef at the beginning of the page (after xmlns declarations)
                 // It should come before QuickStyleDef, PageSettings, and other page-level elements

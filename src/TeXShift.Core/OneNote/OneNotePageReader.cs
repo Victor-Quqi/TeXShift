@@ -48,7 +48,7 @@ namespace TeXShift.Core.OneNote
 
                 if (string.IsNullOrEmpty(pageId))
                 {
-                    return new ReadResult { IsSuccess = false, ErrorMessage = "无法获取当前页面的ID。" };
+                    return new ReadResult { IsSuccess = false, ErrorMessage = Resources.GetString("Error_NoPageId") };
                 }
 
                 string xmlContent;
@@ -56,7 +56,7 @@ namespace TeXShift.Core.OneNote
 
                 if (string.IsNullOrEmpty(xmlContent))
                 {
-                    return new ReadResult { IsSuccess = false, ErrorMessage = "获取页面内容失败。" };
+                    return new ReadResult { IsSuccess = false, ErrorMessage = Resources.GetString("Error_GetPageContentFailed") };
                 }
 
                 return ParseXmlContent(xmlContent, pageId);
@@ -80,7 +80,7 @@ namespace TeXShift.Core.OneNote
 
             if (!deepestSelectedNodes.Any())
             {
-                return new ReadResult { IsSuccess = false, Mode = DetectionMode.None, ErrorMessage = "未检测到选中的内容。\n\n请先用鼠标选中一些文字，或将光标点入一个文本框中。" };
+                return new ReadResult { IsSuccess = false, Mode = DetectionMode.None, ErrorMessage = Resources.GetString("Error_NoSelection") };
             }
 
             bool isCursorMode = deepestSelectedNodes.Count == 1 &&
@@ -102,7 +102,7 @@ namespace TeXShift.Core.OneNote
             var outlineContainer = cursorNode.Ancestors(ns + "Outline").FirstOrDefault();
             if (outlineContainer == null)
             {
-                return new ReadResult { IsSuccess = false, Mode = DetectionMode.Error, ErrorMessage = "错误：未能找到光标所在的文本框容器。" };
+                return new ReadResult { IsSuccess = false, Mode = DetectionMode.Error, ErrorMessage = Resources.GetString("Error_NoTextBoxContainer") };
             }
 
             var sb = new StringBuilder();
@@ -147,13 +147,13 @@ namespace TeXShift.Core.OneNote
             var parentOEs = FindParentOENodes(selectedNodes, ns);
             if (!parentOEs.Any())
             {
-                return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = "成功定位到选区，但未能找到有效的文本容器。" };
+                return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = Resources.GetString("Error_NoValidTextContainer") };
             }
 
             string extractedText = BuildTextFromOENodes(parentOEs, ns);
             if (string.IsNullOrEmpty(extractedText))
             {
-                return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = "成功定位到选区，但未能提取出有效文本内容。" };
+                return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = Resources.GetString("Error_NoValidTextContent") };
             }
 
             var outlineContainer = parentOEs.FirstOrDefault()?.Ancestors(ns + "Outline").FirstOrDefault();

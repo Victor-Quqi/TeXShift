@@ -4,7 +4,7 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:converters="clr-namespace:TeXShift.AddIn.UI.WPF.Converters"
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
-        Title="TeXShift 设置"
+        Title="{Binding WindowTitle}"
         Width="540" Height="620"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
@@ -25,7 +25,7 @@
             <converters:ColorToBrushConverter x:Key="ColorToBrushConverter"/>
 
             <Style x:Key="SettingsLabel" TargetType="TextBlock">
-                <Setter Property="Width" Value="100"/>
+                <Setter Property="Width" Value="120"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Margin" Value="0,0,8,0"/>
             </Style>
@@ -73,29 +73,29 @@
         <!-- Tab Control -->
         <TabControl Grid.Row="0" materialDesign:ColorZoneAssist.Mode="PrimaryMid">
             <!-- Style Tab -->
-            <TabItem Header="样式">
+            <TabItem Header="{Binding TabStyleHeader}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16">
                     <StackPanel>
                         <materialDesign:Card Padding="16" Margin="0,0,0,16">
                             <StackPanel>
-                                <TextBlock Text="引用块" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Text="{Binding QuoteBlockSectionTitle}" Style="{StaticResource SectionTitle}"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="120"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="背景颜色" Style="{StaticResource SettingsLabel}"/>
+                                    <TextBlock Grid.Column="0" Text="{Binding BackgroundColorLabel}" Style="{StaticResource SettingsLabel}"/>
                                     <Border Grid.Column="1" Width="50" CornerRadius="4" BorderBrush="Gray" BorderThickness="1"
                                             Background="{Binding QuoteBlockBackgroundColor, Converter={StaticResource ColorToBrushConverter}}" Margin="0,0,8,0"/>
-                                    <Button Grid.Column="2" Content="选择..." Click="PickQuoteBlockBgColor_Click" Style="{StaticResource SmallOutlinedButton}"/>
+                                    <Button Grid.Column="2" Content="{Binding SelectButtonText}" Click="PickQuoteBlockBgColor_Click" Style="{StaticResource SmallOutlinedButton}"/>
                                 </Grid>
                             </StackPanel>
                         </materialDesign:Card>
 
                         <materialDesign:Card Padding="16">
                             <StackPanel>
-                                <TextBlock Text="标题字号 (pt)" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Text="{Binding HeadingSizeSectionTitle}" Style="{StaticResource SectionTitle}"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -162,43 +162,43 @@
             </TabItem>
 
             <!-- Code Block Tab -->
-            <TabItem Header="代码块">
+            <TabItem Header="{Binding TabCodeBlockHeader}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16">
                     <StackPanel>
                         <materialDesign:Card Padding="16" Margin="0,0,0,16">
                             <StackPanel>
-                                <TextBlock Text="代码块" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Text="{Binding CodeBlockSectionTitle}" Style="{StaticResource SectionTitle}"/>
 
                                 <Grid Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="120"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="背景颜色" Style="{StaticResource SettingsLabel}"/>
+                                    <TextBlock Grid.Column="0" Text="{Binding BackgroundColorLabel}" Style="{StaticResource SettingsLabel}"/>
                                     <Border Grid.Column="1" Width="50" CornerRadius="4" BorderBrush="Gray" BorderThickness="1"
                                             Background="{Binding CodeBlockBackgroundColor, Converter={StaticResource ColorToBrushConverter}}" Margin="0,0,8,0"/>
-                                    <Button Grid.Column="2" Content="选择..." Click="PickCodeBlockBgColor_Click" Style="{StaticResource SmallOutlinedButton}"/>
+                                    <Button Grid.Column="2" Content="{Binding SelectButtonText}" Click="PickCodeBlockBgColor_Click" Style="{StaticResource SmallOutlinedButton}"/>
                                 </Grid>
 
                                 <Grid Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="120"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="文字颜色" Style="{StaticResource SettingsLabel}"/>
+                                    <TextBlock Grid.Column="0" Text="{Binding TextColorLabel}" Style="{StaticResource SettingsLabel}"/>
                                     <Border Grid.Column="1" Width="50" CornerRadius="4" BorderBrush="Gray" BorderThickness="1"
                                             Background="{Binding CodeBlockTextColor, Converter={StaticResource ColorToBrushConverter}}" Margin="0,0,8,0"/>
-                                    <Button Grid.Column="2" Content="选择..." Click="PickCodeBlockTextColor_Click" Style="{StaticResource SmallOutlinedButton}"/>
+                                    <Button Grid.Column="2" Content="{Binding SelectButtonText}" Click="PickCodeBlockTextColor_Click" Style="{StaticResource SmallOutlinedButton}"/>
                                 </Grid>
 
                                 <Grid Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="120"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="字体" Style="{StaticResource SettingsLabel}"/>
+                                    <TextBlock Grid.Column="0" Text="{Binding FontLabel}" Style="{StaticResource SettingsLabel}"/>
                                     <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding CodeBlockFontFamily}"
                                               Width="180" HorizontalAlignment="Left" Style="{StaticResource CompactOutlinedComboBox}">
                                         <ComboBox.ItemTemplate>
@@ -211,52 +211,52 @@
 
                                 <Grid Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="120"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="字号" Style="{StaticResource SettingsLabel}"/>
+                                    <TextBlock Grid.Column="0" Text="{Binding FontSizeLabel}" Style="{StaticResource SettingsLabel}"/>
                                     <Slider Grid.Column="1" Minimum="8" Maximum="24" Value="{Binding CodeBlockFontSize}" TickFrequency="0.5" IsSnapToTickEnabled="True"/>
                                     <TextBlock Grid.Column="2" Text="{Binding CodeBlockFontSize, StringFormat={}{0:F1} pt}" VerticalAlignment="Center" Margin="8,0,0,0" Width="50"/>
                                 </Grid>
 
                                 <Grid Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="120"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="行距" Style="{StaticResource SettingsLabel}"/>
+                                    <TextBlock Grid.Column="0" Text="{Binding LineSpacingLabel}" Style="{StaticResource SettingsLabel}"/>
                                     <Slider Grid.Column="1" Minimum="12" Maximum="36" Value="{Binding CodeBlockSpaceBetween}" TickFrequency="0.5" IsSnapToTickEnabled="True"/>
                                     <TextBlock Grid.Column="2" Text="{Binding CodeBlockSpaceBetween, StringFormat={}{0:F1} pt}" VerticalAlignment="Center" Margin="8,0,0,0" Width="50"/>
                                 </Grid>
 
-                                <CheckBox Content="启用语法高亮" IsChecked="{Binding EnableSyntaxHighlight}" Margin="0,4,0,0"/>
+                                <CheckBox Content="{Binding EnableSyntaxHighlightText}" IsChecked="{Binding EnableSyntaxHighlight}" Margin="0,4,0,0"/>
                             </StackPanel>
                         </materialDesign:Card>
 
                         <materialDesign:Card Padding="16">
                             <StackPanel>
-                                <TextBlock Text="内联代码" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Text="{Binding InlineCodeSectionTitle}" Style="{StaticResource SectionTitle}"/>
 
                                 <Grid Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="120"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="背景颜色" Style="{StaticResource SettingsLabel}"/>
+                                    <TextBlock Grid.Column="0" Text="{Binding BackgroundColorLabel}" Style="{StaticResource SettingsLabel}"/>
                                     <Border Grid.Column="1" Width="50" CornerRadius="4" BorderBrush="Gray" BorderThickness="1"
                                             Background="{Binding InlineCodeBackgroundColor, Converter={StaticResource ColorToBrushConverter}}" Margin="0,0,8,0"/>
-                                    <Button Grid.Column="2" Content="选择..." Click="PickInlineCodeBgColor_Click" Style="{StaticResource SmallOutlinedButton}"/>
+                                    <Button Grid.Column="2" Content="{Binding SelectButtonText}" Click="PickInlineCodeBgColor_Click" Style="{StaticResource SmallOutlinedButton}"/>
                                 </Grid>
 
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="120"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="字体" Style="{StaticResource SettingsLabel}"/>
+                                    <TextBlock Grid.Column="0" Text="{Binding FontLabel}" Style="{StaticResource SettingsLabel}"/>
                                     <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding InlineCodeFontFamily}"
                                               Width="180" HorizontalAlignment="Left" Style="{StaticResource CompactOutlinedComboBox}">
                                         <ComboBox.ItemTemplate>
@@ -273,7 +273,7 @@
             </TabItem>
 
             <!-- Debug Tab -->
-            <TabItem Header="调试">
+            <TabItem Header="{Binding TabDebugHeader}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16">
                     <StackPanel>
                         <materialDesign:Card Padding="16" Margin="0,0,0,16">
@@ -281,7 +281,7 @@
                                 <TextBlock Text="{Binding LanguageSectionTitle}" Style="{StaticResource SectionTitle}"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="120"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="{Binding LanguageLabel}" Style="{StaticResource SettingsLabel}"/>
@@ -294,17 +294,19 @@
 
                         <materialDesign:Card Padding="16">
                             <StackPanel>
-                                <CheckBox Content="显示调试按钮 (调试转换、查看XML)" IsChecked="{Binding ShowDebugButtons}" Margin="0,0,0,12"/>
-                                <CheckBox Content="导出 PDF 到调试输出目录" IsChecked="{Binding ExportPdf}" Margin="0,0,0,16"/>
-                                <TextBlock Text="调试输出目录 (留空使用默认):" Margin="0,0,0,8"/>
+                                <CheckBox Content="{Binding ShowDebugButtonsText}" IsChecked="{Binding ShowDebugButtons}" Margin="0,0,0,12"/>
+                                <CheckBox Content="{Binding ExportPdfText}" IsChecked="{Binding ExportPdf}" Margin="0,0,0,16"/>
+                                <TextBlock Text="{Binding DebugOutputPathDescription}" Margin="0,0,0,8"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBox Grid.Column="0" Text="{Binding DebugOutputPath, UpdateSourceTrigger=PropertyChanged}"
+                                             materialDesign:HintAssist.Hint="{Binding DefaultDebugOutputPath}"
+                                             materialDesign:HintAssist.IsFloating="False"
                                              Style="{StaticResource CompactOutlinedTextBox}" Margin="0,0,8,0"/>
-                                    <Button Grid.Column="1" Content="浏览..." Click="BrowseFolder_Click"
+                                    <Button Grid.Column="1" Content="{Binding BrowseButtonText}" Click="BrowseFolder_Click"
                                             Style="{StaticResource SmallOutlinedButton}"/>
                                 </Grid>
                             </StackPanel>
@@ -316,11 +318,11 @@
 
         <!-- Bottom Buttons -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-            <Button Content="恢复默认" Click="ResetButton_Click"
+            <Button Content="{Binding ResetDefaultsButtonText}" Click="ResetButton_Click"
                     Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0"/>
-            <Button Content="取消" IsCancel="True" Click="CancelButton_Click"
+            <Button Content="{Binding CancelButtonText}" IsCancel="True" Click="CancelButton_Click"
                     Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0"/>
-            <Button Content="确定" IsDefault="True" Click="OkButton_Click"
+            <Button Content="{Binding OkButtonText}" IsDefault="True" Click="OkButton_Click"
                     Style="{StaticResource MaterialDesignRaisedButton}"/>
         </StackPanel>
     </Grid>

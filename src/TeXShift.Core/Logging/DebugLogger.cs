@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using TeXShift.Core.Localization;
 
 namespace TeXShift.Core.Logging
 {
@@ -65,7 +66,7 @@ namespace TeXShift.Core.Logging
             try
             {
                 string errorLogFile = Path.Combine(DebugSessionFolder, $"ERROR_{_sessionTimestamp}.txt");
-                string errorContent = $"转换失败\n\n时间: {DateTime.Now}\n\n错误消息:\n{ex.Message}\n\n堆栈跟踪:\n{ex.StackTrace}";
+                string errorContent = string.Format(Resources.GetString("Debug_ConversionFailed"), DateTime.Now, ex.Message, ex.StackTrace);
                 await Task.Run(() => File.WriteAllText(errorLogFile, errorContent, Encoding.UTF8));
             }
             catch (Exception logEx)

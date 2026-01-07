@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Ribbon_Tab_TeXShift" xml:space="preserve">
+    <value>TeXShift</value>
+  </data>
+  <data name="Ribbon_Group_ConvertTools" xml:space="preserve">
+    <value>转换工具</value>
+  </data>
+  <data name="Ribbon_Group_DebugTools" xml:space="preserve">
+    <value>调试工具</value>
+  </data>
+  <data name="Ribbon_Group_Settings" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="Ribbon_Button_Convert" xml:space="preserve">
+    <value>一键转换</value>
+  </data>
+  <data name="Ribbon_Button_DebugConvert" xml:space="preserve">
+    <value>调试转换</value>
+  </data>
+  <data name="Ribbon_Button_SavePageXml" xml:space="preserve">
+    <value>保存整页XML</value>
+  </data>
+  <data name="Ribbon_Button_SaveSelectionXml" xml:space="preserve">
+    <value>保存选中XML</value>
+  </data>
+  <data name="Ribbon_Button_Settings" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="Settings_Title" xml:space="preserve">
+    <value>TeXShift 设置</value>
+  </data>
+  <data name="Settings_Tab_Style" xml:space="preserve">
+    <value>样式</value>
+  </data>
+  <data name="Settings_Tab_CodeBlock" xml:space="preserve">
+    <value>代码块</value>
+  </data>
+  <data name="Settings_Tab_Debug" xml:space="preserve">
+    <value>调试</value>
+  </data>
+  <data name="Settings_Section_QuoteBlock" xml:space="preserve">
+    <value>引用块</value>
+  </data>
+  <data name="Settings_Section_HeadingSize" xml:space="preserve">
+    <value>标题字号 (pt)</value>
+  </data>
+  <data name="Settings_Section_CodeBlock" xml:space="preserve">
+    <value>代码块</value>
+  </data>
+  <data name="Settings_Section_InlineCode" xml:space="preserve">
+    <value>内联代码</value>
+  </data>
+  <data name="Settings_Label_BackgroundColor" xml:space="preserve">
+    <value>背景颜色</value>
+  </data>
+  <data name="Settings_Label_TextColor" xml:space="preserve">
+    <value>文字颜色</value>
+  </data>
+  <data name="Settings_Label_Font" xml:space="preserve">
+    <value>字体</value>
+  </data>
+  <data name="Settings_Label_FontSize" xml:space="preserve">
+    <value>字号</value>
+  </data>
+  <data name="Settings_Label_LineSpacing" xml:space="preserve">
+    <value>行距</value>
+  </data>
+  <data name="Settings_Button_Select" xml:space="preserve">
+    <value>选择...</value>
+  </data>
+  <data name="Settings_Button_Browse" xml:space="preserve">
+    <value>浏览...</value>
+  </data>
+  <data name="Settings_Button_ResetDefaults" xml:space="preserve">
+    <value>恢复默认</value>
+  </data>
+  <data name="Settings_Button_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Settings_Button_Ok" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="Settings_Checkbox_EnableSyntaxHighlight" xml:space="preserve">
+    <value>启用语法高亮</value>
+  </data>
+  <data name="Settings_Checkbox_ShowDebugButtons" xml:space="preserve">
+    <value>显示调试按钮 (调试转换、查看XML)</value>
+  </data>
+  <data name="Settings_Checkbox_ExportPdf" xml:space="preserve">
+    <value>导出 PDF 到调试输出目录</value>
+  </data>
+  <data name="Settings_Description_DebugOutputPath" xml:space="preserve">
+    <value>调试输出目录 (留空使用默认):</value>
+  </data>
+  <data name="Dialog_Confirm_ResetSettings" xml:space="preserve">
+    <value>确定要恢复所有设置为默认值吗？</value>
+  </data>
+  <data name="Dialog_Confirm_ResetTitle" xml:space="preserve">
+    <value>恢复默认</value>
+  </data>
+  <data name="Dialog_Title_BrowseFolder" xml:space="preserve">
+    <value>选择调试输出目录</value>
+  </data>
+  <data name="Message_Error_WpfFallback" xml:space="preserve">
+    <value>WPF 对话框失败，回退到 WinForms:&#xA;&#xA;{0}&#xA;&#xA;{1}</value>
+  </data>
+  <data name="Message_Error_OpenSettings" xml:space="preserve">
+    <value>打开设置失败:&#xA;&#xA;{0}</value>
+  </data>
+  <data name="Message_Title_WpfError" xml:space="preserve">
+    <value>TeXShift - WPF 错误</value>
+  </data>
+  <data name="Message_Success_ConversionComplete" xml:space="preserve">
+    <value>转换成功!&#xA;&#xA;模式: {0}&#xA;处理了 {1} 个字符&#xA;&#xA;调试文件已保存至:&#xA;{2}</value>
+  </data>
+  <data name="Message_Title_ConversionComplete" xml:space="preserve">
+    <value>TeXShift - 转换完成</value>
+  </data>
+  <data name="Debug_Title" xml:space="preserve">
+    <value>调试工具</value>
+  </data>
+  <data name="Debug_NoXmlNode" xml:space="preserve">
+    <value>未能获取选中内容的XML节点。</value>
+  </data>
+  <data name="Debug_NoPageContent" xml:space="preserve">
+    <value>无法获取当前页面内容。</value>
+  </data>
+  <data name="Debug_SelectionXmlCaption" xml:space="preserve">
+    <value>选中内容 XML 结构 - {0} (已保存至: {1})</value>
+  </data>
+  <data name="Debug_SelectionXmlSaved" xml:space="preserve">
+    <value>选中内容的XML已保存至：&#xA;{0}&#xA;&#xA;模式: {1}&#xA;节点类型: {2}</value>
+  </data>
+  <data name="Debug_PageXmlCaption" xml:space="preserve">
+    <value>OneNote XML 结构 (已保存至: {0})</value>
+  </data>
+  <data name="Debug_PageXmlSaved" xml:space="preserve">
+    <value>XML已保存至：&#xA;{0}&#xA;&#xA;文件大小: {1:F2} KB</value>
+  </data>
+  <data name="Debug_SaveSuccess" xml:space="preserve">
+    <value>调试工具 - 保存成功</value>
+  </data>
+  <data name="Debug_Exception" xml:space="preserve">
+    <value>调试功能发生错误：&#xA;{0}</value>
+  </data>
+  <data name="Debug_ExceptionTitle" xml:space="preserve">
+    <value>调试工具异常</value>
+  </data>
+</root>

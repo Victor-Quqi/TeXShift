@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using TeXShift.AddIn.Localization;
 using TeXShift.AddIn.UI.WPF.ViewModels;
 using TeXShift.Core.Configuration;
 
@@ -87,8 +88,8 @@ namespace TeXShift.AddIn.UI.WPF
         private void ResetButton_Click(object sender, RoutedEventArgs e)
         {
             var result = MessageBox.Show(
-                "确定要恢复所有设置为默认值吗？",
-                "恢复默认",
+                UIResources.GetString("Dialog_Confirm_ResetSettings"),
+                UIResources.GetString("Dialog_Confirm_ResetTitle"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
@@ -105,7 +106,7 @@ namespace TeXShift.AddIn.UI.WPF
             var owner = new WpfWin32Window(this);
             using (var dialog = new System.Windows.Forms.FolderBrowserDialog())
             {
-                dialog.Description = "选择调试输出目录";
+                dialog.Description = UIResources.GetString("Dialog_Title_BrowseFolder");
                 dialog.ShowNewFolderButton = true;
                 if (!string.IsNullOrEmpty(ViewModel.DebugOutputPath))
                     dialog.SelectedPath = ViewModel.DebugOutputPath;

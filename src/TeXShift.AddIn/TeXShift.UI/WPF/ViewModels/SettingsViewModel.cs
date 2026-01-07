@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
 using System.Windows.Media;
+using TeXShift.AddIn.Localization;
 using TeXShift.Core.Configuration;
 using TeXShift.Core.Localization;
 
@@ -178,6 +179,39 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
 
         public string LanguageSectionTitle { get; } = Resources.GetString("UI_LanguageTitle");
         public string LanguageLabel { get; } = Resources.GetString("UI_LanguageLabel");
+
+        #endregion
+
+        #region UI Localization
+
+        public string WindowTitle => UIResources.GetString("Settings_Title");
+
+        public string TabStyleHeader => UIResources.GetString("Settings_Tab_Style");
+        public string TabCodeBlockHeader => UIResources.GetString("Settings_Tab_CodeBlock");
+        public string TabDebugHeader => UIResources.GetString("Settings_Tab_Debug");
+
+        public string QuoteBlockSectionTitle => UIResources.GetString("Settings_Section_QuoteBlock");
+        public string HeadingSizeSectionTitle => UIResources.GetString("Settings_Section_HeadingSize");
+        public string CodeBlockSectionTitle => UIResources.GetString("Settings_Section_CodeBlock");
+        public string InlineCodeSectionTitle => UIResources.GetString("Settings_Section_InlineCode");
+
+        public string BackgroundColorLabel => UIResources.GetString("Settings_Label_BackgroundColor");
+        public string TextColorLabel => UIResources.GetString("Settings_Label_TextColor");
+        public string FontLabel => UIResources.GetString("Settings_Label_Font");
+        public string FontSizeLabel => UIResources.GetString("Settings_Label_FontSize");
+        public string LineSpacingLabel => UIResources.GetString("Settings_Label_LineSpacing");
+
+        public string SelectButtonText => UIResources.GetString("Settings_Button_Select");
+        public string BrowseButtonText => UIResources.GetString("Settings_Button_Browse");
+        public string ResetDefaultsButtonText => UIResources.GetString("Settings_Button_ResetDefaults");
+        public string CancelButtonText => UIResources.GetString("Settings_Button_Cancel");
+        public string OkButtonText => UIResources.GetString("Settings_Button_Ok");
+
+        public string EnableSyntaxHighlightText => UIResources.GetString("Settings_Checkbox_EnableSyntaxHighlight");
+        public string ShowDebugButtonsText => UIResources.GetString("Settings_Checkbox_ShowDebugButtons");
+        public string ExportPdfText => UIResources.GetString("Settings_Checkbox_ExportPdf");
+        public string DebugOutputPathDescription => UIResources.GetString("Settings_Description_DebugOutputPath");
+        public string DefaultDebugOutputPath => TeXShift.Core.Logging.DebugLogger.ResolveDebugOutputFolder(null);
 
         #endregion
 

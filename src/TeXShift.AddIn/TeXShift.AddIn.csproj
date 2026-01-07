@@ -98,6 +98,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Connect.cs" />
+    <Compile Include="Connect.Ribbon.cs" />
+    <Compile Include="Connect.Settings.cs" />
+    <Compile Include="Connect.Conversion.cs" />
+    <Compile Include="Connect.Debug.cs" />
+    <Compile Include="Localization\UIResources.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TeXShift.UI\SettingsDialog.cs">
       <SubType>Form</SubType>
@@ -157,6 +162,10 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Ribbon.xml" />
+    <EmbeddedResource Include="Localization\UIResources.resx" />
+    <EmbeddedResource Include="Localization\UIResources.zh-CN.resx">
+      <DependentUpon>UIResources.resx</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <!-- Copy MathJax files to output directory -->
   <ItemGroup>

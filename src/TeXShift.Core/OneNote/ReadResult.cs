@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Xml.Linq;
+using TeXShift.Core.Localization;
 
 namespace TeXShift.Core.OneNote
 {
@@ -70,11 +71,11 @@ namespace TeXShift.Core.OneNote
             switch (Mode)
             {
                 case DetectionMode.Cursor:
-                    return "光标模式 (操作整个文本框)";
+                    return Resources.GetString("Mode_Cursor");
                 case DetectionMode.Selection:
-                    return "选区模式 (只操作选中的文字)";
+                    return Resources.GetString("Mode_Selection");
                 default:
-                    return "未知模式";
+                    return Resources.GetString("Mode_Unknown");
             }
         }
     }

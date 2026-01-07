@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using TeXShift.Core.Configuration;
+using TeXShift.Core.Errors;
+using TeXShift.Core.Localization;
 using TeXShift.Core.Markdown.Abstractions;
 
 namespace TeXShift.Core.Markdown.Handlers
@@ -179,7 +181,10 @@ namespace TeXShift.Core.Markdown.Handlers
                 }
                 catch (Exception ex)
                 {
-                    return $"[MathInit Error: {ex.Message}]";
+                    throw new MathConversionException(
+                        Resources.GetString("Error_MathInitFailed"),
+                        $"MathService initialization failed in ParagraphHandler. {ex.GetType().Name}: {ex.Message}",
+                        ex);
                 }
             }
 
@@ -191,9 +196,12 @@ namespace TeXShift.Core.Markdown.Handlers
                 var mathml = mathService.LatexToMathMLAsync(latex, displayMode: true).GetAwaiter().GetResult();
                 return mathService.WrapMathMLForOneNote(mathml);
             }
-            catch
+            catch (Exception ex) when (!(ex is MathConversionException))
             {
-                return $"[LaTeX Error: $${mathInline.Content}$$]";
+                throw new MathConversionException(
+                    Resources.GetString("Error_MathConversionFailed"),
+                    $"LaTeX conversion failed for: {mathInline.Content}. {ex.GetType().Name}: {ex.Message}",
+                    ex);
             }
         }
 

@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using TeXShift.AddIn.Localization;
 using TeXShift.Core.Configuration;
 
 namespace TeXShift.AddIn.UI
@@ -71,7 +72,7 @@ namespace TeXShift.AddIn.UI
 
         private void InitializeComponent()
         {
-            this.Text = "TeXShift 设置";
+            this.Text = UIResources.GetString("Settings_Title");
             this.Size = new Size(500, 520);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -96,7 +97,7 @@ namespace TeXShift.AddIn.UI
             // Create buttons
             _okButton = new Button
             {
-                Text = "确定",
+                Text = UIResources.GetString("Settings_Button_Ok"),
                 Location = new Point(216, 445),
                 Size = new Size(80, 28),
                 DialogResult = DialogResult.OK
@@ -105,7 +106,7 @@ namespace TeXShift.AddIn.UI
 
             _cancelButton = new Button
             {
-                Text = "取消",
+                Text = UIResources.GetString("Settings_Button_Cancel"),
                 Location = new Point(302, 445),
                 Size = new Size(80, 28),
                 DialogResult = DialogResult.Cancel
@@ -113,7 +114,7 @@ namespace TeXShift.AddIn.UI
 
             _resetButton = new Button
             {
-                Text = "恢复默认",
+                Text = UIResources.GetString("Settings_Button_ResetDefaults"),
                 Location = new Point(388, 445),
                 Size = new Size(80, 28)
             };
@@ -129,12 +130,12 @@ namespace TeXShift.AddIn.UI
 
         private void CreateDebugTab()
         {
-            var tab = new TabPage("调试");
+            var tab = new TabPage(UIResources.GetString("Settings_Tab_Debug"));
 
             // Show debug buttons
             _showDebugButtonsCheckBox = new CheckBox
             {
-                Text = "显示调试按钮 (调试转换、查看XML)",
+                Text = UIResources.GetString("Settings_Checkbox_ShowDebugButtons"),
                 Location = new Point(20, 25),
                 Size = new Size(400, 24),
                 AutoSize = true
@@ -143,7 +144,7 @@ namespace TeXShift.AddIn.UI
             // Export PDF
             _exportPdfCheckBox = new CheckBox
             {
-                Text = "导出 PDF 到调试输出目录",
+                Text = UIResources.GetString("Settings_Checkbox_ExportPdf"),
                 Location = new Point(20, 55),
                 Size = new Size(400, 24),
                 AutoSize = true
@@ -152,7 +153,7 @@ namespace TeXShift.AddIn.UI
             // Debug output path
             var debugPathLabel = new Label
             {
-                Text = "调试输出目录 (留空使用默认):",
+                Text = UIResources.GetString("Settings_Description_DebugOutputPath"),
                 Location = new Point(20, 95),
                 AutoSize = true
             };
@@ -165,7 +166,7 @@ namespace TeXShift.AddIn.UI
 
             _browseDebugPathButton = new Button
             {
-                Text = "浏览...",
+                Text = UIResources.GetString("Settings_Button_Browse"),
                 Location = new Point(365, 119),
                 Size = new Size(70, 25)
             };
@@ -182,14 +183,14 @@ namespace TeXShift.AddIn.UI
 
         private void CreateCodeBlockTab()
         {
-            var tab = new TabPage("代码块");
+            var tab = new TabPage(UIResources.GetString("Settings_Tab_CodeBlock"));
 
             int y = 20;
 
             // Background color
-            var bgLabel = new Label { Text = "背景颜色:", Location = new Point(20, y + 4), AutoSize = true };
+            var bgLabel = new Label { Text = UIResources.GetString("Settings_Label_BackgroundColor") + ":", Location = new Point(20, y + 4), AutoSize = true };
             _codeBlockBgColorPanel = CreateColorPanel(new Point(120, y));
-            _codeBlockBgColorButton = new Button { Text = "选择...", Location = new Point(165, y), Size = new Size(60, 24) };
+            _codeBlockBgColorButton = new Button { Text = UIResources.GetString("Settings_Button_Select"), Location = new Point(165, y), Size = new Size(60, 24) };
             _codeBlockBgColorButton.Click += (s, e) => PickColor(_codeBlockBgColorPanel);
             tab.Controls.Add(bgLabel);
             tab.Controls.Add(_codeBlockBgColorPanel);
@@ -197,9 +198,9 @@ namespace TeXShift.AddIn.UI
             y += 35;
 
             // Text color
-            var textLabel = new Label { Text = "文字颜色:", Location = new Point(20, y + 4), AutoSize = true };
+            var textLabel = new Label { Text = UIResources.GetString("Settings_Label_TextColor") + ":", Location = new Point(20, y + 4), AutoSize = true };
             _codeBlockTextColorPanel = CreateColorPanel(new Point(120, y));
-            _codeBlockTextColorButton = new Button { Text = "选择...", Location = new Point(165, y), Size = new Size(60, 24) };
+            _codeBlockTextColorButton = new Button { Text = UIResources.GetString("Settings_Button_Select"), Location = new Point(165, y), Size = new Size(60, 24) };
             _codeBlockTextColorButton.Click += (s, e) => PickColor(_codeBlockTextColorPanel);
             tab.Controls.Add(textLabel);
             tab.Controls.Add(_codeBlockTextColorPanel);
@@ -207,7 +208,7 @@ namespace TeXShift.AddIn.UI
             y += 35;
 
             // Font family
-            var fontLabel = new Label { Text = "字体:", Location = new Point(20, y + 4), AutoSize = true };
+            var fontLabel = new Label { Text = UIResources.GetString("Settings_Label_Font") + ":", Location = new Point(20, y + 4), AutoSize = true };
             _codeBlockFontComboBox = new ComboBox
             {
                 Location = new Point(120, y),
@@ -220,7 +221,7 @@ namespace TeXShift.AddIn.UI
             y += 35;
 
             // Font size
-            var sizeLabel = new Label { Text = "字号 (pt):", Location = new Point(20, y + 4), AutoSize = true };
+            var sizeLabel = new Label { Text = $"{UIResources.GetString("Settings_Label_FontSize")} (pt):", Location = new Point(20, y + 4), AutoSize = true };
             _codeBlockFontSizeNumeric = new NumericUpDown
             {
                 Location = new Point(120, y),
@@ -235,7 +236,7 @@ namespace TeXShift.AddIn.UI
             y += 35;
 
             // Space between lines
-            var spaceBetweenLabel = new Label { Text = "行距 (pt):", Location = new Point(20, y + 4), AutoSize = true };
+            var spaceBetweenLabel = new Label { Text = $"{UIResources.GetString("Settings_Label_LineSpacing")} (pt):", Location = new Point(20, y + 4), AutoSize = true };
             _codeBlockSpaceBetweenNumeric = new NumericUpDown
             {
                 Location = new Point(120, y),
@@ -252,7 +253,7 @@ namespace TeXShift.AddIn.UI
             // Syntax highlight
             _enableSyntaxHighlightCheckBox = new CheckBox
             {
-                Text = "启用语法高亮",
+                Text = UIResources.GetString("Settings_Checkbox_EnableSyntaxHighlight"),
                 Location = new Point(20, y),
                 AutoSize = true
             };
@@ -262,7 +263,7 @@ namespace TeXShift.AddIn.UI
             // Inline code section
             var inlineLabel = new Label
             {
-                Text = "── 内联代码 ──",
+                Text = $"── {UIResources.GetString("Settings_Section_InlineCode")} ──",
                 Location = new Point(20, y),
                 AutoSize = true,
                 ForeColor = Color.Gray
@@ -271,9 +272,9 @@ namespace TeXShift.AddIn.UI
             y += 30;
 
             // Inline code background
-            var inlineBgLabel = new Label { Text = "背景颜色:", Location = new Point(20, y + 4), AutoSize = true };
+            var inlineBgLabel = new Label { Text = UIResources.GetString("Settings_Label_BackgroundColor") + ":", Location = new Point(20, y + 4), AutoSize = true };
             _inlineCodeBgColorPanel = CreateColorPanel(new Point(120, y));
-            _inlineCodeBgColorButton = new Button { Text = "选择...", Location = new Point(165, y), Size = new Size(60, 24) };
+            _inlineCodeBgColorButton = new Button { Text = UIResources.GetString("Settings_Button_Select"), Location = new Point(165, y), Size = new Size(60, 24) };
             _inlineCodeBgColorButton.Click += (s, e) => PickColor(_inlineCodeBgColorPanel);
             tab.Controls.Add(inlineBgLabel);
             tab.Controls.Add(_inlineCodeBgColorPanel);
@@ -281,7 +282,7 @@ namespace TeXShift.AddIn.UI
             y += 35;
 
             // Inline code font
-            var inlineFontLabel = new Label { Text = "字体:", Location = new Point(20, y + 4), AutoSize = true };
+            var inlineFontLabel = new Label { Text = UIResources.GetString("Settings_Label_Font") + ":", Location = new Point(20, y + 4), AutoSize = true };
             _inlineCodeFontComboBox = new ComboBox
             {
                 Location = new Point(120, y),
@@ -297,14 +298,14 @@ namespace TeXShift.AddIn.UI
 
         private void CreateStyleTab()
         {
-            var tab = new TabPage("样式");
+            var tab = new TabPage(UIResources.GetString("Settings_Tab_Style"));
 
             int y = 20;
 
             // Quote block section
             var quoteLabel = new Label
             {
-                Text = "── 引用块 ──",
+                Text = $"── {UIResources.GetString("Settings_Section_QuoteBlock")} ──",
                 Location = new Point(20, y),
                 AutoSize = true,
                 ForeColor = Color.Gray
@@ -312,9 +313,9 @@ namespace TeXShift.AddIn.UI
             tab.Controls.Add(quoteLabel);
             y += 30;
 
-            var quoteBgLabel = new Label { Text = "背景颜色:", Location = new Point(20, y + 4), AutoSize = true };
+            var quoteBgLabel = new Label { Text = UIResources.GetString("Settings_Label_BackgroundColor") + ":", Location = new Point(20, y + 4), AutoSize = true };
             _quoteBlockBgColorPanel = CreateColorPanel(new Point(120, y));
-            _quoteBlockBgColorButton = new Button { Text = "选择...", Location = new Point(165, y), Size = new Size(60, 24) };
+            _quoteBlockBgColorButton = new Button { Text = UIResources.GetString("Settings_Button_Select"), Location = new Point(165, y), Size = new Size(60, 24) };
             _quoteBlockBgColorButton.Click += (s, e) => PickColor(_quoteBlockBgColorPanel);
             tab.Controls.Add(quoteBgLabel);
             tab.Controls.Add(_quoteBlockBgColorPanel);
@@ -324,7 +325,7 @@ namespace TeXShift.AddIn.UI
             // Heading section
             var headingLabel = new Label
             {
-                Text = "── 标题字号 (pt) ──",
+                Text = $"── {UIResources.GetString("Settings_Section_HeadingSize")} ──",
                 Location = new Point(20, y),
                 AutoSize = true,
                 ForeColor = Color.Gray
@@ -459,8 +460,8 @@ namespace TeXShift.AddIn.UI
         private void ResetButton_Click(object sender, EventArgs e)
         {
             var result = MessageBox.Show(
-                "确定要将所有设置恢复为默认值吗？",
-                "确认恢复默认",
+                UIResources.GetString("Dialog_Confirm_ResetSettings"),
+                UIResources.GetString("Dialog_Confirm_ResetTitle"),
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
 
@@ -481,7 +482,7 @@ namespace TeXShift.AddIn.UI
             {
                 using (var dialog = new FolderBrowserDialog())
                 {
-                    dialog.Description = "选择调试输出目录";
+                    dialog.Description = UIResources.GetString("Dialog_Title_BrowseFolder");
                     if (!string.IsNullOrEmpty(initialPath))
                     {
                         dialog.SelectedPath = initialPath;

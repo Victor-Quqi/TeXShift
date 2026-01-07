@@ -3,6 +3,8 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using TeXShift.Core.Errors;
+using TeXShift.Core.Localization;
 
 namespace TeXShift.Core.Utils
 {
@@ -54,7 +56,7 @@ namespace TeXShift.Core.Utils
         {
             if (string.IsNullOrWhiteSpace(source))
             {
-                return new ImageLoadResult { Success = false, ErrorMessage = "Empty source" };
+                return new ImageLoadResult { Success = false, ErrorMessage = Resources.GetString("Error_Image_EmptySource") };
             }
 
             // Determine if it's a URL or local path
@@ -88,19 +90,19 @@ namespace TeXShift.Core.Utils
             {
                 if (!File.Exists(filePath))
                 {
-                    return new ImageLoadResult { Success = false, ErrorMessage = "File not found" };
+                    return new ImageLoadResult { Success = false, ErrorMessage = Resources.GetString("Error_Image_FileNotFound") };
                 }
 
                 var fileInfo = new FileInfo(filePath);
                 if (fileInfo.Length > MaxFileSizeBytes)
                 {
-                    return new ImageLoadResult { Success = false, ErrorMessage = "File too large" };
+                    return new ImageLoadResult { Success = false, ErrorMessage = Resources.GetString("Error_Image_FileTooLarge") };
                 }
 
                 var format = GetImageFormat(filePath);
                 if (format == null)
                 {
-                    return new ImageLoadResult { Success = false, ErrorMessage = "Unsupported format" };
+                    return new ImageLoadResult { Success = false, ErrorMessage = Resources.GetString("Error_Image_UnsupportedFormat") };
                 }
 
                 var bytes = File.ReadAllBytes(filePath);
@@ -115,7 +117,10 @@ namespace TeXShift.Core.Utils
             }
             catch (Exception ex)
             {
-                return new ImageLoadResult { Success = false, ErrorMessage = ex.Message };
+                throw new ImageLoadException(
+                    Resources.GetString("Error_Image_LoadFailed"),
+                    $"Failed to load image from file '{filePath}'. {ex.GetType().Name}: {ex.Message}",
+                    ex);
             }
         }
 
@@ -133,14 +138,14 @@ namespace TeXShift.Core.Utils
                     // Check content length if available
                     if (response.Content.Headers.ContentLength > MaxFileSizeBytes)
                     {
-                        return new ImageLoadResult { Success = false, ErrorMessage = "File too large" };
+                        return new ImageLoadResult { Success = false, ErrorMessage = Resources.GetString("Error_Image_FileTooLarge") };
                     }
 
                     var bytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
 
                     if (bytes.Length > MaxFileSizeBytes)
                     {
-                        return new ImageLoadResult { Success = false, ErrorMessage = "File too large" };
+                        return new ImageLoadResult { Success = false, ErrorMessage = Resources.GetString("Error_Image_FileTooLarge") };
                     }
 
                     var format = GetImageFormat(uri.AbsolutePath);
@@ -151,7 +156,7 @@ namespace TeXShift.Core.Utils
                     }
                     if (format == null)
                     {
-                        return new ImageLoadResult { Success = false, ErrorMessage = "Unsupported format" };
+                        return new ImageLoadResult { Success = false, ErrorMessage = Resources.GetString("Error_Image_UnsupportedFormat") };
                     }
 
                     var base64 = Convert.ToBase64String(bytes);
@@ -166,11 +171,18 @@ namespace TeXShift.Core.Utils
             }
             catch (TaskCanceledException)
             {
-                return new ImageLoadResult { Success = false, ErrorMessage = "Request timeout" };
+                return new ImageLoadResult { Success = false, ErrorMessage = Resources.GetString("Error_Image_RequestTimeout") };
+            }
+            catch (HttpRequestException ex)
+            {
+                return new ImageLoadResult { Success = false, ErrorMessage = ex.Message };
             }
             catch (Exception ex)
             {
-                return new ImageLoadResult { Success = false, ErrorMessage = ex.Message };
+                throw new ImageLoadException(
+                    Resources.GetString("Error_Image_LoadFailed"),
+                    $"Failed to load image from URL '{uri}'. {ex.GetType().Name}: {ex.Message}",
+                    ex);
             }
         }
 

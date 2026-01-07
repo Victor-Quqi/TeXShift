@@ -115,6 +115,42 @@
   <data name="Error_EmptyTextBox" xml:space="preserve">
     <value>当前文本框为空，没有可转换的内容。</value>
   </data>
+  <data name="Error_NoPageId" xml:space="preserve">
+    <value>无法获取当前页面的ID。</value>
+  </data>
+  <data name="Error_GetPageContentFailed" xml:space="preserve">
+    <value>获取页面内容失败。</value>
+  </data>
+  <data name="Error_NoSelection" xml:space="preserve">
+    <value>未检测到选中的内容。&#xA;&#xA;请先用鼠标选中一些文字，或将光标点入一个文本框中。</value>
+  </data>
+  <data name="Error_NoTextBoxContainer" xml:space="preserve">
+    <value>错误：未能找到光标所在的文本框容器。</value>
+  </data>
+  <data name="Error_NoValidTextContainer" xml:space="preserve">
+    <value>成功定位到选区，但未能找到有效的文本容器。</value>
+  </data>
+  <data name="Error_NoValidTextContent" xml:space="preserve">
+    <value>成功定位到选区，但未能提取出有效文本内容。</value>
+  </data>
+  <data name="Error_UpdatePageFailed" xml:space="preserve">
+    <value>更新 OneNote 页面内容时发生错误: {0}</value>
+  </data>
+  <data name="OneNote_TodoTag" xml:space="preserve">
+    <value>待办事项</value>
+  </data>
+  <data name="Mode_Cursor" xml:space="preserve">
+    <value>光标模式 (操作整个文本框)</value>
+  </data>
+  <data name="Mode_Selection" xml:space="preserve">
+    <value>选区模式 (只操作选中的文字)</value>
+  </data>
+  <data name="Mode_Unknown" xml:space="preserve">
+    <value>未知模式</value>
+  </data>
+  <data name="Debug_ConversionFailed" xml:space="preserve">
+    <value>转换失败&#xA;&#xA;时间: {0}&#xA;&#xA;错误消息:&#xA;{1}&#xA;&#xA;堆栈跟踪:&#xA;{2}</value>
+  </data>
   <data name="UI_LanguageTitle" xml:space="preserve">
     <value>语言</value>
   </data>
@@ -159,5 +195,23 @@
   </data>
   <data name="Dialog_HResultLabel" xml:space="preserve">
     <value>HResult</value>
+  </data>
+  <data name="Error_Image_EmptySource" xml:space="preserve">
+    <value>图片源为空</value>
+  </data>
+  <data name="Error_Image_FileNotFound" xml:space="preserve">
+    <value>图片文件不存在</value>
+  </data>
+  <data name="Error_Image_FileTooLarge" xml:space="preserve">
+    <value>图片文件过大</value>
+  </data>
+  <data name="Error_Image_UnsupportedFormat" xml:space="preserve">
+    <value>不支持的图片格式</value>
+  </data>
+  <data name="Error_Image_RequestTimeout" xml:space="preserve">
+    <value>图片请求超时</value>
+  </data>
+  <data name="Error_Image_LoadFailed" xml:space="preserve">
+    <value>加载图片失败</value>
   </data>
 </root>
