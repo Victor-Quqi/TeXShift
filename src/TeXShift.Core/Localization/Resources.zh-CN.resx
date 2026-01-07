@@ -112,6 +112,9 @@
   <data name="Error_MathConversionFailed" xml:space="preserve">
     <value>公式转换失败。请检查 LaTeX 表达式。</value>
   </data>
+  <data name="Error_EmptyTextBox" xml:space="preserve">
+    <value>当前文本框为空，没有可转换的内容。</value>
+  </data>
   <data name="UI_LanguageTitle" xml:space="preserve">
     <value>语言</value>
   </data>

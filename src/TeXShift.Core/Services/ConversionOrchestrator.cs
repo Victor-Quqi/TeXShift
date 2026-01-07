@@ -104,12 +104,8 @@ namespace TeXShift.Core.Services
 
                 if (!readResult.IsSuccess)
                 {
-                    var error = new InvalidOperationException(readResult.ErrorMessage ?? "Content extraction failed.");
-                    result.Error = error;
-                    if (options.WriteDebugFiles)
-                    {
-                        await logger.LogErrorAsync(error).ConfigureAwait(false);
-                    }
+                    // Don't wrap read errors in an exception - let Connect.cs handle
+                    // ReadResult.ErrorMessage directly for user-friendly display
                     return result;
                 }
 

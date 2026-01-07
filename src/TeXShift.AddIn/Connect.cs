@@ -366,13 +366,17 @@ using OneNote = Microsoft.Office.Interop.OneNote;
 
                 if (!result.Success)
                 {
-                    if (result.ReadResult != null && !result.ReadResult.IsSuccess)
-                    {
-                        ShowTopMostMessageBox(result.ReadResult.ErrorMessage, "操作提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                    else
+                    if (result.Error != null)
                     {
                         HandleConversionError(result.Error, result.DebugOutputFolder);
+                    }
+                    else if (result.ReadResult != null && !result.ReadResult.IsSuccess)
+                    {
+                        // Show read errors (like "no selection") using the new error dialog
+                        ShowWpfErrorDialog(
+                            result.ReadResult.ErrorMessage,
+                            string.Empty,
+                            ResolveDebugFolderPath(result.DebugOutputFolder));
                     }
                     return;
                 }
@@ -539,7 +543,7 @@ using OneNote = Microsoft.Office.Interop.OneNote;
                 }
             }
         }
- 
+
         /// <summary>
         /// Debug button: Shows and saves the selected content's XML structure only.
         /// </summary>

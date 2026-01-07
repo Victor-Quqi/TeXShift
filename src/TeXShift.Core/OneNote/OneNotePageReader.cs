@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Abstractions;
+using TeXShift.Core.Localization;
 using OneNoteInterop = Microsoft.Office.Interop.OneNote;
 
 namespace TeXShift.Core.OneNote
@@ -112,6 +113,17 @@ namespace TeXShift.Core.OneNote
             }
 
             string extractedText = sb.ToString().TrimEnd('\r', '\n');
+
+            if (string.IsNullOrWhiteSpace(extractedText))
+            {
+                return new ReadResult
+                {
+                    IsSuccess = false,
+                    Mode = DetectionMode.Cursor,
+                    ErrorMessage = Resources.GetString("Error_EmptyTextBox")
+                };
+            }
+
             string objectId = outlineContainer.Attribute("objectID")?.Value;
 
             var result = new ReadResult
