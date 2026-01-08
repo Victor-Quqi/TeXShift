@@ -355,10 +355,20 @@ namespace TeXShift.Core.Mermaid
                 theme: theme || 'default',
                 securityLevel: 'loose',
                 flowchart: {
-                    htmlLabels: false
+                    htmlLabels: false,
+                    useMaxWidth: true
                 },
                 sequence: {
-                    useMaxWidth: false
+                    useMaxWidth: true
+                },
+                class: {
+                    useMaxWidth: true
+                },
+                state: {
+                    useMaxWidth: true
+                },
+                journey: {
+                    useMaxWidth: true
                 }
             });
         } catch (e) {
@@ -376,6 +386,23 @@ namespace TeXShift.Core.Mermaid
     }
 
     function getSvgDimensions(svgEl) {
+        try {
+            var container = document.getElementById('texshift-mermaid-container');
+            container.style.cssText = 'position: fixed; left: -100000px; top: -100000px; width: auto; height: auto; overflow: visible;';
+            container.innerHTML = '';
+            var clonedSvg = svgEl.cloneNode(true);
+            container.appendChild(clonedSvg);
+
+            var bbox = clonedSvg.getBBox();
+            container.innerHTML = '';
+            container.style.cssText = 'position: fixed; left: -100000px; top: -100000px; width: 1px; height: 1px; overflow: hidden;';
+
+            if (bbox && bbox.width > 0 && bbox.height > 0) {
+                return { width: Math.ceil(bbox.x + bbox.width + 10), height: Math.ceil(bbox.y + bbox.height + 10) };
+            }
+        } catch (e) {
+        }
+
         var width = getFirstNumber(svgEl.getAttribute('width'));
         var height = getFirstNumber(svgEl.getAttribute('height'));
         if (width > 0 && height > 0) {
@@ -392,25 +419,6 @@ namespace TeXShift.Core.Mermaid
                     return { width: vbW, height: vbH };
                 }
             }
-        }
-
-        try {
-            var container = document.getElementById('texshift-mermaid-container');
-            container.innerHTML = '';
-            container.appendChild(svgEl);
-
-            var rect = svgEl.getBoundingClientRect();
-            if (rect && rect.width > 0 && rect.height > 0) {
-                container.innerHTML = '';
-                return { width: rect.width, height: rect.height };
-            }
-
-            var bbox = svgEl.getBBox();
-            container.innerHTML = '';
-            if (bbox && bbox.width > 0 && bbox.height > 0) {
-                return { width: bbox.width, height: bbox.height };
-            }
-        } catch (e) {
         }
 
         return { width: 800, height: 600 };
@@ -438,25 +446,6 @@ namespace TeXShift.Core.Mermaid
         if (!svgEl) {
             throw new Error('Invalid SVG');
         }
-
-        var foreignObjects = svgEl.querySelectorAll('foreignObject');
-        foreignObjects.forEach(function(fo) {
-            var text = fo.textContent || '';
-            var parent = fo.parentNode;
-            if (parent && text.trim()) {
-                var textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                textEl.textContent = text.trim();
-                var x = fo.getAttribute('x') || '0';
-                var y = fo.getAttribute('y') || '0';
-                textEl.setAttribute('x', x);
-                textEl.setAttribute('y', y);
-                textEl.setAttribute('font-size', '14');
-                textEl.setAttribute('fill', '#333');
-                parent.replaceChild(textEl, fo);
-            } else {
-                fo.remove();
-            }
-        });
 
         var serializer = new XMLSerializer();
         var processedSvgText = serializer.serializeToString(svgEl);
