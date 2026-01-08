@@ -6,6 +6,7 @@ using TeXShift.AddIn.Localization;
 using TeXShift.AddIn.UI;
 using TeXShift.AddIn.UI.WPF;
 using TeXShift.Core.Localization;
+using TeXShift.Core.Mermaid;
 
 namespace TeXShift.AddIn
 {
@@ -182,6 +183,15 @@ namespace TeXShift.AddIn
             {
                 styleConfig.SetHeadingFont(i, headings.GetFontSize(i));
             }
+
+            // Apply Mermaid settings
+            var mermaid = _appSettings.Mermaid;
+            _serviceContainer.MermaidOptions = new MermaidRenderOptions
+            {
+                Theme = mermaid.Theme ?? "default",
+                MaxWidth = mermaid.MaxWidth > 0 ? mermaid.MaxWidth : 1920,
+                MaxHeight = mermaid.MaxHeight > 0 ? mermaid.MaxHeight : 1080
+            };
         }
 
         #endregion

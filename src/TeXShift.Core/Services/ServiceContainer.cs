@@ -24,6 +24,12 @@ namespace TeXShift.Core.Services
         private readonly Lazy<IMermaidService> _mermaidService;
         private bool _disposed;
 
+        /// <summary>
+        /// Gets or sets the Mermaid render options.
+        /// Set this before conversion to apply theme, maxWidth, maxHeight settings.
+        /// </summary>
+        public MermaidRenderOptions MermaidOptions { get; set; }
+
         public ServiceContainer()
         {
             // Initialize singletons lazily
@@ -96,7 +102,7 @@ namespace TeXShift.Core.Services
         /// </summary>
         public IMarkdownConverter CreateMarkdownConverter(double? sourceOutlineWidth = null)
         {
-            return new MarkdownToOneNoteConverter(StyleConfig, MarkdownPipeline, MathService, MermaidService, sourceOutlineWidth);
+            return new MarkdownToOneNoteConverter(StyleConfig, MarkdownPipeline, MathService, MermaidService, MermaidOptions, sourceOutlineWidth);
         }
 
         /// <summary>

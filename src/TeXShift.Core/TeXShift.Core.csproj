@@ -38,5 +38,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\Math\mathjax-loader.html" />
+    <EmbeddedResource Include="Resources\Mermaid\mermaid-loader.html" />
   </ItemGroup>
 </Project>

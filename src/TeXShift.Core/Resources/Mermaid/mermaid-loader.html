@@ -35,6 +35,9 @@
                 },
                 journey: {
                     useMaxWidth: true
+                },
+                gantt: {
+                    useMaxWidth: true
                 }
             });
         } catch (e) {
@@ -54,12 +57,38 @@
     }
 
     function getSvgDimensions(svgEl) {
-        // First try to get actual content bounding box (most accurate)
+        var candidates = [];
+
+        // 1. Try viewBox first (usually most reliable for Mermaid)
+        var viewBox = svgEl.getAttribute('viewBox');
+        if (viewBox) {
+            var parts = viewBox.trim().split(/[\s,]+/);
+            if (parts.length === 4) {
+                var vbW = parseFloat(parts[2]);
+                var vbH = parseFloat(parts[3]);
+                if (vbW > 0 && vbH > 0) {
+                    candidates.push({ width: vbW, height: vbH, source: 'viewBox' });
+                }
+            }
+        }
+
+        // 2. Try width/height attributes
+        var width = getFirstNumber(svgEl.getAttribute('width'));
+        var height = getFirstNumber(svgEl.getAttribute('height'));
+        if (width > 0 && height > 0) {
+            candidates.push({ width: width, height: height, source: 'attr' });
+        }
+
+        // 3. Try getBBox() for actual content size
         try {
             var container = document.getElementById('texshift-mermaid-container');
             container.style.cssText = 'position: fixed; left: -100000px; top: -100000px; width: auto; height: auto; overflow: visible;';
             container.innerHTML = '';
             var clonedSvg = svgEl.cloneNode(true);
+            // Remove any max-width constraints that might affect measurement
+            clonedSvg.style.maxWidth = 'none';
+            clonedSvg.style.width = 'auto';
+            clonedSvg.style.height = 'auto';
             container.appendChild(clonedSvg);
 
             var bbox = clonedSvg.getBBox();
@@ -67,34 +96,34 @@
             container.style.cssText = 'position: fixed; left: -100000px; top: -100000px; width: 1px; height: 1px; overflow: hidden;';
 
             if (bbox && bbox.width > 0 && bbox.height > 0) {
-                // Add some padding for content that might extend beyond bbox
-                return { width: Math.ceil(bbox.x + bbox.width + 10), height: Math.ceil(bbox.y + bbox.height + 10) };
+                // Use bbox dimensions directly (not x+width which can be wrong)
+                var bboxW = Math.ceil(bbox.width + 20);
+                var bboxH = Math.ceil(bbox.height + 20);
+                candidates.push({ width: bboxW, height: bboxH, source: 'bbox' });
             }
         } catch (e) {
             // Ignore
         }
 
-        // Fallback to width/height attributes
-        var width = getFirstNumber(svgEl.getAttribute('width'));
-        var height = getFirstNumber(svgEl.getAttribute('height'));
-        if (width > 0 && height > 0) {
-            return { width: width, height: height };
+        // Choose the best candidate: prefer viewBox, but validate against bbox if available
+        if (candidates.length === 0) {
+            return { width: 800, height: 600 };
         }
 
-        // Fallback to viewBox
-        var viewBox = svgEl.getAttribute('viewBox');
-        if (viewBox) {
-            var parts = viewBox.trim().split(/\s+/);
-            if (parts.length === 4) {
-                var vbW = parseFloat(parts[2]);
-                var vbH = parseFloat(parts[3]);
-                if (vbW > 0 && vbH > 0) {
-                    return { width: vbW, height: vbH };
-                }
-            }
+        // If we have viewBox, use it (Mermaid usually sets this correctly)
+        var viewBoxCandidate = candidates.find(function(c) { return c.source === 'viewBox'; });
+        if (viewBoxCandidate) {
+            return { width: Math.ceil(viewBoxCandidate.width), height: Math.ceil(viewBoxCandidate.height) };
         }
 
-        return { width: 800, height: 600 };
+        // Otherwise use the largest dimensions from available sources
+        var maxW = 0, maxH = 0;
+        candidates.forEach(function(c) {
+            if (c.width > maxW) maxW = c.width;
+            if (c.height > maxH) maxH = c.height;
+        });
+
+        return { width: Math.ceil(maxW), height: Math.ceil(maxH) };
     }
 
     function computeTargetSize(width, height, maxWidth, maxHeight) {

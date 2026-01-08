@@ -47,8 +47,9 @@ namespace TeXShift.Core.Markdown.Handlers
                 {
                     _mermaidService.InitializeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                 }
-                catch
+                catch (Exception ex)
                 {
+                    System.Diagnostics.Debug.WriteLine($"[TeXShift] MermaidService initialization failed: {ex.Message}");
                     return _codeBlockFallback.Handle(block, context);
                 }
             }
@@ -56,10 +57,11 @@ namespace TeXShift.Core.Markdown.Handlers
             MermaidRenderResult result;
             try
             {
-                result = _mermaidService.RenderToImageAsync(code).ConfigureAwait(false).GetAwaiter().GetResult();
+                result = _mermaidService.RenderToImageAsync(code, context.MermaidOptions).ConfigureAwait(false).GetAwaiter().GetResult();
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[TeXShift] Mermaid render failed: {ex.Message}");
                 return _codeBlockFallback.Handle(block, context);
             }
 
@@ -74,7 +76,7 @@ namespace TeXShift.Core.Markdown.Handlers
                 new XAttribute("alt", "mermaid"),
                 new XElement(ns + "Data", result.Base64PngData));
 
-            return new[] { new XElement(ns + "OE", image) };
+            return new[] { new XElement(ns + "OE", new XAttribute("alignment", "center"), image) };
         }
 
         private static string ExtractCode(CodeBlock codeBlock)

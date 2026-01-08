@@ -215,9 +215,9 @@
     <value>主题</value>
   </data>
   <data name="Settings_Label_MaxWidth" xml:space="preserve">
-    <value>最大宽度 (px)</value>
+    <value>分辨率上限 (宽)</value>
   </data>
   <data name="Settings_Label_MaxHeight" xml:space="preserve">
-    <value>最大高度 (px)</value>
+    <value>分辨率上限 (高)</value>
   </data>
 </root>

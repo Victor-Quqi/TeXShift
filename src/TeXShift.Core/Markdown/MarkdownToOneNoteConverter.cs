@@ -41,6 +41,7 @@ namespace TeXShift.Core.Markdown
         public OneNoteStyleConfig StyleConfig { get; }
         public IMathService MathService { get; }
         public IMermaidService MermaidService { get; }
+        public MermaidRenderOptions MermaidOptions { get; }
         public int QuoteNestingDepth => _quoteNestingDepth;
         public double? SourceOutlineWidth { get; }
 
@@ -63,12 +64,14 @@ namespace TeXShift.Core.Markdown
             MarkdownPipeline pipeline,
             IMathService mathService,
             IMermaidService mermaidService,
+            MermaidRenderOptions mermaidOptions = null,
             double? sourceOutlineWidth = null)
         {
             StyleConfig = styleConfig ?? throw new ArgumentNullException(nameof(styleConfig));
             _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
             MathService = mathService;
             MermaidService = mermaidService;
+            MermaidOptions = mermaidOptions;
             SourceOutlineWidth = sourceOutlineWidth;
             _initialWidth = sourceOutlineWidth ?? StyleConfig.GetQuoteBlockStyle().BaseWidth;
 

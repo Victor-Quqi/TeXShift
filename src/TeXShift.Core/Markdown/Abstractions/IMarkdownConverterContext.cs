@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Xml.Linq;
 using TeXShift.Core.Configuration;
 using TeXShift.Core.Math;
+using TeXShift.Core.Mermaid;
 
 namespace TeXShift.Core.Markdown.Abstractions
 {
@@ -28,6 +29,11 @@ namespace TeXShift.Core.Markdown.Abstractions
         /// Gets the MathService for LaTeX to MathML conversion (may be null).
         /// </summary>
         IMathService MathService { get; }
+
+        /// <summary>
+        /// Gets the Mermaid render options (may be null to use defaults).
+        /// </summary>
+        MermaidRenderOptions MermaidOptions { get; }
 
         /// <summary>
         /// Gets the current nesting depth for quote blocks.
