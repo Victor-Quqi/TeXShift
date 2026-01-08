@@ -28,6 +28,7 @@ namespace TeXShift.Core.Markdown
     {
         private readonly Dictionary<Type, IBlockHandler> _blockHandlers;
         private readonly FallbackHandler _fallbackHandler = new FallbackHandler();
+        private readonly MermaidBlockHandler _mermaidBlockHandler;
         private readonly MarkdownPipeline _pipeline;
         private readonly HtmlEntityProcessor _entityProcessor = new HtmlEntityProcessor();
         private readonly IInlineRenderer _inlineRenderer;
@@ -77,6 +78,9 @@ namespace TeXShift.Core.Markdown
 
             // Create the inline renderer with dependencies
             _inlineRenderer = new InlineRenderer(styleConfig, mathService);
+
+            // Create the Mermaid handler (used for fenced code blocks with mermaid info string)
+            _mermaidBlockHandler = new MermaidBlockHandler(mermaidService);
 
             // Register all the specialized handlers for each block type.
             // Note: CodeBlock = indented code (4-space), FencedCodeBlock = ```code```
@@ -198,7 +202,7 @@ namespace TeXShift.Core.Markdown
                 var language = info.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
                 if (string.Equals(language, "mermaid", StringComparison.OrdinalIgnoreCase))
                 {
-                    return new MermaidBlockHandler(MermaidService).Handle(block, this);
+                    return _mermaidBlockHandler.Handle(block, this);
                 }
             }
 

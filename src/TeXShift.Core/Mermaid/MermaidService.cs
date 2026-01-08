@@ -265,9 +265,9 @@ namespace TeXShift.Core.Mermaid
 
                 tcs.SetResult(result);
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore malformed messages
+                System.Diagnostics.Debug.WriteLine($"[TeXShift] Malformed WebMessage ignored: {ex.Message}");
             }
         }
 
