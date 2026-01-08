@@ -23,6 +23,9 @@ namespace TeXShift.Tests.E2E
         private bool _disposed;
         private bool _createdNotebook;  // Track if we created the notebook
         private string _notebookPath;   // Path to delete on cleanup
+        private string _originalPageId; // Page ID to navigate back to after test
+        private bool _hadWindowsOnStart; // Track if OneNote had windows when we started
+        private bool _shouldCloseOneNote; // Flag to close OneNote on dispose
 
         private TestPageManager()
         {
@@ -68,6 +71,93 @@ namespace TeXShift.Tests.E2E
         public Task CleanupTestResourcesAsync()
         {
             return Task.Run(() => _staRunner.Run(CleanupTestResources));
+        }
+
+        /// <summary>
+        /// Saves the current active page ID so we can navigate back after test.
+        /// Call this before creating test pages.
+        /// </summary>
+        public Task SaveCurrentPageAsync()
+        {
+            return Task.Run(() => _staRunner.Run(SaveCurrentPage));
+        }
+
+        /// <summary>
+        /// Navigates back to the original page that was active before the test.
+        /// Call this after cleanup to restore the user's view.
+        /// </summary>
+        public Task RestoreOriginalPageAsync()
+        {
+            return Task.Run(() => _staRunner.Run(RestoreOriginalPage));
+        }
+
+        private void SaveCurrentPage()
+        {
+            EnsureNotDisposed();
+
+            OneNoteInterop.Window window = null;
+            OneNoteInterop.Windows windows = null;
+
+            try
+            {
+                windows = _oneNoteApp.Windows;
+                if (windows == null || windows.Count == 0)
+                {
+                    _hadWindowsOnStart = false;
+                    return;
+                }
+
+                _hadWindowsOnStart = true;
+                window = windows.CurrentWindow;
+                if (window != null)
+                {
+                    _originalPageId = window.CurrentPageId;
+                }
+            }
+            finally
+            {
+                if (window != null) Marshal.ReleaseComObject(window);
+                if (windows != null) Marshal.ReleaseComObject(windows);
+            }
+        }
+
+        private void RestoreOriginalPage()
+        {
+            EnsureNotDisposed();
+
+            if (!string.IsNullOrWhiteSpace(_originalPageId))
+            {
+                _oneNoteApp.NavigateTo(_originalPageId, null, false);
+                return;
+            }
+
+            // If OneNote wasn't open before, mark it for closing on dispose
+            if (!_hadWindowsOnStart)
+            {
+                _shouldCloseOneNote = true;
+            }
+        }
+
+        private void CloseOneNoteProcess()
+        {
+            // Kill OneNote process since we started it
+            try
+            {
+                var processes = System.Diagnostics.Process.GetProcessesByName("ONENOTE");
+                foreach (var proc in processes)
+                {
+                    proc.CloseMainWindow();
+                    if (!proc.WaitForExit(3000))
+                    {
+                        proc.Kill();
+                    }
+                    proc.Dispose();
+                }
+            }
+            catch
+            {
+                // Ignore process close failures
+            }
         }
 
         private void CleanupTestResources()
@@ -376,6 +466,12 @@ namespace TeXShift.Tests.E2E
             }
 
             _staRunner.Dispose();
+
+            // Close OneNote after COM is released
+            if (_shouldCloseOneNote)
+            {
+                CloseOneNoteProcess();
+            }
         }
 
         private sealed class StaTaskRunner : IDisposable

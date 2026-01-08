@@ -115,6 +115,9 @@ namespace TeXShift.Tests.E2E
                 pageManager = await TestPageManager.CreateAsync().ConfigureAwait(false);
                 serviceContainer = new ServiceContainer();
 
+                // Save current page so we can navigate back after test
+                await pageManager.SaveCurrentPageAsync().ConfigureAwait(false);
+
                 pageId = await pageManager.CreateTestPageAsync(testName, markdownContent).ConfigureAwait(false);
 
                 var orchestrator = serviceContainer.CreateConversionOrchestrator(pageManager.OneNoteApp);
@@ -209,6 +212,19 @@ namespace TeXShift.Tests.E2E
                     catch (Exception ex)
                     {
                         EmitError("清理测试笔记本失败。", ex);
+                    }
+                }
+
+                // Navigate back to original page after cleanup
+                if (pageManager != null)
+                {
+                    try
+                    {
+                        await pageManager.RestoreOriginalPageAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        EmitError("返回原始页面失败。", ex);
                     }
                 }
 
