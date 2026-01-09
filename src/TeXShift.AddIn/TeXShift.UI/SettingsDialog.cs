@@ -1,7 +1,4 @@
-using System;
 using System.Drawing;
-using System.Runtime.InteropServices;
-using System.Threading;
 using System.Windows.Forms;
 using TeXShift.AddIn.Localization;
 using TeXShift.Core.Configuration;
@@ -9,11 +6,19 @@ using TeXShift.Core.Configuration;
 namespace TeXShift.AddIn.UI
 {
     /// <summary>
-    /// Settings dialog for TeXShift configuration.
+    /// Settings dialog for TeXShift configuration (WinForms fallback).
     /// Uses TabControl to organize settings into categories.
     /// </summary>
-    public class SettingsDialog : Form
+    /// <remarks>
+    /// This is a partial class split into:
+    /// - SettingsDialog.cs: Fields, constructor, InitializeComponent
+    /// - SettingsDialog.Tabs.cs: Tab creation methods
+    /// - SettingsDialog.Settings.cs: Settings load/save, helpers, event handlers
+    /// </remarks>
+    public partial class SettingsDialog : Form
     {
+        #region Fields
+
         private readonly AppSettings _originalSettings;
         private AppSettings _currentSettings;
 
@@ -48,10 +53,22 @@ namespace TeXShift.AddIn.UI
         // Heading settings
         private NumericUpDown[] _headingFontSizeNumerics;
 
+        // Mermaid settings
+        private ComboBox _mermaidThemeComboBox;
+        private NumericUpDown _mermaidMaxWidthNumeric;
+        private NumericUpDown _mermaidMaxHeightNumeric;
+
+        // Language settings
+        private ComboBox _languageComboBox;
+
         // Buttons
         private Button _okButton;
         private Button _cancelButton;
         private Button _resetButton;
+
+        #endregion
+
+        #region Constructor
 
         public SettingsDialog(AppSettings settings)
         {
@@ -62,6 +79,10 @@ namespace TeXShift.AddIn.UI
             LoadSettingsToControls();
         }
 
+        #endregion
+
+        #region Public Methods
+
         /// <summary>
         /// Gets the updated settings after the dialog is closed with OK.
         /// </summary>
@@ -70,10 +91,14 @@ namespace TeXShift.AddIn.UI
             return _currentSettings;
         }
 
+        #endregion
+
+        #region Initialization
+
         private void InitializeComponent()
         {
             this.Text = UIResources.GetString("Settings_Title");
-            this.Size = new Size(500, 520);
+            this.Size = new Size(500, 560);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -84,12 +109,13 @@ namespace TeXShift.AddIn.UI
             _tabControl = new TabControl
             {
                 Location = new Point(12, 12),
-                Size = new Size(460, 420)
+                Size = new Size(460, 460)
             };
 
-            // Create tabs
+            // Create tabs (defined in SettingsDialog.Tabs.cs)
             CreateStyleTab();
             CreateCodeBlockTab();
+            CreateMermaidTab();
             CreateDebugTab();
 
             this.Controls.Add(_tabControl);
@@ -98,7 +124,7 @@ namespace TeXShift.AddIn.UI
             _okButton = new Button
             {
                 Text = UIResources.GetString("Settings_Button_Ok"),
-                Location = new Point(216, 445),
+                Location = new Point(216, 485),
                 Size = new Size(80, 28),
                 DialogResult = DialogResult.OK
             };
@@ -107,7 +133,7 @@ namespace TeXShift.AddIn.UI
             _cancelButton = new Button
             {
                 Text = UIResources.GetString("Settings_Button_Cancel"),
-                Location = new Point(302, 445),
+                Location = new Point(302, 485),
                 Size = new Size(80, 28),
                 DialogResult = DialogResult.Cancel
             };
@@ -115,7 +141,7 @@ namespace TeXShift.AddIn.UI
             _resetButton = new Button
             {
                 Text = UIResources.GetString("Settings_Button_ResetDefaults"),
-                Location = new Point(388, 445),
+                Location = new Point(388, 485),
                 Size = new Size(80, 28)
             };
             _resetButton.Click += ResetButton_Click;
@@ -128,467 +154,6 @@ namespace TeXShift.AddIn.UI
             this.CancelButton = _cancelButton;
         }
 
-        private void CreateDebugTab()
-        {
-            var tab = new TabPage(UIResources.GetString("Settings_Tab_Debug"));
-
-            // Show debug buttons
-            _showDebugButtonsCheckBox = new CheckBox
-            {
-                Text = UIResources.GetString("Settings_Checkbox_ShowDebugButtons"),
-                Location = new Point(20, 25),
-                Size = new Size(400, 24),
-                AutoSize = true
-            };
-
-            // Export PDF
-            _exportPdfCheckBox = new CheckBox
-            {
-                Text = UIResources.GetString("Settings_Checkbox_ExportPdf"),
-                Location = new Point(20, 55),
-                Size = new Size(400, 24),
-                AutoSize = true
-            };
-
-            // Debug output path
-            var debugPathLabel = new Label
-            {
-                Text = UIResources.GetString("Settings_Description_DebugOutputPath"),
-                Location = new Point(20, 95),
-                AutoSize = true
-            };
-
-            _debugOutputPathTextBox = new TextBox
-            {
-                Location = new Point(20, 120),
-                Size = new Size(340, 23)
-            };
-
-            _browseDebugPathButton = new Button
-            {
-                Text = UIResources.GetString("Settings_Button_Browse"),
-                Location = new Point(365, 119),
-                Size = new Size(70, 25)
-            };
-            _browseDebugPathButton.Click += BrowseDebugPath_Click;
-
-            tab.Controls.Add(_showDebugButtonsCheckBox);
-            tab.Controls.Add(_exportPdfCheckBox);
-            tab.Controls.Add(debugPathLabel);
-            tab.Controls.Add(_debugOutputPathTextBox);
-            tab.Controls.Add(_browseDebugPathButton);
-
-            _tabControl.TabPages.Add(tab);
-        }
-
-        private void CreateCodeBlockTab()
-        {
-            var tab = new TabPage(UIResources.GetString("Settings_Tab_CodeBlock"));
-
-            int y = 20;
-
-            // Background color
-            var bgLabel = new Label { Text = UIResources.GetString("Settings_Label_BackgroundColor") + ":", Location = new Point(20, y + 4), AutoSize = true };
-            _codeBlockBgColorPanel = CreateColorPanel(new Point(120, y));
-            _codeBlockBgColorButton = new Button { Text = UIResources.GetString("Settings_Button_Select"), Location = new Point(165, y), Size = new Size(60, 24) };
-            _codeBlockBgColorButton.Click += (s, e) => PickColor(_codeBlockBgColorPanel);
-            tab.Controls.Add(bgLabel);
-            tab.Controls.Add(_codeBlockBgColorPanel);
-            tab.Controls.Add(_codeBlockBgColorButton);
-            y += 35;
-
-            // Text color
-            var textLabel = new Label { Text = UIResources.GetString("Settings_Label_TextColor") + ":", Location = new Point(20, y + 4), AutoSize = true };
-            _codeBlockTextColorPanel = CreateColorPanel(new Point(120, y));
-            _codeBlockTextColorButton = new Button { Text = UIResources.GetString("Settings_Button_Select"), Location = new Point(165, y), Size = new Size(60, 24) };
-            _codeBlockTextColorButton.Click += (s, e) => PickColor(_codeBlockTextColorPanel);
-            tab.Controls.Add(textLabel);
-            tab.Controls.Add(_codeBlockTextColorPanel);
-            tab.Controls.Add(_codeBlockTextColorButton);
-            y += 35;
-
-            // Font family
-            var fontLabel = new Label { Text = UIResources.GetString("Settings_Label_Font") + ":", Location = new Point(20, y + 4), AutoSize = true };
-            _codeBlockFontComboBox = new ComboBox
-            {
-                Location = new Point(120, y),
-                Size = new Size(150, 23),
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-            _codeBlockFontComboBox.Items.AddRange(FontPresets.MonospaceFonts);
-            tab.Controls.Add(fontLabel);
-            tab.Controls.Add(_codeBlockFontComboBox);
-            y += 35;
-
-            // Font size
-            var sizeLabel = new Label { Text = $"{UIResources.GetString("Settings_Label_FontSize")} (pt):", Location = new Point(20, y + 4), AutoSize = true };
-            _codeBlockFontSizeNumeric = new NumericUpDown
-            {
-                Location = new Point(120, y),
-                Size = new Size(80, 23),
-                Minimum = 8,
-                Maximum = 24,
-                DecimalPlaces = 1,
-                Increment = 0.5m
-            };
-            tab.Controls.Add(sizeLabel);
-            tab.Controls.Add(_codeBlockFontSizeNumeric);
-            y += 35;
-
-            // Space between lines
-            var spaceBetweenLabel = new Label { Text = $"{UIResources.GetString("Settings_Label_LineSpacing")} (pt):", Location = new Point(20, y + 4), AutoSize = true };
-            _codeBlockSpaceBetweenNumeric = new NumericUpDown
-            {
-                Location = new Point(120, y),
-                Size = new Size(80, 23),
-                Minimum = 12,
-                Maximum = 36,
-                DecimalPlaces = 1,
-                Increment = 0.5m
-            };
-            tab.Controls.Add(spaceBetweenLabel);
-            tab.Controls.Add(_codeBlockSpaceBetweenNumeric);
-            y += 35;
-
-            // Syntax highlight
-            _enableSyntaxHighlightCheckBox = new CheckBox
-            {
-                Text = UIResources.GetString("Settings_Checkbox_EnableSyntaxHighlight"),
-                Location = new Point(20, y),
-                AutoSize = true
-            };
-            tab.Controls.Add(_enableSyntaxHighlightCheckBox);
-            y += 40;
-
-            // Inline code section
-            var inlineLabel = new Label
-            {
-                Text = $"── {UIResources.GetString("Settings_Section_InlineCode")} ──",
-                Location = new Point(20, y),
-                AutoSize = true,
-                ForeColor = Color.Gray
-            };
-            tab.Controls.Add(inlineLabel);
-            y += 30;
-
-            // Inline code background
-            var inlineBgLabel = new Label { Text = UIResources.GetString("Settings_Label_BackgroundColor") + ":", Location = new Point(20, y + 4), AutoSize = true };
-            _inlineCodeBgColorPanel = CreateColorPanel(new Point(120, y));
-            _inlineCodeBgColorButton = new Button { Text = UIResources.GetString("Settings_Button_Select"), Location = new Point(165, y), Size = new Size(60, 24) };
-            _inlineCodeBgColorButton.Click += (s, e) => PickColor(_inlineCodeBgColorPanel);
-            tab.Controls.Add(inlineBgLabel);
-            tab.Controls.Add(_inlineCodeBgColorPanel);
-            tab.Controls.Add(_inlineCodeBgColorButton);
-            y += 35;
-
-            // Inline code font
-            var inlineFontLabel = new Label { Text = UIResources.GetString("Settings_Label_Font") + ":", Location = new Point(20, y + 4), AutoSize = true };
-            _inlineCodeFontComboBox = new ComboBox
-            {
-                Location = new Point(120, y),
-                Size = new Size(150, 23),
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-            _inlineCodeFontComboBox.Items.AddRange(FontPresets.MonospaceFonts);
-            tab.Controls.Add(inlineFontLabel);
-            tab.Controls.Add(_inlineCodeFontComboBox);
-
-            _tabControl.TabPages.Add(tab);
-        }
-
-        private void CreateStyleTab()
-        {
-            var tab = new TabPage(UIResources.GetString("Settings_Tab_Style"));
-
-            int y = 20;
-
-            // Quote block section
-            var quoteLabel = new Label
-            {
-                Text = $"── {UIResources.GetString("Settings_Section_QuoteBlock")} ──",
-                Location = new Point(20, y),
-                AutoSize = true,
-                ForeColor = Color.Gray
-            };
-            tab.Controls.Add(quoteLabel);
-            y += 30;
-
-            var quoteBgLabel = new Label { Text = UIResources.GetString("Settings_Label_BackgroundColor") + ":", Location = new Point(20, y + 4), AutoSize = true };
-            _quoteBlockBgColorPanel = CreateColorPanel(new Point(120, y));
-            _quoteBlockBgColorButton = new Button { Text = UIResources.GetString("Settings_Button_Select"), Location = new Point(165, y), Size = new Size(60, 24) };
-            _quoteBlockBgColorButton.Click += (s, e) => PickColor(_quoteBlockBgColorPanel);
-            tab.Controls.Add(quoteBgLabel);
-            tab.Controls.Add(_quoteBlockBgColorPanel);
-            tab.Controls.Add(_quoteBlockBgColorButton);
-            y += 45;
-
-            // Heading section
-            var headingLabel = new Label
-            {
-                Text = $"── {UIResources.GetString("Settings_Section_HeadingSize")} ──",
-                Location = new Point(20, y),
-                AutoSize = true,
-                ForeColor = Color.Gray
-            };
-            tab.Controls.Add(headingLabel);
-            y += 30;
-
-            _headingFontSizeNumerics = new NumericUpDown[6];
-            for (int i = 0; i < 6; i++)
-            {
-                var label = new Label
-                {
-                    Text = $"H{i + 1}:",
-                    Location = new Point(20 + (i % 3) * 140, y + (i / 3) * 35 + 4),
-                    AutoSize = true
-                };
-
-                _headingFontSizeNumerics[i] = new NumericUpDown
-                {
-                    Location = new Point(55 + (i % 3) * 140, y + (i / 3) * 35),
-                    Size = new Size(70, 23),
-                    Minimum = 8,
-                    Maximum = 36,
-                    DecimalPlaces = 1,
-                    Increment = 0.5m
-                };
-
-                tab.Controls.Add(label);
-                tab.Controls.Add(_headingFontSizeNumerics[i]);
-            }
-
-            _tabControl.TabPages.Add(tab);
-        }
-
-        private Panel CreateColorPanel(Point location)
-        {
-            return new Panel
-            {
-                Location = location,
-                Size = new Size(40, 24),
-                BorderStyle = BorderStyle.FixedSingle
-            };
-        }
-
-        private void PickColor(Panel colorPanel)
-        {
-            using (var dialog = new ColorDialog())
-            {
-                dialog.Color = colorPanel.BackColor;
-                dialog.FullOpen = true;
-                if (dialog.ShowDialog() == DialogResult.OK)
-                {
-                    colorPanel.BackColor = dialog.Color;
-                }
-            }
-        }
-
-        private void LoadSettingsToControls()
-        {
-            // Debug settings
-            _showDebugButtonsCheckBox.Checked = _currentSettings.Debug.ShowDebugButtons;
-            _exportPdfCheckBox.Checked = _currentSettings.Debug.ExportPdf;
-            _debugOutputPathTextBox.Text = _currentSettings.Debug.DebugOutputPath;
-
-            // Code block settings
-            _codeBlockBgColorPanel.BackColor = ColorFromHex(_currentSettings.CodeBlock.BackgroundColor);
-            _codeBlockTextColorPanel.BackColor = ColorFromHex(_currentSettings.CodeBlock.TextColor);
-            SelectOrAddItem(_codeBlockFontComboBox, _currentSettings.CodeBlock.FontFamily);
-            SafeSetNumericValue(_codeBlockFontSizeNumeric, (decimal)_currentSettings.CodeBlock.FontSize);
-            SafeSetNumericValue(_codeBlockSpaceBetweenNumeric, (decimal)_currentSettings.CodeBlock.SpaceBetween);
-            _enableSyntaxHighlightCheckBox.Checked = _currentSettings.CodeBlock.EnableSyntaxHighlight;
-
-            // Inline code settings
-            _inlineCodeBgColorPanel.BackColor = ColorFromHex(_currentSettings.InlineCode.BackgroundColor);
-            SelectOrAddItem(_inlineCodeFontComboBox, _currentSettings.InlineCode.FontFamily);
-
-            // Quote block settings
-            _quoteBlockBgColorPanel.BackColor = ColorFromHex(_currentSettings.QuoteBlock.BackgroundColor);
-
-            // Heading settings
-            for (int i = 0; i < 6; i++)
-            {
-                SafeSetNumericValue(_headingFontSizeNumerics[i], (decimal)_currentSettings.Headings.GetFontSize(i + 1));
-            }
-        }
-
-        /// <summary>
-        /// Safely sets a NumericUpDown value, clamping to valid range if needed.
-        /// Handles legacy configs with missing or out-of-range values.
-        /// </summary>
-        private static void SafeSetNumericValue(NumericUpDown numeric, decimal value)
-        {
-            value = Math.Max(value, numeric.Minimum);
-            value = Math.Min(value, numeric.Maximum);
-            numeric.Value = value;
-        }
-
-        private void SaveControlsToSettings()
-        {
-            // Debug settings
-            _currentSettings.Debug.ShowDebugButtons = _showDebugButtonsCheckBox.Checked;
-            _currentSettings.Debug.ExportPdf = _exportPdfCheckBox.Checked;
-            _currentSettings.Debug.DebugOutputPath = _debugOutputPathTextBox.Text.Trim();
-
-            // Code block settings
-            _currentSettings.CodeBlock.BackgroundColor = ColorToHex(_codeBlockBgColorPanel.BackColor);
-            _currentSettings.CodeBlock.TextColor = ColorToHex(_codeBlockTextColorPanel.BackColor);
-            _currentSettings.CodeBlock.FontFamily = _codeBlockFontComboBox.Text;
-            _currentSettings.CodeBlock.FontSize = (double)_codeBlockFontSizeNumeric.Value;
-            _currentSettings.CodeBlock.SpaceBetween = (double)_codeBlockSpaceBetweenNumeric.Value;
-            _currentSettings.CodeBlock.EnableSyntaxHighlight = _enableSyntaxHighlightCheckBox.Checked;
-
-            // Inline code settings
-            _currentSettings.InlineCode.BackgroundColor = ColorToHex(_inlineCodeBgColorPanel.BackColor);
-            _currentSettings.InlineCode.FontFamily = _inlineCodeFontComboBox.Text;
-
-            // Quote block settings
-            _currentSettings.QuoteBlock.BackgroundColor = ColorToHex(_quoteBlockBgColorPanel.BackColor);
-
-            // Heading settings
-            for (int i = 0; i < 6; i++)
-            {
-                _currentSettings.Headings.SetFontSize(i + 1, (double)_headingFontSizeNumerics[i].Value);
-            }
-        }
-
-        private void OkButton_Click(object sender, EventArgs e)
-        {
-            SaveControlsToSettings();
-        }
-
-        private void ResetButton_Click(object sender, EventArgs e)
-        {
-            var result = MessageBox.Show(
-                UIResources.GetString("Dialog_Confirm_ResetSettings"),
-                UIResources.GetString("Dialog_Confirm_ResetTitle"),
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
-
-            if (result == DialogResult.Yes)
-            {
-                _currentSettings = AppSettings.CreateDefault();
-                LoadSettingsToControls();
-            }
-        }
-
-        private void BrowseDebugPath_Click(object sender, EventArgs e)
-        {
-            string selectedPath = null;
-            string initialPath = _debugOutputPathTextBox.Text;
-
-            // FolderBrowserDialog must be run on an STA thread
-            var thread = new Thread(() =>
-            {
-                using (var dialog = new FolderBrowserDialog())
-                {
-                    dialog.Description = UIResources.GetString("Dialog_Title_BrowseFolder");
-                    if (!string.IsNullOrEmpty(initialPath))
-                    {
-                        dialog.SelectedPath = initialPath;
-                    }
-
-                    if (dialog.ShowDialog() == DialogResult.OK)
-                    {
-                        selectedPath = dialog.SelectedPath;
-                    }
-                }
-            });
-
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            thread.Join();
-
-            if (!string.IsNullOrEmpty(selectedPath))
-            {
-                _debugOutputPathTextBox.Text = selectedPath;
-            }
-        }
-
-        private void SelectOrAddItem(ComboBox comboBox, string value)
-        {
-            int index = comboBox.Items.IndexOf(value);
-            if (index >= 0)
-            {
-                comboBox.SelectedIndex = index;
-            }
-            else
-            {
-                comboBox.Items.Add(value);
-                comboBox.SelectedIndex = comboBox.Items.Count - 1;
-            }
-        }
-
-        private static Color ColorFromHex(string hex)
-        {
-            try
-            {
-                if (hex.StartsWith("#"))
-                    hex = hex.Substring(1);
-                return ColorTranslator.FromHtml("#" + hex);
-            }
-            catch
-            {
-                return Color.White;
-            }
-        }
-
-        private static string ColorToHex(Color color)
-        {
-            return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
-        }
-
-        private static AppSettings CloneSettings(AppSettings source)
-        {
-            return new AppSettings
-            {
-                Debug = new DebugSettings
-                {
-                    ShowDebugButtons = source.Debug.ShowDebugButtons,
-                    ExportPdf = source.Debug.ExportPdf,
-                    DebugOutputPath = source.Debug.DebugOutputPath
-                },
-                CodeBlock = new CodeBlockStyleSettings
-                {
-                    BackgroundColor = source.CodeBlock.BackgroundColor,
-                    TextColor = source.CodeBlock.TextColor,
-                    FontFamily = source.CodeBlock.FontFamily,
-                    FontSize = source.CodeBlock.FontSize,
-                    SpaceBetween = source.CodeBlock.SpaceBetween,
-                    EnableSyntaxHighlight = source.CodeBlock.EnableSyntaxHighlight
-                },
-                InlineCode = new InlineCodeStyleSettings
-                {
-                    BackgroundColor = source.InlineCode.BackgroundColor,
-                    FontFamily = source.InlineCode.FontFamily
-                },
-                QuoteBlock = new QuoteBlockStyleSettings
-                {
-                    BackgroundColor = source.QuoteBlock.BackgroundColor
-                },
-                Headings = new HeadingStyleSettings
-                {
-                    H1FontSize = source.Headings.H1FontSize,
-                    H2FontSize = source.Headings.H2FontSize,
-                    H3FontSize = source.Headings.H3FontSize,
-                    H4FontSize = source.Headings.H4FontSize,
-                    H5FontSize = source.Headings.H5FontSize,
-                    H6FontSize = source.Headings.H6FontSize
-                },
-                Layout = new Core.Configuration.LayoutSettings
-                {
-                    ListIndent = source.Layout.ListIndent,
-                    TableColumnWidth = source.Layout.TableColumnWidth,
-                    ParagraphSpaceBefore = source.Layout.ParagraphSpaceBefore,
-                    ParagraphSpaceAfter = source.Layout.ParagraphSpaceAfter
-                },
-                Image = new ImageSettings
-                {
-                    DownloadTimeoutSeconds = source.Image.DownloadTimeoutSeconds,
-                    MaxFileSizeBytes = source.Image.MaxFileSizeBytes
-                },
-                Language = source.Language
-            };
-        }
+        #endregion
     }
 }

@@ -64,13 +64,15 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <Grid>
+        <!-- Main Content -->
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <!-- Tab Control -->
+            <!-- Tab Control -->
         <TabControl Grid.Row="0" materialDesign:ColorZoneAssist.Mode="PrimaryMid">
             <!-- Style Tab -->
             <TabItem Header="{Binding TabStyleHeader}">
@@ -370,5 +372,39 @@
             <Button Content="{Binding OkButtonText}" IsDefault="True" Click="OkButton_Click"
                     Style="{StaticResource MaterialDesignRaisedButton}"/>
         </StackPanel>
+        </Grid>
+
+        <!-- Dialog Overlay -->
+        <Grid x:Name="DialogOverlay" Visibility="Collapsed">
+            <!-- Semi-transparent backdrop -->
+            <Border Background="#66000000" MouseDown="DialogOverlay_MouseDown"/>
+
+            <!-- Card without shadow -->
+            <materialDesign:Card x:Name="DialogCard" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                 Padding="24" MinWidth="280"
+                                 materialDesign:ElevationAssist.Elevation="Dp0"
+                                 RenderTransformOrigin="0.5,0.5">
+                <materialDesign:Card.RenderTransform>
+                    <ScaleTransform x:Name="DialogScale" ScaleX="1" ScaleY="1"/>
+                </materialDesign:Card.RenderTransform>
+                <StackPanel>
+                    <TextBlock Text="{Binding ResetDialogTitle}"
+                               Style="{StaticResource MaterialDesignHeadline6TextBlock}"
+                               Margin="0,0,0,16"/>
+                    <TextBlock Text="{Binding ResetDialogMessage}"
+                               TextWrapping="Wrap"
+                               MaxWidth="300"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
+                        <Button Content="{Binding CancelButtonText}"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Click="DialogCancel_Click"
+                                Margin="0,0,8,0"/>
+                        <Button Content="{Binding OkButtonText}"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Click="DialogConfirm_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </materialDesign:Card>
+        </Grid>
     </Grid>
 </Window>

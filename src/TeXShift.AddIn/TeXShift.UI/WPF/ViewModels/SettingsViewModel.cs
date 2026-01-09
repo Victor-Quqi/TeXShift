@@ -246,6 +246,9 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
         public string DebugOutputPathDescription => UIResources.GetString("Settings_Description_DebugOutputPath");
         public string DefaultDebugOutputPath => TeXShift.Core.Logging.DebugLogger.ResolveDebugOutputFolder(null);
 
+        public string ResetDialogTitle => UIResources.GetString("Dialog_Confirm_ResetTitle");
+        public string ResetDialogMessage => UIResources.GetString("Dialog_Confirm_ResetSettings");
+
         #endregion
 
         #region Font Options

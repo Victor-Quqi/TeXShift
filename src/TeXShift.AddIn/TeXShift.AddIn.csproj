@@ -107,6 +107,12 @@
     <Compile Include="TeXShift.UI\SettingsDialog.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="TeXShift.UI\SettingsDialog.Settings.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TeXShift.UI\SettingsDialog.Tabs.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <!-- WPF Files -->
     <Compile Include="TeXShift.UI\WPF\Converters\HexToColorConverter.cs" />
     <Compile Include="TeXShift.UI\WPF\Converters\ColorToBrushConverter.cs" />

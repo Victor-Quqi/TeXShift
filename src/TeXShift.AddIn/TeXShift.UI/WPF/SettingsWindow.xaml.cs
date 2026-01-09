@@ -1,7 +1,9 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media.Animation;
 using TeXShift.AddIn.Localization;
 using TeXShift.AddIn.UI.WPF.ViewModels;
 using TeXShift.Core.Configuration;
@@ -87,16 +89,53 @@ namespace TeXShift.AddIn.UI.WPF
 
         private void ResetButton_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
-                UIResources.GetString("Dialog_Confirm_ResetSettings"),
-                UIResources.GetString("Dialog_Confirm_ResetTitle"),
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            ShowDialogWithAnimation();
+        }
 
-            if (result == MessageBoxResult.Yes)
-            {
-                ViewModel.LoadFromSettings(AppSettings.CreateDefault());
-            }
+        private void ShowDialogWithAnimation()
+        {
+            DialogScale.ScaleX = 0.85;
+            DialogScale.ScaleY = 0.85;
+            DialogOverlay.Visibility = Visibility.Visible;
+
+            var duration = TimeSpan.FromMilliseconds(120);
+            var ease = new QuadraticEase { EasingMode = EasingMode.EaseOut };
+
+            var animX = new DoubleAnimation(0.85, 1.0, duration) { EasingFunction = ease };
+            var animY = new DoubleAnimation(0.85, 1.0, duration) { EasingFunction = ease };
+
+            DialogScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, animX);
+            DialogScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, animY);
+        }
+
+        private void HideDialog()
+        {
+            var duration = TimeSpan.FromMilliseconds(80);
+            var ease = new QuadraticEase { EasingMode = EasingMode.EaseIn };
+
+            var animX = new DoubleAnimation(1.0, 0.85, duration) { EasingFunction = ease };
+            var animY = new DoubleAnimation(1.0, 0.85, duration) { EasingFunction = ease };
+
+            animX.Completed += (s, e) => DialogOverlay.Visibility = Visibility.Collapsed;
+
+            DialogScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, animX);
+            DialogScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, animY);
+        }
+
+        private void DialogConfirm_Click(object sender, RoutedEventArgs e)
+        {
+            HideDialog();
+            ViewModel.LoadFromSettings(AppSettings.CreateDefault());
+        }
+
+        private void DialogCancel_Click(object sender, RoutedEventArgs e)
+        {
+            HideDialog();
+        }
+
+        private void DialogOverlay_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            HideDialog();
         }
 
         #region Dialog Handlers
