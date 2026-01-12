@@ -46,8 +46,14 @@ namespace TeXShift.Core.Logging
         /// <summary>
         /// Asynchronously saves the raw XML of the current selection to a debug file.
         /// </summary>
-        /// <returns>The full path to the saved file.</returns>
-        Task<string> LogSelectionXmlAsync(XNode selectionXml);
+        /// <returns>Tuple of (saved file path, formatted XML content).</returns>
+        Task<(string Path, string FormattedXml)> LogSelectionXmlAsync(XNode selectionXml);
+
+        /// <summary>
+        /// Asynchronously saves the raw XML of multiple selected nodes to a debug file.
+        /// </summary>
+        /// <returns>Tuple of (saved file path, formatted XML content).</returns>
+        Task<(string Path, string FormattedXml)> LogSelectionXmlAsync(System.Collections.Generic.IEnumerable<XElement> selectionXmlNodes);
 
         /// <summary>
         /// Asynchronously saves the raw XML of the entire page to a debug file.

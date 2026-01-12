@@ -40,9 +40,13 @@ namespace TeXShift.AddIn
 
                 var logger = _serviceContainer.CreateDebugLogger(_appSettings?.Debug?.DebugOutputPath);
                 logger.StartSession();
-                string savedPath = await logger.LogSelectionXmlAsync(result.OriginalXmlNode);
-                string formattedXml = System.Xml.Linq.XDocument.Parse(result.OriginalXmlNode.ToString()).ToString();
 
+                // Use OriginalXmlNodes for multi-selection, fall back to OriginalXmlNode for single/cursor mode
+                var (savedPath, formattedXml) = result.OriginalXmlNodes != null && result.OriginalXmlNodes.Count > 1
+                    ? await logger.LogSelectionXmlAsync(result.OriginalXmlNodes)
+                    : await logger.LogSelectionXmlAsync(result.OriginalXmlNode);
+
+                int nodeCount = result.OriginalXmlNodes?.Count ?? 1;
 
                 // Show in dialog
                 string caption = string.Format(
@@ -56,7 +60,7 @@ namespace TeXShift.AddIn
                     UIResources.GetString("Debug_SelectionXmlSaved"),
                     savedPath,
                     GetDetectionModeLabel(result.Mode),
-                    result.OriginalXmlNode.Name.LocalName);
+                    nodeCount > 1 ? $"{nodeCount} nodes" : result.OriginalXmlNode.Name.LocalName);
 
                 if (result.TargetObjectIds != null && result.TargetObjectIds.Count > 0)
                 {

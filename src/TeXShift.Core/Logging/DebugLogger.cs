@@ -76,16 +76,38 @@ namespace TeXShift.Core.Logging
             }
         }
 
-        public async Task<string> LogSelectionXmlAsync(XNode selectionXml)
+        public async Task<(string Path, string FormattedXml)> LogSelectionXmlAsync(XNode selectionXml)
         {
-            if (DebugSessionFolder == null || selectionXml == null) return null;
+            if (DebugSessionFolder == null || selectionXml == null) return (null, null);
 
             string filename = $"Selection_XML_{_sessionTimestamp}.xml";
             string fullPath = Path.Combine(DebugSessionFolder, filename);
             string formattedXml = FormatXml(selectionXml.ToString());
 
             await Task.Run(() => File.WriteAllText(fullPath, formattedXml, Encoding.UTF8));
-            return fullPath;
+            return (fullPath, formattedXml);
+        }
+
+        public async Task<(string Path, string FormattedXml)> LogSelectionXmlAsync(System.Collections.Generic.IEnumerable<XElement> selectionXmlNodes)
+        {
+            if (DebugSessionFolder == null || selectionXmlNodes == null) return (null, null);
+
+            var nodesList = selectionXmlNodes as System.Collections.Generic.IList<XElement>
+                ?? new System.Collections.Generic.List<XElement>(selectionXmlNodes);
+
+            if (nodesList.Count == 0) return (null, null);
+
+            string filename = $"Selection_XML_{_sessionTimestamp}.xml";
+            string fullPath = Path.Combine(DebugSessionFolder, filename);
+
+            // Wrap multiple nodes in a container element for valid XML
+            var container = new XElement("SelectedNodes",
+                new XAttribute("count", nodesList.Count),
+                nodesList);
+            string formattedXml = container.ToString();
+
+            await Task.Run(() => File.WriteAllText(fullPath, formattedXml, Encoding.UTF8));
+            return (fullPath, formattedXml);
         }
 
         public async Task<string> LogPageXmlAsync(string pageXml)
