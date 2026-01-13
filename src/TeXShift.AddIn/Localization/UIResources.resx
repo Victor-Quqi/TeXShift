@@ -160,14 +160,8 @@
   <data name="Dialog_Title_BrowseFolder" xml:space="preserve">
     <value>Select debug output folder</value>
   </data>
-  <data name="Message_Error_WpfFallback" xml:space="preserve">
-    <value>WPF dialog failed, falling back to WinForms:&#xA;&#xA;{0}&#xA;&#xA;{1}</value>
-  </data>
   <data name="Message_Error_OpenSettings" xml:space="preserve">
     <value>Failed to open settings:&#xA;&#xA;{0}</value>
-  </data>
-  <data name="Message_Title_WpfError" xml:space="preserve">
-    <value>TeXShift - WPF Error</value>
   </data>
   <data name="Message_Success_ConversionComplete" xml:space="preserve">
     <value>Conversion succeeded!&#xA;&#xA;Mode: {0}&#xA;Processed {1} characters&#xA;&#xA;Debug files saved to:&#xA;{2}</value>
@@ -219,5 +213,11 @@
   </data>
   <data name="Settings_Label_MaxHeight" xml:space="preserve">
     <value>Resolution limit (H)</value>
+  </data>
+  <data name="Settings_Section_HorizontalRule" xml:space="preserve">
+    <value>Horizontal Rule</value>
+  </data>
+  <data name="Settings_Checkbox_HorizontalRuleUseImage" xml:space="preserve">
+    <value>Use image mode (unchecked: use text characters)</value>
   </data>
 </root>

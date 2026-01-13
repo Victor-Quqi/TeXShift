@@ -159,6 +159,13 @@
                                 </Grid>
                             </StackPanel>
                         </materialDesign:Card>
+
+                        <materialDesign:Card Padding="16" Margin="0,16,0,0">
+                            <StackPanel>
+                                <TextBlock Text="{Binding HorizontalRuleSectionTitle}" Style="{StaticResource SectionTitle}"/>
+                                <CheckBox Content="{Binding HorizontalRuleUseImageText}" IsChecked="{Binding HorizontalRuleUseImage}"/>
+                            </StackPanel>
+                        </materialDesign:Card>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

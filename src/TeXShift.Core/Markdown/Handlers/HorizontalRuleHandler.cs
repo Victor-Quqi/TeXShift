@@ -54,7 +54,7 @@ namespace TeXShift.Core.Markdown.Handlers
 
         private XElement CreateImageRule(XNamespace ns, OneNoteStyleConfig.HorizontalRuleConfig styleConfig, int imageWidth)
         {
-            var base64Image = GenerateLineImageBase64(styleConfig.Color, imageWidth, 1);
+            var base64Image = GenerateLineImageBase64(styleConfig.Color, imageWidth, 2);
 
             // Per OneNote's XML schema, size attributes are not allowed on the Image element.
             // The image's dimensions are determined by the image data itself.
@@ -85,6 +85,11 @@ namespace TeXShift.Core.Markdown.Handlers
 
             using (var bmp = new Bitmap(width, height))
             {
+                // Set DPI to ensure proper physical size when copied to Word.
+                // At 300 DPI, a 2400px wide image = 8 inches ≈ standard page width.
+                // This prevents Word from incorrectly scaling the image.
+                bmp.SetResolution(300, 300);
+
                 using (var graphics = Graphics.FromImage(bmp))
                 {
                     graphics.Clear(color);

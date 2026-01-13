@@ -33,6 +33,9 @@ namespace TeXShift.Core.Configuration
         [DataMember]
         public MermaidSettings Mermaid { get; set; }
 
+        [DataMember]
+        public HorizontalRuleSettings HorizontalRule { get; set; }
+
         /// <summary>
         /// Preferred UI language (e.g., "zh-CN", "en-US"). Empty means follow system language.
         /// </summary>
@@ -49,6 +52,7 @@ namespace TeXShift.Core.Configuration
             Layout = new LayoutSettings();
             Image = new ImageSettings();
             Mermaid = new MermaidSettings();
+            HorizontalRule = new HorizontalRuleSettings();
         }
 
         /// <summary>
@@ -294,5 +298,20 @@ namespace TeXShift.Core.Configuration
         /// </summary>
         [DataMember]
         public string Theme { get; set; } = "default";
+    }
+
+    /// <summary>
+    /// Horizontal rule (divider) settings.
+    /// </summary>
+    [DataContract]
+    public class HorizontalRuleSettings
+    {
+        /// <summary>
+        /// Whether to use image mode (true) or character mode (false).
+        /// Image mode: renders as a PNG line image.
+        /// Character mode: renders as repeated Unicode characters.
+        /// </summary>
+        [DataMember]
+        public bool UseImage { get; set; } = true;
     }
 }

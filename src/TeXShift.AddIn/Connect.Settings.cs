@@ -3,7 +3,6 @@ using System.Windows.Forms;
 using System.Windows.Interop;
 using Microsoft.Office.Core;
 using TeXShift.AddIn.Localization;
-using TeXShift.AddIn.UI;
 using TeXShift.AddIn.UI.WPF;
 using TeXShift.Core.Localization;
 using TeXShift.Core.Mermaid;
@@ -28,28 +27,11 @@ namespace TeXShift.AddIn
             }
             catch (Exception ex)
             {
-                // Temporarily show WPF error for debugging
                 ShowTopMostMessageBox(
-                    string.Format(
-                        UIResources.GetString("Message_Error_WpfFallback"),
-                        ex.Message,
-                        ex.StackTrace ?? string.Empty),
-                    UIResources.GetString("Message_Title_WpfError"),
+                    string.Format(UIResources.GetString("Message_Error_OpenSettings"), ex.Message),
+                    Resources.GetString("Dialog_ErrorTitle"),
                     MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-
-                try
-                {
-                    ShowWinFormsSettingsDialog();
-                }
-                catch (Exception ex2)
-                {
-                    ShowTopMostMessageBox(
-                        string.Format(UIResources.GetString("Message_Error_OpenSettings"), ex2.Message),
-                        Resources.GetString("Dialog_ErrorTitle"),
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
-                }
+                    MessageBoxIcon.Error);
             }
         }
 
@@ -122,27 +104,6 @@ namespace TeXShift.AddIn
             }
         }
 
-        /// <summary>
-        /// Fallback: Shows the WinForms settings dialog.
-        /// </summary>
-        private void ShowWinFormsSettingsDialog()
-        {
-            var owner = new Win32Window(GetForegroundWindow());
-            using (var dialog = new SettingsDialog(_appSettings))
-            {
-                if (dialog.ShowDialog(owner) == DialogResult.OK)
-                {
-                    _appSettings = dialog.GetUpdatedSettings();
-                    _settingsManager.Save(_appSettings);
-                    LocalizationManager.Initialize(_appSettings?.Language);
-                    ApplySettingsToStyleConfig();
-
-                    // Refresh Ribbon to update button visibility
-                    _ribbon?.Invalidate();
-                }
-            }
-        }
-
         #endregion
 
         #region Settings Application
@@ -192,6 +153,13 @@ namespace TeXShift.AddIn
                 MaxWidth = mermaid.MaxWidth > 0 ? mermaid.MaxWidth : 1920,
                 MaxHeight = mermaid.MaxHeight > 0 ? mermaid.MaxHeight : 1080
             };
+
+            // Apply horizontal rule settings
+            var horizontalRule = _appSettings.HorizontalRule;
+            var hrMode = (horizontalRule?.UseImage ?? true)
+                ? Core.Configuration.OneNoteStyleConfig.HorizontalRuleMode.Image
+                : Core.Configuration.OneNoteStyleConfig.HorizontalRuleMode.Character;
+            styleConfig.SetHorizontalRuleStyle(hrMode, "#888888", 90, '─', 2325);
         }
 
         #endregion

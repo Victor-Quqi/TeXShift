@@ -188,6 +188,17 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
 
         #endregion
 
+        #region Horizontal Rule Settings
+
+        private bool _horizontalRuleUseImage;
+        public bool HorizontalRuleUseImage
+        {
+            get => _horizontalRuleUseImage;
+            set => SetProperty(ref _horizontalRuleUseImage, value);
+        }
+
+        #endregion
+
         #region Language Settings
 
         private LanguageOption _selectedLanguage;
@@ -224,6 +235,7 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
         public string CodeBlockSectionTitle => UIResources.GetString("Settings_Section_CodeBlock");
         public string InlineCodeSectionTitle => UIResources.GetString("Settings_Section_InlineCode");
         public string MermaidSectionTitle => UIResources.GetString("Settings_Section_Mermaid");
+        public string HorizontalRuleSectionTitle => UIResources.GetString("Settings_Section_HorizontalRule");
 
         public string BackgroundColorLabel => UIResources.GetString("Settings_Label_BackgroundColor");
         public string TextColorLabel => UIResources.GetString("Settings_Label_TextColor");
@@ -243,6 +255,7 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
         public string EnableSyntaxHighlightText => UIResources.GetString("Settings_Checkbox_EnableSyntaxHighlight");
         public string ShowDebugButtonsText => UIResources.GetString("Settings_Checkbox_ShowDebugButtons");
         public string ExportPdfText => UIResources.GetString("Settings_Checkbox_ExportPdf");
+        public string HorizontalRuleUseImageText => UIResources.GetString("Settings_Checkbox_HorizontalRuleUseImage");
         public string DebugOutputPathDescription => UIResources.GetString("Settings_Description_DebugOutputPath");
         public string DefaultDebugOutputPath => TeXShift.Core.Logging.DebugLogger.ResolveDebugOutputFolder(null);
 
@@ -386,6 +399,10 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
             MermaidMaxWidth = mermaidSettings.MaxWidth;
             MermaidMaxHeight = mermaidSettings.MaxHeight;
 
+            // Horizontal Rule
+            var horizontalRuleSettings = settings.HorizontalRule ?? new HorizontalRuleSettings();
+            HorizontalRuleUseImage = horizontalRuleSettings.UseImage;
+
             // Preserve Layout/Image settings
             _layoutSettings = CloneLayoutSettings(settings.Layout);
             _imageSettings = CloneImageSettings(settings.Image);
@@ -456,6 +473,10 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
                     Theme = string.IsNullOrWhiteSpace(MermaidTheme) ? "default" : MermaidTheme,
                     MaxWidth = MermaidMaxWidth > 0 ? MermaidMaxWidth : 1920,
                     MaxHeight = MermaidMaxHeight > 0 ? MermaidMaxHeight : 1080
+                },
+                HorizontalRule = new HorizontalRuleSettings
+                {
+                    UseImage = HorizontalRuleUseImage
                 },
                 Layout = CloneLayoutSettings(_layoutSettings),
                 Image = CloneImageSettings(_imageSettings),

@@ -160,14 +160,8 @@
   <data name="Dialog_Title_BrowseFolder" xml:space="preserve">
     <value>选择调试输出目录</value>
   </data>
-  <data name="Message_Error_WpfFallback" xml:space="preserve">
-    <value>WPF 对话框失败，回退到 WinForms:&#xA;&#xA;{0}&#xA;&#xA;{1}</value>
-  </data>
   <data name="Message_Error_OpenSettings" xml:space="preserve">
     <value>打开设置失败:&#xA;&#xA;{0}</value>
-  </data>
-  <data name="Message_Title_WpfError" xml:space="preserve">
-    <value>TeXShift - WPF 错误</value>
   </data>
   <data name="Message_Success_ConversionComplete" xml:space="preserve">
     <value>转换成功!&#xA;&#xA;模式: {0}&#xA;处理了 {1} 个字符&#xA;&#xA;调试文件已保存至:&#xA;{2}</value>
@@ -219,5 +213,11 @@
   </data>
   <data name="Settings_Label_MaxHeight" xml:space="preserve">
     <value>分辨率上限 (高)</value>
+  </data>
+  <data name="Settings_Section_HorizontalRule" xml:space="preserve">
+    <value>分隔线</value>
+  </data>
+  <data name="Settings_Checkbox_HorizontalRuleUseImage" xml:space="preserve">
+    <value>使用图片模式 (取消勾选则使用文字字符)</value>
   </data>
 </root>
