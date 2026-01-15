@@ -262,7 +262,6 @@ namespace TeXShift.Core.Math
 
         private string GetMathJaxLoaderHtml()
         {
-            // Try to load from embedded resource first
             var assembly = Assembly.GetExecutingAssembly();
             var resourceName = "TeXShift.Core.Resources.Math.mathjax-loader.html";
 
@@ -277,37 +276,8 @@ namespace TeXShift.Core.Math
                 }
             }
 
-            // Fallback: return inline HTML with MathJax CDN (requires internet)
-            return @"<!DOCTYPE html>
-<html>
-<head>
-    <script>
-        MathJax = {
-            startup: { typeset: false },
-            tex: { packages: {'[+]': ['ams', 'newcommand', 'configmacros']} }
-        };
-    </script>
-    <script src=""https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js""></script>
-</head>
-<body>
-<script>
-    var mathJaxReady = false;
-    MathJax.startup.promise.then(() => { mathJaxReady = true; });
-
-    function isMathJaxReady() {
-        return mathJaxReady;
-    }
-
-    function texToMml(latex, display) {
-        try {
-            return MathJax.tex2mml(latex, { display: display });
-        } catch (e) {
-            return '<math xmlns=""http://www.w3.org/1998/Math/MathML""><merror><mtext>' + e.message + '</mtext></merror></math>';
-        }
-    }
-</script>
-</body>
-</html>";
+            throw new InvalidOperationException(
+                "MathJax loader HTML not found. Expected embedded resource 'TeXShift.Core.Resources.Math.mathjax-loader.html'.");
         }
 
         private async Task WaitForMathJaxReady()

@@ -200,7 +200,10 @@ src/TeXShift.Core/
 - [ ] `HtmlStripper` 去高亮工具
 - [ ] `TeXShift.Tests.E2E` 增加 `reverse-xml` / `reverse-inplace`（用于阶段性验证与写回验证）
 
-**验证**: `reverse-xml` 验证 XML→Markdown（无需 Ribbon）
+**验证**:
+- `InlineParser` 单元测试（粗体、斜体、删除线、链接）
+- `HtmlStripper` 单元测试（去除语法高亮 HTML）
+- `reverse-xml` E2E 骨架验证
 
 ### 阶段2：基础元素处理器
 - [ ] `ParagraphElementHandler`
@@ -224,7 +227,11 @@ src/TeXShift.Core/
 - [ ] 反向转换：Meta 命中且签名一致 → 直接输出 source；否则丢弃并解析兜底
 - [ ] 一键交换（写回后读回）：用 OneNote 最终落盘内容更新签名（减少误判）
 
-**验证**：受控 Outline 的往返、签名过期行为、占位符输出、跨复制/粘贴行为
+**验证**：
+- 受控 Outline 往返测试
+- 签名过期行为、占位符输出
+- 正向转换回归测试（防止改坏 `MarkdownToOneNoteConverter`）
+- 跨复制/粘贴行为（手动验收）
 
 ### 阶段5：特殊元素处理器
 - [ ] `MathElementHandler`（Meta 优先；过期/缺失 → warning + 占位符）

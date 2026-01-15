@@ -324,52 +324,8 @@ namespace TeXShift.Core.Mermaid
                 }
             }
 
-            // Fallback: load from disk in dev scenarios
-            var diskPath = FindMermaidLoaderHtmlPath();
-            if (!string.IsNullOrEmpty(diskPath) && File.Exists(diskPath))
-            {
-                return File.ReadAllText(diskPath, Encoding.UTF8);
-            }
-
             throw new InvalidOperationException(
-                "Mermaid loader HTML not found. Expected embedded resource 'TeXShift.Core.Resources.Mermaid.mermaid-loader.html' " +
-                "or file at Resources/Mermaid/mermaid-loader.html relative to assembly.");
-        }
-
-        private string FindMermaidLoaderHtmlPath()
-        {
-            var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            if (string.IsNullOrEmpty(assemblyDir))
-            {
-                return null;
-            }
-
-            // If someone copied Resources folder next to DLL
-            var prodPath = Path.Combine(assemblyDir, "Resources", "Mermaid", "mermaid-loader.html");
-            if (File.Exists(prodPath))
-            {
-                return prodPath;
-            }
-
-            var dir = new DirectoryInfo(assemblyDir);
-            while (dir != null)
-            {
-                var devPath = Path.Combine(dir.FullName, "src", "TeXShift.Core", "Resources", "Mermaid", "mermaid-loader.html");
-                if (File.Exists(devPath))
-                {
-                    return devPath;
-                }
-
-                var resourcesPath = Path.Combine(dir.FullName, "Resources", "Mermaid", "mermaid-loader.html");
-                if (File.Exists(resourcesPath))
-                {
-                    return resourcesPath;
-                }
-
-                dir = dir.Parent;
-            }
-
-            return null;
+                "Mermaid loader HTML not found. Expected embedded resource 'TeXShift.Core.Resources.Mermaid.mermaid-loader.html'.");
         }
 
         private async Task WaitForMermaidReady()
