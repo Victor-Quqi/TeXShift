@@ -8,8 +8,6 @@
 
 ## 核心功能
 
-### 已实现
-
 - **Markdown 转换** - 将 Markdown 语法转换为 OneNote 富文本格式
   - 标题（H1-H6）
   - 有序/无序列表
@@ -18,44 +16,62 @@
   - 表格（支持表头加粗、列对齐）
   - 链接
   - 图片嵌入
-  - 分割线
+  - 分割线（图片或字符样式）
 
 - **LaTeX 公式** - 将 LaTeX 数学公式转换为 OneNote 原生可编辑公式
   - 内置 MathJax 资源，完全离线运行
-  - 需要 .NET Framework 4.8 和 WebView2 Runtime
+  - 支持行内公式（`$...$`）和块级公式（`$$...$$`）
 
-- **代码高亮** - 基于 ColorCode 的语法高亮
-  - 将代码块转换为带背景色和语法着色的富文本
+- **Mermaid 图表** - 将 Mermaid 图表渲染为嵌入式 PNG 图片
+  - 支持流程图、时序图、类图等
+  - 可配置主题和分辨率
+
+- **代码高亮** - 基于 TextMateSharp 的语法高亮
+  - 广泛的语言支持，精确的词法分析
+  - 可自定义背景色、文字颜色、字体和行距
 
 - **智能选择** - 识别两种操作模式
   - **光标模式**：操作整个文本框
   - **选区模式**：操作高亮文字所在的完整段落
+
+- **自定义样式** - 通过设置界面完全控制外观
+  - 引用块背景色
+  - 标题字号（H1-H6）
+  - 代码块样式（颜色、字体、字号、行距）
+  - 行内代码样式
+  - Mermaid 主题和最大分辨率
+  - 分隔线样式（图片/字符）
+
+- **本地化** - 支持中英文界面
 
 - **完全离线** - 所有核心功能均可在本地离线运行
 
 ### 开发中
 
 - 实时预览窗格
-- Mermaid 图表支持
-- 自定义样式设置
 - 富文本转 Markdown（反向转换）
 
 ## 技术栈
 
 - **语言:** C# (.NET Framework 4.8)
 - **框架:** OneNote COM Add-in
-- **IDE:** Visual Studio 2026
+- **UI:** WPF + Material Design
 - **依赖:**
   - Markdig - Markdown 解析
-  - ColorCode - 语法高亮
+  - TextMateSharp - 语法高亮
   - MathJax - LaTeX 渲染
+  - Mermaid.js - 图表渲染
 
 ## 系统要求
 
 - Windows 10/11
 - Microsoft OneNote 桌面版 (x64)
 - .NET Framework 4.8
-- WebView2 Runtime（用于 LaTeX 渲染）
+- WebView2 Runtime（用于 LaTeX 和 Mermaid 渲染）
+
+## 安装
+
+从 [Releases](https://github.com/Victor-Quqi/TeXShift/releases) 页面下载最新的 `.msi` 安装包并运行即可。
 
 ## 从源码构建
 
@@ -79,10 +95,6 @@
      ```powershell
      .\build.ps1 -Target Build -Configuration Debug
      ```
-
-## 安装
-
-项目仍在开发中，暂未发布稳定版本。
 
 ## 许可证
 

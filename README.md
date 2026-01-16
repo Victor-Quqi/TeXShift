@@ -8,8 +8,6 @@ English | [简体中文](README.zh-CN.md)
 
 ## Features
 
-### Implemented
-
 - **Markdown Conversion** - Convert Markdown syntax to OneNote rich text
   - Headings (H1-H6)
   - Ordered/unordered lists
@@ -18,44 +16,62 @@ English | [简体中文](README.zh-CN.md)
   - Tables (header bold, column alignment)
   - Links
   - Embedded images
-  - Horizontal rules
+  - Horizontal rules (image or character style)
 
 - **LaTeX Formulas** - Convert LaTeX math expressions to native editable OneNote equations
   - Built-in MathJax resources for fully offline operation
-  - Requires .NET Framework 4.8 and WebView2 Runtime
+  - Inline (`$...$`) and display (`$$...$$`) math support
 
-- **Syntax Highlighting** - ColorCode-based code highlighting
-  - Transform code blocks into rich text with background color and syntax coloring
+- **Mermaid Diagrams** - Render Mermaid diagrams as embedded PNG images
+  - Flowcharts, sequence diagrams, class diagrams, and more
+  - Configurable theme and resolution
+
+- **Syntax Highlighting** - TextMateSharp-based code highlighting
+  - Wide language support with accurate tokenization
+  - Customizable background color, text color, font, and spacing
 
 - **Intelligent Selection** - Two operation modes
   - **Cursor Mode**: Operates on the entire text box
   - **Selection Mode**: Operates on complete paragraphs containing highlighted text
+
+- **Custom Styles** - Full control over appearance via settings UI
+  - Quote block background color
+  - Heading font sizes (H1-H6)
+  - Code block styling (colors, font, size, line spacing)
+  - Inline code styling
+  - Mermaid theme and max resolution
+  - Horizontal rule style (image/character)
+
+- **Localization** - UI available in English and Simplified Chinese
 
 - **Fully Offline** - All core features work locally without network connection
 
 ### In Development
 
 - Live preview pane
-- Mermaid diagram support
-- Custom style settings
 - Rich text to Markdown (reverse conversion)
 
 ## Tech Stack
 
 - **Language:** C# (.NET Framework 4.8)
 - **Framework:** OneNote COM Add-in
-- **IDE:** Visual Studio 2026
+- **UI:** WPF with Material Design
 - **Dependencies:**
   - Markdig - Markdown parsing
-  - ColorCode - Syntax highlighting
+  - TextMateSharp - Syntax highlighting
   - MathJax - LaTeX rendering
+  - Mermaid.js - Diagram rendering
 
 ## System Requirements
 
 - Windows 10/11
 - Microsoft OneNote Desktop (x64)
 - .NET Framework 4.8
-- WebView2 Runtime (for LaTeX rendering)
+- WebView2 Runtime (for LaTeX and Mermaid rendering)
+
+## Installation
+
+Download the latest `.msi` installer from the [Releases](https://github.com/Victor-Quqi/TeXShift/releases) page and run it.
 
 ## Building from Source
 
@@ -79,10 +95,6 @@ For developers who want to build TeXShift from source:
      ```powershell
      .\build.ps1 -Target Build -Configuration Debug
      ```
-
-## Installation
-
-The project is still under active development. No stable release yet.
 
 ## License
 
