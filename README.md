@@ -42,6 +42,14 @@ English | [简体中文](README.zh-CN.md)
   - Mermaid theme and max resolution
   - Horizontal rule style (image/character)
 
+- **Reverse Conversion** - Convert OneNote rich text back to Markdown
+  - Dual-channel strategy: embedded metadata (lossless) + XML parsing (fallback)
+  - Headings, paragraphs, lists (ordered/unordered/task), tables
+  - Code blocks with syntax highlighting stripped
+  - Math formulas (restore original LaTeX via metadata)
+  - Mermaid diagrams (restore original source via metadata)
+  - Inline styles (bold, italic, strikethrough, code, links)
+
 - **Localization** - UI available in English and Simplified Chinese
 
 - **Fully Offline** - All core features work locally without network connection
@@ -49,7 +57,6 @@ English | [简体中文](README.zh-CN.md)
 ### In Development
 
 - Live preview pane
-- Rich text to Markdown (reverse conversion)
 
 ## Tech Stack
 
