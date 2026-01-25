@@ -43,6 +43,10 @@ MathJax 生成的 MathML 中，矩阵和 `\left...\right` 括号使用 `<mo>` �
 - `munder`, `mover`, `munderover` - 上下标结构
 - `mfenced` - 嵌套括号
 
+### 单边括号（cases 环境）
+
+`cases` 环境产生 `<mrow><mo>{</mo>...<mo stretchy="true"></mo></mrow>`（右边为空的不可见边界），需转换为 `<mfenced open="{" close="">...`。
+
 ### 不转换的情况
 
 普通括号如 `(a + b)` 不包含高元素，保持原样并添加 `fence="false"` 防止 OneNote 错误转换。

@@ -295,6 +295,43 @@ namespace TeXShift.Core.Math
                 }, RegexOptions.Singleline);
             }
 
+            // Handle one-sided brackets (e.g., \begin{cases} produces left brace with empty right)
+            // Pattern: <mrow><mo ...>{</mo>...CONTENT...<mo stretchy='true'></mo></mrow>
+            mathml = ConvertOneSidedBracketsToMfenced(mathml, tallElements);
+
+            return mathml;
+        }
+
+        /// <summary>
+        /// Converts one-sided brackets (e.g., cases environment) to mfenced.
+        /// MathJax outputs: &lt;mrow&gt;&lt;mo&gt;{&lt;/mo&gt;...&lt;mo stretchy='true'&gt;&lt;/mo&gt;&lt;/mrow&gt;
+        /// OneNote needs: &lt;mfenced open="{" close=""&gt;...&lt;/mfenced&gt;
+        /// </summary>
+        private static string ConvertOneSidedBracketsToMfenced(string mathml, string tallElements)
+        {
+            // One-sided left brackets: { [ ( with empty right boundary
+            var leftBrackets = new[] { "{", "[", "(" };
+
+            foreach (var bracket in leftBrackets)
+            {
+                var escapedBracket = Regex.Escape(bracket);
+                // Match: <mrow><mo ...>BRACKET</mo>...CONTENT...<mo ... stretchy="true" ...></mo></mrow>
+                // The empty <mo> with stretchy="true" indicates an invisible boundary
+                // Note: attributes use double quotes at this stage (single quote conversion happens later)
+                var pattern = $@"<mml:mrow><mml:mo[^>]*>{escapedBracket}</mml:mo>(.*?)<mml:mo[^>]*stretchy=""true""[^>]*></mml:mo></mml:mrow>";
+
+                mathml = Regex.Replace(mathml, pattern, match =>
+                {
+                    var content = match.Groups[1].Value;
+                    if (Regex.IsMatch(content, $@"<mml:({tallElements})"))
+                    {
+                        var openAttr = bracket == "(" ? "" : $" open=\"{bracket}\"";
+                        return $"<mml:mfenced{openAttr} close=\"\"><mml:mrow>{content}</mml:mrow></mml:mfenced>";
+                    }
+                    return match.Value;
+                }, RegexOptions.Singleline);
+            }
+
             return mathml;
         }
 
