@@ -1,4 +1,6 @@
 using Markdig.Syntax.Inlines;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace TeXShift.Core.Markdown.Abstractions
 {
@@ -12,14 +14,14 @@ namespace TeXShift.Core.Markdown.Abstractions
         /// </summary>
         /// <param name="container">The container of inline elements.</param>
         /// <returns>An HTML-formatted string.</returns>
-        string Render(ContainerInline container);
+        Task<string> RenderAsync(ContainerInline container);
 
         /// <summary>
         /// Converts a collection of inline elements to an HTML string.
         /// </summary>
         /// <param name="inlines">The collection of inline elements.</param>
         /// <returns>An HTML-formatted string.</returns>
-        string Render(System.Collections.Generic.IEnumerable<Inline> inlines);
+        Task<string> RenderAsync(IEnumerable<Inline> inlines);
 
         /// <summary>
         /// Sets or gets the entity decoder function for decoding HTML entities in math content.

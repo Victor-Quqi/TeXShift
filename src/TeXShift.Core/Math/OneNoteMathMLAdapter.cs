@@ -1,5 +1,7 @@
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
+using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.Math
 {
@@ -17,6 +19,16 @@ namespace TeXShift.Core.Math
             @"<mml:mspace\s+width=""([^""]+)""\s*(?:/>|></mml:mspace>)",
             RegexOptions.Compiled);
 
+        // OneNote sometimes leaks attribute quote characters as visible text when MathML is embedded
+        // via conditional comments. Using single quotes for attribute values avoids this behavior.
+        private static readonly Regex DoubleQuotedAttributeRegex = new Regex(
+            "=\"([^\"]*)\"",
+            RegexOptions.Compiled);
+
+        private static readonly Regex MtextRegex = new Regex(
+            "<mml:mtext\\b[^>]*>(.*?)</mml:mtext>",
+            RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
         /// <summary>
         /// Adapts MathML to OneNote format and wraps it for insertion.
         /// This is the main public API that orchestrates all transformations.
@@ -33,25 +45,48 @@ namespace TeXShift.Core.Math
             // Step 1: Remove MathJax-specific data attributes
             mathml = RemoveMathJaxAttributes(mathml);
 
-            // Step 2: Compact whitespace
+            // Step 2: Remove semantics/annotation wrappers (OneNote strips them anyway)
+            mathml = RemoveSemanticsAnnotations(mathml);
+
+            // Step 3: Compact whitespace
             mathml = CompactMathML(mathml);
 
-            // Step 3: Convert mspace to Unicode space characters
+            // Step 4: Convert mspace to Unicode space characters
             mathml = ConvertMspaceToUnicode(mathml);
 
-            // Step 4: Convert matrix brackets to mfenced (for automatic stretching)
+            // Step 5: Replace <mtext> with normal MathML tokens.
+            // OneNote may insert visible stray quote characters when mtext is present in embedded MathML.
+            mathml = ConvertMtextToNormalTokens(mathml);
+
+            // Step 6: Convert matrix brackets to mfenced (for automatic stretching)
             // Must be done BEFORE AddFenceAttributeToBrackets
             mathml = ConvertMatrixBracketsToMfenced(mathml);
 
-            // Step 5: Add fence="false" to brackets (verified fix for bracket/comma issues)
+            // Step 7: Add fence="false" to brackets (verified fix for bracket/comma issues)
             mathml = AddFenceAttributeToBrackets(mathml);
 
-            // Step 6: Split multi-character identifiers into single chars (stability fix)
+            // Step 8: Split multi-character identifiers into single chars (stability fix)
             mathml = SplitMultiCharIdentifiers(mathml);
 
-            // Step 7: Wrap in OneNote conditional comment with zero-width space sentinels
-            const string zeroWidthSpan = "<span style='font-family:Arial'>\u200B</span>";
+            // Step 9: Convert MathML attributes to single-quoted values to avoid OneNote inserting
+            // visible stray quote characters around equations.
+            mathml = ConvertAttributeQuotesToSingle(mathml);
+
+            // Step 10: Wrap in OneNote conditional comment with zero-width space sentinels.
+            // NOTE: Avoid hardcoding fonts here; users can configure fonts in settings and OneNote will rewrite spans anyway.
+            const string zeroWidthSpan = "<span lang='x-none'>\u200B</span>";
             return $"{zeroWidthSpan}<!--[if mathML]>{mathml}<![endif]-->{zeroWidthSpan}";
+        }
+
+        private static string ConvertAttributeQuotesToSingle(string mathml)
+        {
+            if (string.IsNullOrWhiteSpace(mathml))
+            {
+                return string.Empty;
+            }
+
+            // Replace only attribute delimiters, not text nodes.
+            return DoubleQuotedAttributeRegex.Replace(mathml, "='$1'");
         }
 
         /// <summary>
@@ -87,6 +122,30 @@ namespace TeXShift.Core.Math
         }
 
         /// <summary>
+        /// Removes MathML semantics wrappers and embedded annotations (e.g., TeX source).
+        /// OneNote removes these during round-trips, so we strip them upfront for stability.
+        /// </summary>
+        /// <param name="mathml">The MathML string to process.</param>
+        /// <returns>MathML with semantics/annotation elements removed.</returns>
+        internal static string RemoveSemanticsAnnotations(string mathml)
+        {
+            if (string.IsNullOrWhiteSpace(mathml))
+            {
+                return string.Empty;
+            }
+
+            // Remove annotation and annotation-xml blocks
+            var result = Regex.Replace(mathml, @"<(?:mml:)?annotation(?:-xml)?[^>]*>.*?</(?:mml:)?annotation(?:-xml)?>",
+                "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+            // Unwrap semantics tags while keeping the inner MathML
+            result = Regex.Replace(result, @"<(?:mml:)?semantics[^>]*>", "", RegexOptions.IgnoreCase);
+            result = Regex.Replace(result, @"</(?:mml:)?semantics>", "", RegexOptions.IgnoreCase);
+
+            return result;
+        }
+
+        /// <summary>
         /// Converts mspace width attributes to Unicode space characters.
         /// OneNote doesn't support mspace width, so we replace them with actual space characters.
         /// </summary>
@@ -106,8 +165,86 @@ namespace TeXShift.Core.Math
                 {
                     return string.Empty; // Negative space or unknown width
                 }
-                return $"<mml:mtext>{spaceChars}</mml:mtext>";
+
+                // Avoid <mtext> because OneNote may introduce visible artifacts when mtext is present.
+                return $"<mml:mo>{spaceChars}</mml:mo>";
             });
+        }
+
+        internal static string ConvertMtextToNormalTokens(string mathml)
+        {
+            if (string.IsNullOrWhiteSpace(mathml))
+            {
+                return string.Empty;
+            }
+
+            return MtextRegex.Replace(mathml, match =>
+            {
+                string inner = match.Groups[1].Value ?? string.Empty;
+                string decoded = OneNoteHtmlEntityDecoder.Decode(inner) ?? string.Empty;
+
+                // Convert the decoded text into MathML tokens that OneNote renders consistently.
+                // We wrap the result in an mrow so we replace one element with one element.
+                string tokens = ConvertTextToMathTokens(decoded);
+                return $"<mml:mrow>{tokens}</mml:mrow>";
+            });
+        }
+
+        private static string ConvertTextToMathTokens(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
+            var sb = new StringBuilder(capacity: text.Length * 24);
+
+            foreach (char ch in text)
+            {
+                if (char.IsWhiteSpace(ch) || ch == '\u00A0')
+                {
+                    // Preserve spacing, but keep it out of <mtext>.
+                    sb.Append("<mml:mo>&#xA0;</mml:mo>");
+                    continue;
+                }
+
+                string escaped = EscapeXmlChar(ch);
+
+                if (char.IsLetter(ch))
+                {
+                    // Units and plain text should not be italicized.
+                    sb.Append("<mml:mi mathvariant='normal'>");
+                    sb.Append(escaped);
+                    sb.Append("</mml:mi>");
+                }
+                else if (char.IsDigit(ch))
+                {
+                    sb.Append("<mml:mn>");
+                    sb.Append(escaped);
+                    sb.Append("</mml:mn>");
+                }
+                else
+                {
+                    sb.Append("<mml:mo>");
+                    sb.Append(escaped);
+                    sb.Append("</mml:mo>");
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        private static string EscapeXmlChar(char ch)
+        {
+            switch (ch)
+            {
+                case '&': return "&amp;";
+                case '<': return "&lt;";
+                case '>': return "&gt;";
+                case '"': return "&quot;";
+                case '\'': return "&apos;";
+                default: return ch.ToString();
+            }
         }
 
         /// <summary>

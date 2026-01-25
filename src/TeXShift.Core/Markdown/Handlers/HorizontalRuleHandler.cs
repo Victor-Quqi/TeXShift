@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Configuration;
 using TeXShift.Core.Markdown.Abstractions;
@@ -13,7 +14,7 @@ namespace TeXShift.Core.Markdown.Handlers
 {
     internal class HorizontalRuleHandler : IBlockHandler
     {
-        public IEnumerable<XElement> Handle(Block block, IMarkdownConverterContext context)
+        public Task<IReadOnlyList<XElement>> HandleAsync(Block block, IMarkdownConverterContext context)
         {
             var styleConfig = context.StyleConfig.GetHorizontalRuleStyle();
             var ns = context.OneNoteNamespace;
@@ -36,7 +37,7 @@ namespace TeXShift.Core.Markdown.Handlers
             oe.Add(new XAttribute("spaceBefore", "8.0"));
             oe.Add(new XAttribute("spaceAfter", "8.0"));
 
-            return new[] { oe };
+            return Task.FromResult<IReadOnlyList<XElement>>(new[] { oe });
         }
 
         private XElement CreateCharacterRule(XNamespace ns, OneNoteStyleConfig.HorizontalRuleConfig styleConfig)

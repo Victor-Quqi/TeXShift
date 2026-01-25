@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using Markdig.Extensions.Mathematics;
 using Markdig.Syntax;
@@ -7,6 +8,7 @@ using TeXShift.Core.Errors;
 using TeXShift.Core.Localization;
 using TeXShift.Core.Markdown.Abstractions;
 using TeXShift.Core.Math;
+using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.Markdown.Handlers
 {
@@ -22,7 +24,7 @@ namespace TeXShift.Core.Markdown.Handlers
             _mathService = mathService;
         }
 
-        public IEnumerable<XElement> Handle(Block block, IMarkdownConverterContext context)
+        public async Task<IReadOnlyList<XElement>> HandleAsync(Block block, IMarkdownConverterContext context)
         {
             var mathBlock = block as MathBlock;
             if (mathBlock == null)
@@ -46,7 +48,7 @@ namespace TeXShift.Core.Markdown.Handlers
                 var fallbackOe = new XElement(context.OneNoteNamespace + "OE",
                     new XAttribute("alignment", "center"),
                     new XElement(context.OneNoteNamespace + "T",
-                        new XCData($"$${latex}$$")));
+                        new XCData($"$${OneNoteHtmlTextEscaper.Escape(latex)}$$")));
                 return new[] { fallbackOe };
             }
 
@@ -55,7 +57,7 @@ namespace TeXShift.Core.Markdown.Handlers
             {
                 try
                 {
-                    _mathService.InitializeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+                    await _mathService.InitializeAsync().ConfigureAwait(false);
                 }
                 catch (Exception ex) when (!(ex is MathConversionException))
                 {
@@ -71,7 +73,7 @@ namespace TeXShift.Core.Markdown.Handlers
             try
             {
                 // Use displayMode: true for block-level math
-                mathml = _mathService.LatexToMathMLAsync(latex, displayMode: true).ConfigureAwait(false).GetAwaiter().GetResult();
+                mathml = await _mathService.LatexToMathMLAsync(latex, displayMode: true).ConfigureAwait(false);
             }
             catch (Exception ex) when (!(ex is MathConversionException))
             {

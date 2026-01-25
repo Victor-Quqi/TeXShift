@@ -9,13 +9,23 @@
                             size="large"
                             onAction="OnConvertButtonClick"
                             imageMso="Repeat" />
+                    <button id="btnReverseConvert"
+                            getLabel="GetButtonLabel"
+                            size="large"
+                            onAction="OnReverseConvertButtonClick"
+                            imageMso="Undo" />
                 </group>
                 <group id="grpDebugTools" getLabel="GetGroupLabel" getVisible="GetDebugGroupVisible">
                     <button id="btnDebugConvert"
                             getLabel="GetButtonLabel"
                             size="large"
                             onAction="OnDebugConvertButtonClick"
-                            imageMso="ScriptDebugger" />
+                            imageMso="EndOfLine" />
+                    <button id="btnDebugReverseConvert"
+                            getLabel="GetButtonLabel"
+                            size="large"
+                            onAction="OnDebugReverseConvertButtonClick"
+                            imageMso="StartOfLine" />
                     <button id="btnDebugXml"
                             getLabel="GetButtonLabel"
                             size="large"

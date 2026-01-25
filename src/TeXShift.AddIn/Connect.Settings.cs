@@ -160,6 +160,10 @@ namespace TeXShift.AddIn
                 ? Core.Configuration.OneNoteStyleConfig.HorizontalRuleMode.Image
                 : Core.Configuration.OneNoteStyleConfig.HorizontalRuleMode.Character;
             styleConfig.SetHorizontalRuleStyle(hrMode, "#888888", 90, '─', 2325);
+
+            // Apply reverse conversion settings
+            var reverse = _appSettings.ReverseConversion ?? new Core.Configuration.ReverseConversionSettings();
+            styleConfig.SetReverseConversionOptions(reverse.TryRecognizeNonTeXShiftFormats);
         }
 
         #endregion

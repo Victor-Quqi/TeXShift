@@ -4,6 +4,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Configuration;
 using TeXShift.Core.Errors;
@@ -14,7 +15,7 @@ namespace TeXShift.Core.Markdown.Handlers
 {
     internal class ParagraphHandler : IBlockHandler
     {
-        public IEnumerable<XElement> Handle(Block block, IMarkdownConverterContext context)
+        public async Task<IReadOnlyList<XElement>> HandleAsync(Block block, IMarkdownConverterContext context)
         {
             var paragraph = (ParagraphBlock)block;
             var ns = context.OneNoteNamespace;
@@ -24,21 +25,22 @@ namespace TeXShift.Core.Markdown.Handlers
             var singleImage = ImageElementHelper.GetSingleImage(paragraph);
             if (singleImage != null)
             {
-                return new[] { ImageElementHelper.CreateImageOE(singleImage, ns, context) };
+                var imageOe = await ImageElementHelper.CreateImageOEAsync(singleImage, ns, context).ConfigureAwait(false);
+                return new[] { imageOe };
             }
 
             // Check if paragraph contains display math ($$...$$) that should be split into separate blocks
             var mathSegments = SplitParagraphByDisplayMath(paragraph);
             if (mathSegments.Count > 1 || (mathSegments.Count == 1 && mathSegments[0].IsDisplayMath))
             {
-                return HandleMathParagraph(mathSegments, context, ns, styleConfig);
+                return await HandleMathParagraphAsync(mathSegments, context, ns, styleConfig).ConfigureAwait(false);
             }
 
             // Check if paragraph contains standalone image lines mixed with text
             var segments = SplitParagraphByStandaloneImages(paragraph);
             if (segments.Count > 1)
             {
-                return HandleMixedParagraph(segments, context, ns, styleConfig);
+                return await HandleMixedParagraphAsync(segments, context, ns, styleConfig).ConfigureAwait(false);
             }
 
             var oe = new XElement(ns + "OE");
@@ -50,7 +52,7 @@ namespace TeXShift.Core.Markdown.Handlers
             oe.Add(new XAttribute("spaceBetween", spacing.SpaceBetween.ToString("F1")));
 
             // Convert inline content to HTML
-            var htmlContent = context.ConvertInlinesToHtml(paragraph.Inline);
+            var htmlContent = await context.ConvertInlinesToHtmlAsync(paragraph.Inline).ConfigureAwait(false);
             oe.Add(new XElement(ns + "T", new XCData(htmlContent)));
 
             return new[] { oe };
@@ -118,10 +120,10 @@ namespace TeXShift.Core.Markdown.Handlers
             return segments;
         }
 
-        /// <summary>
-        /// Handles a paragraph with display math, creating separate centered OE elements for each formula.
-        /// </summary>
-        private IEnumerable<XElement> HandleMathParagraph(List<ParagraphSegment> segments, IMarkdownConverterContext context, XNamespace ns, OneNoteStyleConfig styleConfig)
+         /// <summary>
+         /// Handles a paragraph with display math, creating separate centered OE elements for each formula.
+         /// </summary>
+        private async Task<IReadOnlyList<XElement>> HandleMathParagraphAsync(List<ParagraphSegment> segments, IMarkdownConverterContext context, XNamespace ns, OneNoteStyleConfig styleConfig)
         {
             var results = new List<XElement>();
             var spacing = styleConfig.GetParagraphSpacing();
@@ -137,7 +139,7 @@ namespace TeXShift.Core.Markdown.Handlers
                         new XAttribute("spaceAfter", "8.8"));
 
                     // Convert the math inline directly
-                    var mathHtml = ConvertDisplayMathToHtml(segment.MathInline, context);
+                    var mathHtml = await ConvertDisplayMathToHtmlAsync(segment.MathInline, context).ConfigureAwait(false);
                     oe.Add(new XElement(ns + "T", new XCData(mathHtml)));
 
                     results.Add(oe);
@@ -150,7 +152,7 @@ namespace TeXShift.Core.Markdown.Handlers
                     oe.Add(new XAttribute("spaceAfter", spacing.SpaceAfter.ToString("F1")));
                     oe.Add(new XAttribute("spaceBetween", spacing.SpaceBetween.ToString("F1")));
 
-                    var htmlContent = context.ConvertInlinesToHtml(segment.TextInlines);
+                    var htmlContent = await context.ConvertInlinesToHtmlAsync(segment.TextInlines).ConfigureAwait(false);
                     oe.Add(new XElement(ns + "T", new XCData(htmlContent)));
 
                     results.Add(oe);
@@ -160,10 +162,10 @@ namespace TeXShift.Core.Markdown.Handlers
             return results;
         }
 
-        /// <summary>
-        /// Converts a display math MathInline to HTML/MathML for OneNote.
-        /// </summary>
-        private string ConvertDisplayMathToHtml(MathInline mathInline, IMarkdownConverterContext context)
+         /// <summary>
+         /// Converts a display math MathInline to HTML/MathML for OneNote.
+         /// </summary>
+        private async Task<string> ConvertDisplayMathToHtmlAsync(MathInline mathInline, IMarkdownConverterContext context)
         {
             // Get MathService from context
             var mathService = context.MathService;
@@ -172,32 +174,32 @@ namespace TeXShift.Core.Markdown.Handlers
                 return $"$${mathInline.Content}$$";
             }
 
-            // Auto-initialize MathService if needed
-            if (!mathService.IsInitialized)
-            {
-                try
-                {
-                    mathService.InitializeAsync().GetAwaiter().GetResult();
-                }
-                catch (Exception ex)
-                {
-                    throw new MathConversionException(
-                        Resources.GetString("Error_MathInitFailed"),
+             // Auto-initialize MathService if needed
+             if (!mathService.IsInitialized)
+             {
+                 try
+                 {
+                    await mathService.InitializeAsync().ConfigureAwait(false);
+                 }
+                 catch (Exception ex)
+                 {
+                     throw new MathConversionException(
+                         Resources.GetString("Error_MathInitFailed"),
                         $"MathService initialization failed in ParagraphHandler. {ex.GetType().Name}: {ex.Message}",
                         ex);
                 }
             }
 
             try
-            {
-                var latex = mathInline.Content.ToString();
-                // Decode HTML entity placeholders before passing to MathJax
-                latex = context.DecodeEntityPlaceholders(latex);
-                var mathml = mathService.LatexToMathMLAsync(latex, displayMode: true).GetAwaiter().GetResult();
-                return mathService.WrapMathMLForOneNote(mathml);
-            }
-            catch (Exception ex) when (!(ex is MathConversionException))
-            {
+             {
+                  var latex = mathInline.Content.ToString();
+                  // Decode HTML entity placeholders before passing to MathJax
+                  latex = context.DecodeEntityPlaceholders(latex);
+                var mathml = await mathService.LatexToMathMLAsync(latex, displayMode: true).ConfigureAwait(false);
+                  return mathService.WrapMathMLForOneNote(mathml);
+              }
+              catch (Exception ex) when (!(ex is MathConversionException))
+              {
                 throw new MathConversionException(
                     Resources.GetString("Error_MathConversionFailed"),
                     $"LaTeX conversion failed for: {mathInline.Content}. {ex.GetType().Name}: {ex.Message}",
@@ -341,10 +343,10 @@ namespace TeXShift.Core.Markdown.Handlers
             return true;
         }
 
-        /// <summary>
-        /// Handles a paragraph with mixed text and standalone image segments.
-        /// </summary>
-        private IEnumerable<XElement> HandleMixedParagraph(List<ParagraphSegment> segments, IMarkdownConverterContext context, XNamespace ns, OneNoteStyleConfig styleConfig)
+         /// <summary>
+         /// Handles a paragraph with mixed text and standalone image segments.
+         /// </summary>
+        private async Task<IReadOnlyList<XElement>> HandleMixedParagraphAsync(List<ParagraphSegment> segments, IMarkdownConverterContext context, XNamespace ns, OneNoteStyleConfig styleConfig)
         {
             var results = new List<XElement>();
             var spacing = styleConfig.GetParagraphSpacing();
@@ -354,7 +356,7 @@ namespace TeXShift.Core.Markdown.Handlers
                 if (segment.IsImage)
                 {
                     // Handle as standalone image using shared helper
-                    results.Add(ImageElementHelper.CreateImageOE(segment.ImageLink, ns, context));
+                    results.Add(await ImageElementHelper.CreateImageOEAsync(segment.ImageLink, ns, context).ConfigureAwait(false));
                 }
                 else
                 {
@@ -364,7 +366,7 @@ namespace TeXShift.Core.Markdown.Handlers
                     oe.Add(new XAttribute("spaceAfter", spacing.SpaceAfter.ToString("F1")));
                     oe.Add(new XAttribute("spaceBetween", spacing.SpaceBetween.ToString("F1")));
 
-                    var htmlContent = context.ConvertInlinesToHtml(segment.TextInlines);
+                    var htmlContent = await context.ConvertInlinesToHtmlAsync(segment.TextInlines).ConfigureAwait(false);
                     oe.Add(new XElement(ns + "T", new XCData(htmlContent)));
 
                     results.Add(oe);

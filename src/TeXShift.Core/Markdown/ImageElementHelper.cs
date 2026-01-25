@@ -3,6 +3,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Markdown.Abstractions;
 using TeXShift.Core.Utils;
@@ -49,7 +50,7 @@ namespace TeXShift.Core.Markdown
         /// <param name="ns">The OneNote XML namespace.</param>
         /// <param name="context">The converter context for decoding HTML entity placeholders in URLs.</param>
         /// <returns>An Image XElement, or null if loading fails.</returns>
-        public static XElement CreateImageElement(LinkInline imageLink, XNamespace ns, IMarkdownConverterContext context = null)
+        public static async Task<XElement> CreateImageElementAsync(LinkInline imageLink, XNamespace ns, IMarkdownConverterContext context = null)
         {
             var url = imageLink?.Url ?? "";
             var altText = GetAltText(imageLink);
@@ -61,7 +62,7 @@ namespace TeXShift.Core.Markdown
                 url = context.DecodeEntityPlaceholders(url);
             }
 
-            var result = ImageLoader.LoadImage(url);
+            var result = await ImageLoader.LoadImageAsync(url).ConfigureAwait(false);
             if (!result.Success)
             {
                 return null;
@@ -101,9 +102,9 @@ namespace TeXShift.Core.Markdown
         /// <param name="ns">The OneNote XML namespace.</param>
         /// <param name="context">The converter context for decoding HTML entity placeholders in URLs.</param>
         /// <returns>An OE XElement with image or fallback content.</returns>
-        public static XElement CreateImageOE(LinkInline imageLink, XNamespace ns, IMarkdownConverterContext context = null)
+        public static async Task<XElement> CreateImageOEAsync(LinkInline imageLink, XNamespace ns, IMarkdownConverterContext context = null)
         {
-            var imageElement = CreateImageElement(imageLink, ns, context);
+            var imageElement = await CreateImageElementAsync(imageLink, ns, context).ConfigureAwait(false);
             if (imageElement != null)
             {
                 return new XElement(ns + "OE", imageElement);

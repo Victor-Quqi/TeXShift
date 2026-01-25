@@ -4,6 +4,7 @@ using Markdig.Extensions.TaskLists;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Markdown.Abstractions;
 
@@ -11,7 +12,7 @@ namespace TeXShift.Core.Markdown.Handlers
 {
     internal class ListHandler : IBlockHandler
     {
-        public IEnumerable<XElement> Handle(Block block, IMarkdownConverterContext context)
+        public async Task<IReadOnlyList<XElement>> HandleAsync(Block block, IMarkdownConverterContext context)
         {
             var listBlock = (ListBlock)block;
             var elements = new List<XElement>();
@@ -21,18 +22,19 @@ namespace TeXShift.Core.Markdown.Handlers
             // Nested lists remain as OEChildren for proper indentation.
             foreach (var listItem in listBlock.OfType<ListItemBlock>())
             {
-                elements.AddRange(ProcessListItemBlock(listItem, listBlock.IsOrdered, context));
+                var itemElements = await ProcessListItemBlockAsync(listItem, listBlock.IsOrdered, context).ConfigureAwait(false);
+                elements.AddRange(itemElements);
             }
 
             return elements;
         }
 
         /// <summary>
-        /// Processes a single list item and returns it along with any sibling content blocks.
-        /// - Nested ListBlocks remain as OEChildren (for proper indentation)
-        /// - Other blocks (CodeBlock, QuoteBlock, etc.) become siblings for full-width display
-        /// </summary>
-        private IEnumerable<XElement> ProcessListItemBlock(ListItemBlock listItem, bool isOrdered, IMarkdownConverterContext context)
+         /// Processes a single list item and returns it along with any sibling content blocks.
+         /// - Nested ListBlocks remain as OEChildren (for proper indentation)
+         /// - Other blocks (CodeBlock, QuoteBlock, etc.) become siblings for full-width display
+         /// </summary>
+        private async Task<IReadOnlyList<XElement>> ProcessListItemBlockAsync(ListItemBlock listItem, bool isOrdered, IMarkdownConverterContext context)
         {
             var ns = context.OneNoteNamespace;
             var styleConfig = context.StyleConfig;
@@ -45,11 +47,11 @@ namespace TeXShift.Core.Markdown.Handlers
             var oe = CreateListItemOE(ns, styleConfig, isOrdered, taskList);
 
             // Add the main text/image content
-            AddMainContent(oe, firstBlock, taskList, ns, context);
+            await AddMainContentAsync(oe, firstBlock, taskList, ns, context).ConfigureAwait(false);
 
             // Process remaining blocks (nested lists and siblings)
             var results = new List<XElement> { oe };
-            ProcessRemainingBlocks(listItem, firstBlock, oe, results, isOrdered, ns, styleConfig, context);
+            await ProcessRemainingBlocksAsync(listItem, firstBlock, oe, results, isOrdered, ns, styleConfig, context).ConfigureAwait(false);
 
             return results;
         }
@@ -135,10 +137,10 @@ namespace TeXShift.Core.Markdown.Handlers
             return listElement;
         }
 
-        /// <summary>
-        /// Adds the main text or image content to the list item OE.
-        /// </summary>
-        private void AddMainContent(XElement oe, Block firstBlock, TaskList taskList, XNamespace ns, IMarkdownConverterContext context)
+         /// <summary>
+         /// Adds the main text or image content to the list item OE.
+         /// </summary>
+        private async Task AddMainContentAsync(XElement oe, Block firstBlock, TaskList taskList, XNamespace ns, IMarkdownConverterContext context)
         {
             if (!(firstBlock is ParagraphBlock paragraphBlock))
             {
@@ -150,13 +152,13 @@ namespace TeXShift.Core.Markdown.Handlers
             var singleImage = ImageElementHelper.GetSingleImage(paragraphBlock, filterTaskList: true);
             if (singleImage != null)
             {
-                var imageElement = ImageElementHelper.CreateImageElement(singleImage, ns, context);
+                var imageElement = await ImageElementHelper.CreateImageElementAsync(singleImage, ns, context).ConfigureAwait(false);
                 oe.Add(imageElement ?? ImageElementHelper.CreateImageFallback(singleImage, ns));
                 return;
             }
 
             // Convert inline content to HTML
-            var htmlContent = context.ConvertInlinesToHtml(paragraphBlock.Inline);
+            var htmlContent = await context.ConvertInlinesToHtmlAsync(paragraphBlock.Inline).ConfigureAwait(false);
 
             // Trim leading whitespace for task list items
             if (taskList != null)
@@ -167,10 +169,10 @@ namespace TeXShift.Core.Markdown.Handlers
             oe.Add(new XElement(ns + "T", new XCData(htmlContent)));
         }
 
-        /// <summary>
-        /// Processes remaining child blocks: nested lists become OEChildren, others become siblings.
-        /// </summary>
-        private void ProcessRemainingBlocks(ListItemBlock listItem, Block firstBlock, XElement oe, List<XElement> results,
+         /// <summary>
+         /// Processes remaining child blocks: nested lists become OEChildren, others become siblings.
+         /// </summary>
+        private async Task ProcessRemainingBlocksAsync(ListItemBlock listItem, Block firstBlock, XElement oe, List<XElement> results,
             bool isOrdered, XNamespace ns, Configuration.OneNoteStyleConfig styleConfig, IMarkdownConverterContext context)
         {
             var remainingBlocks = listItem.Skip(firstBlock is ParagraphBlock ? 1 : 0).ToList();
@@ -186,10 +188,17 @@ namespace TeXShift.Core.Markdown.Handlers
 
                 var reservation = styleConfig.WidthReservation.GetListItemReservation(isOrdered);
                 context.PushWidthReservation(reservation);
-                var convertedChildren = context.ProcessBlocks(nestedListBlocks).ToList();
-                context.PopWidthReservation();
+                IReadOnlyList<XElement> convertedChildren;
+                try
+                {
+                    convertedChildren = await context.ProcessBlocksAsync(nestedListBlocks).ConfigureAwait(false);
+                }
+                finally
+                {
+                    context.PopWidthReservation();
+                }
 
-                if (convertedChildren.Any())
+                if (convertedChildren.Count > 0)
                 {
                     childrenContainer.Add(convertedChildren);
                     oe.Add(childrenContainer);
@@ -199,7 +208,8 @@ namespace TeXShift.Core.Markdown.Handlers
             // Process other blocks as siblings
             if (siblingBlocks.Any())
             {
-                results.AddRange(context.ProcessBlocks(siblingBlocks));
+                var convertedSiblings = await context.ProcessBlocksAsync(siblingBlocks).ConfigureAwait(false);
+                results.AddRange(convertedSiblings);
             }
         }
     }

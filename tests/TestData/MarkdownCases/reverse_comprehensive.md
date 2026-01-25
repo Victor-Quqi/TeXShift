@@ -246,6 +246,14 @@ x - y = 0
 \end{cases}
 $$
 
+### Mfenced Fence Rewrite
+
+$$ \left| x \right| $$
+
+$$ |\vec{v}| $$
+
+$$ \left\| \vec{v} \right\| $$
+
 ### Math with Special LaTeX
 
 $$

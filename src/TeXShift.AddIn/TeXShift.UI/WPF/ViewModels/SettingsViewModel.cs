@@ -30,11 +30,29 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
             set => SetProperty(ref _exportPdf, value);
         }
 
+        private bool _dumpFullPageXml;
+        public bool DumpFullPageXml
+        {
+            get => _dumpFullPageXml;
+            set => SetProperty(ref _dumpFullPageXml, value);
+        }
+
         private string _debugOutputPath;
         public string DebugOutputPath
         {
             get => _debugOutputPath;
             set => SetProperty(ref _debugOutputPath, value);
+        }
+
+        #endregion
+
+        #region Reverse Conversion Settings
+
+        private bool _tryRecognizeNonTeXShiftFormats;
+        public bool TryRecognizeNonTeXShiftFormats
+        {
+            get => _tryRecognizeNonTeXShiftFormats;
+            set => SetProperty(ref _tryRecognizeNonTeXShiftFormats, value);
         }
 
         #endregion
@@ -253,8 +271,10 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
         public string OkButtonText => UIResources.GetString("Settings_Button_Ok");
 
         public string EnableSyntaxHighlightText => UIResources.GetString("Settings_Checkbox_EnableSyntaxHighlight");
+        public string TryRecognizeNonTeXShiftFormatsText => UIResources.GetString("Settings_Checkbox_TryRecognizeNonTeXShiftFormats");
         public string ShowDebugButtonsText => UIResources.GetString("Settings_Checkbox_ShowDebugButtons");
         public string ExportPdfText => UIResources.GetString("Settings_Checkbox_ExportPdf");
+        public string DumpFullPageXmlText => UIResources.GetString("Settings_Checkbox_DumpFullPageXml");
         public string HorizontalRuleUseImageText => UIResources.GetString("Settings_Checkbox_HorizontalRuleUseImage");
         public string DebugOutputPathDescription => UIResources.GetString("Settings_Description_DebugOutputPath");
         public string DefaultDebugOutputPath => TeXShift.Core.Logging.DebugLogger.ResolveDebugOutputFolder(null);
@@ -355,6 +375,7 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
                 settings = AppSettings.CreateDefault();
 
             var debugSettings = settings.Debug ?? new DebugSettings();
+            var reverseSettings = settings.ReverseConversion ?? new ReverseConversionSettings();
             var codeBlockSettings = settings.CodeBlock ?? new CodeBlockStyleSettings();
             var inlineCodeSettings = settings.InlineCode ?? new InlineCodeStyleSettings();
             var quoteBlockSettings = settings.QuoteBlock ?? new QuoteBlockStyleSettings();
@@ -369,7 +390,11 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
             // Debug
             ShowDebugButtons = debugSettings.ShowDebugButtons;
             ExportPdf = debugSettings.ExportPdf;
+            DumpFullPageXml = debugSettings.DumpFullPageXml;
             DebugOutputPath = debugSettings.DebugOutputPath ?? string.Empty;
+
+            // Reverse conversion
+            TryRecognizeNonTeXShiftFormats = reverseSettings.TryRecognizeNonTeXShiftFormats;
 
             // Code Block
             CodeBlockBackgroundColor = string.IsNullOrWhiteSpace(codeBlockSettings.BackgroundColor) ? "#0D1117" : codeBlockSettings.BackgroundColor;
@@ -439,7 +464,12 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
                 {
                     ShowDebugButtons = ShowDebugButtons,
                     ExportPdf = ExportPdf,
+                    DumpFullPageXml = DumpFullPageXml,
                     DebugOutputPath = debugOutputPath
+                },
+                ReverseConversion = new ReverseConversionSettings
+                {
+                    TryRecognizeNonTeXShiftFormats = TryRecognizeNonTeXShiftFormats
                 },
                 CodeBlock = new CodeBlockStyleSettings
                 {

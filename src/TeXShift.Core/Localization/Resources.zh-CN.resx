@@ -220,4 +220,7 @@
   <data name="Error_Image_LoadFailed" xml:space="preserve">
     <value>加载图片失败</value>
   </data>
+  <data name="Reverse_MathSourceMissing" xml:space="preserve">
+    <value>【TeXShift：公式源码缺失，无法还原】</value>
+  </data>
 </root>

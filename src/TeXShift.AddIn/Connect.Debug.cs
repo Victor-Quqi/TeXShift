@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using Microsoft.Office.Core;
 using TeXShift.AddIn.Localization;
 using TeXShift.Core.Localization;
+using TeXShift.Core.Logging;
 using OneNote = Microsoft.Office.Interop.OneNote;
 
 namespace TeXShift.AddIn
@@ -39,7 +40,7 @@ namespace TeXShift.AddIn
                 }
 
                 var logger = _serviceContainer.CreateDebugLogger(_appSettings?.Debug?.DebugOutputPath);
-                logger.StartSession();
+                logger.StartSession(DebugSessionKind.SelectionXml);
 
                 // Use OriginalXmlNodes for multi-selection, fall back to OriginalXmlNode for single/cursor mode
                 var (savedPath, formattedXml) = result.OriginalXmlNodes != null && result.OriginalXmlNodes.Count > 1
@@ -117,7 +118,7 @@ namespace TeXShift.AddIn
                 }
 
                 var logger = _serviceContainer.CreateDebugLogger(_appSettings?.Debug?.DebugOutputPath);
-                logger.StartSession();
+                logger.StartSession(DebugSessionKind.PageXml);
                 string savedPath = await logger.LogPageXmlAsync(xmlContent);
                 string formattedXml = System.Xml.Linq.XDocument.Parse(xmlContent).ToString();
 

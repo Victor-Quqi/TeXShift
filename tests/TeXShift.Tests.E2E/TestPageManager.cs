@@ -18,6 +18,24 @@ namespace TeXShift.Tests.E2E
         private const string TestSectionName = "E2E";
         private static readonly XNamespace OneNoteNamespace = "http://schemas.microsoft.com/office/onenote/2013/onenote";
 
+        private static bool IsBoolAttributeTrue(XElement element, string attributeName)
+        {
+            string value = (string)element?.Attribute(attributeName);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            value = value.Trim();
+            if (bool.TryParse(value, out bool result))
+            {
+                return result;
+            }
+
+            // xsd:boolean may also be serialized as "1"/"0".
+            return string.Equals(value, "1", StringComparison.Ordinal);
+        }
+
         private readonly StaTaskRunner _staRunner;
         private OneNoteInterop.Application _oneNoteApp;
         private bool _disposed;
@@ -174,7 +192,9 @@ namespace TeXShift.Tests.E2E
             var doc = XDocument.Parse(hierarchyXml);
 
             var notebook = doc.Descendants(OneNoteNamespace + "Notebook")
-                .FirstOrDefault(node => string.Equals((string)node.Attribute("name"), TestNotebookName, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(node =>
+                    string.Equals((string)node.Attribute("name"), TestNotebookName, StringComparison.OrdinalIgnoreCase)
+                    && !IsBoolAttributeTrue(node, "isInRecycleBin"));
 
             if (notebook != null)
             {
@@ -268,7 +288,7 @@ namespace TeXShift.Tests.E2E
             foreach (var line in lines)
             {
                 var oe = new XElement(ns + "OE");
-                var text = new XElement(ns + "T", new XCData(HtmlEscaper.Escape(line)));
+                var text = new XElement(ns + "T", new XCData(OneNoteHtmlTextEscaper.Escape(line)));
                 oe.Add(text);
                 oeChildren.Add(oe);
             }
@@ -341,7 +361,9 @@ namespace TeXShift.Tests.E2E
             var doc = XDocument.Parse(hierarchyXml);
 
             var notebook = doc.Descendants(OneNoteNamespace + "Notebook")
-                .FirstOrDefault(node => string.Equals((string)node.Attribute("name"), TestNotebookName, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(node =>
+                    string.Equals((string)node.Attribute("name"), TestNotebookName, StringComparison.OrdinalIgnoreCase)
+                    && !IsBoolAttributeTrue(node, "isInRecycleBin"));
             if (notebook != null)
             {
                 // Notebook already exists - NOT created by us, don't delete on cleanup
@@ -379,9 +401,11 @@ namespace TeXShift.Tests.E2E
             _oneNoteApp.GetHierarchy(notebookId, OneNoteInterop.HierarchyScope.hsSections, out string hierarchyXml, OneNoteInterop.XMLSchema.xs2013);
             var doc = XDocument.Parse(hierarchyXml);
 
-            // Try to find existing E2E section
+            // Try to find existing E2E section (exclude recycle bin)
             var section = doc.Descendants(OneNoteNamespace + "Section")
-                .FirstOrDefault(node => string.Equals((string)node.Attribute("name"), TestSectionName, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(node =>
+                    string.Equals((string)node.Attribute("name"), TestSectionName, StringComparison.OrdinalIgnoreCase)
+                    && !IsBoolAttributeTrue(node, "isInRecycleBin"));
             if (section != null)
             {
                 return (string)section.Attribute("ID");

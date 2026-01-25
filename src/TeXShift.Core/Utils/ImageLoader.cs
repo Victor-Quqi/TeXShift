@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using TeXShift.Core.Errors;
 using TeXShift.Core.Localization;
@@ -13,27 +14,85 @@ namespace TeXShift.Core.Utils
     /// </summary>
     public static class ImageLoader
     {
-        private static readonly HttpClient _httpClient;
+        private static readonly object HttpClientGate = new object();
+        private static HttpClient _httpClient;
+        private static Exception _httpClientInitError;
         private const int MaxFileSizeBytes = 10 * 1024 * 1024; // 10MB
         private const int TimeoutSeconds = 30;
 
-        static ImageLoader()
+        private static HttpClient GetHttpClient()
         {
-            // Enable TLS 1.2 for .NET Framework 4.8
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
-
-            var handler = new HttpClientHandler
+            if (_httpClient != null)
             {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-            };
+                return _httpClient;
+            }
 
-            _httpClient = new HttpClient(handler)
+            lock (HttpClientGate)
             {
-                Timeout = TimeSpan.FromSeconds(TimeoutSeconds)
-            };
+                if (_httpClient != null)
+                {
+                    return _httpClient;
+                }
 
-            // Add User-Agent to avoid being blocked by servers
-            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) TeXShift/1.0");
+                _httpClient = CreateHttpClientSafe(out _httpClientInitError);
+                return _httpClient;
+            }
+        }
+
+        private static HttpClient CreateHttpClientSafe(out Exception error)
+        {
+            error = null;
+
+            try
+            {
+                // Enable TLS 1.2 for .NET Framework 4.8
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
+            }
+            catch (Exception ex)
+            {
+                // Don't fail type initialization if TLS configuration is blocked in a given environment.
+                System.Diagnostics.Trace.WriteLine(ex);
+            }
+
+            try
+            {
+                var handler = new HttpClientHandler
+                {
+                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+                };
+
+                var client = new HttpClient(handler)
+                {
+                    Timeout = TimeSpan.FromSeconds(TimeoutSeconds)
+                };
+
+                // Add User-Agent to avoid being blocked by servers
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) TeXShift/1.0");
+                return client;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.WriteLine(ex);
+                error = ex;
+            }
+
+            // Fallback: try a minimal HttpClient without a custom handler.
+            try
+            {
+                var client = new HttpClient
+                {
+                    Timeout = TimeSpan.FromSeconds(TimeoutSeconds)
+                };
+
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) TeXShift/1.0");
+                return client;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.WriteLine(ex);
+                error = ex;
+                return null;
+            }
         }
 
         /// <summary>
@@ -59,12 +118,18 @@ namespace TeXShift.Core.Utils
                 return new ImageLoadResult { Success = false, ErrorMessage = Resources.GetString("Error_Image_EmptySource") };
             }
 
+            // Support data: URLs (used by reverse conversion to keep images self-contained).
+            if (source.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            {
+                return LoadFromDataUrl(source);
+            }
+
             // Determine if it's a URL or local path
             if (Uri.TryCreate(source, UriKind.Absolute, out var uri))
             {
                 if (uri.Scheme == "http" || uri.Scheme == "https")
                 {
-                    return await LoadFromUrlAsync(uri);
+                    return await LoadFromUrlAsync(uri).ConfigureAwait(false);
                 }
                 else if (uri.Scheme == "file" || uri.IsFile)
                 {
@@ -76,12 +141,153 @@ namespace TeXShift.Core.Utils
             return LoadFromFile(source);
         }
 
+        private static ImageLoadResult LoadFromDataUrl(string dataUrl)
+        {
+            try
+            {
+                // data:[<mediatype>][;base64],<data>
+                int comma = dataUrl.IndexOf(',');
+                if (comma < 0)
+                {
+                    return new ImageLoadResult { Success = false, ErrorMessage = "Invalid data URL (missing comma)" };
+                }
+
+                string meta = dataUrl.Substring("data:".Length, comma - "data:".Length);
+                string payload = dataUrl.Substring(comma + 1);
+
+                bool isBase64 = meta.IndexOf(";base64", StringComparison.OrdinalIgnoreCase) >= 0;
+                string mediaType = meta.Split(new[] { ';' }, 2)[0];
+
+                if (!isBase64)
+                {
+                    return new ImageLoadResult { Success = false, ErrorMessage = "Unsupported data URL (not base64)" };
+                }
+
+                if (string.IsNullOrWhiteSpace(mediaType) || !mediaType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new ImageLoadResult { Success = false, ErrorMessage = "Unsupported data URL (not an image)" };
+                }
+
+                // Some writers percent-encode the payload; decode only when needed.
+                var base64 = (payload.IndexOf('%') >= 0) ? Uri.UnescapeDataString(payload) : payload;
+                base64 = RemoveWhitespace(base64);
+
+                // Approximate size check before decoding.
+                var approxBytes = ApproximateDecodedSize(base64);
+                if (approxBytes > MaxFileSizeBytes)
+                {
+                    return new ImageLoadResult { Success = false, ErrorMessage = Resources.GetString("Error_Image_FileTooLarge") };
+                }
+
+                // Validate base64 and re-check actual size.
+                var bytes = Convert.FromBase64String(base64);
+                if (bytes.Length > MaxFileSizeBytes)
+                {
+                    return new ImageLoadResult { Success = false, ErrorMessage = Resources.GetString("Error_Image_FileTooLarge") };
+                }
+
+                var format = GetImageFormatFromMime(mediaType) ?? DetectFormatFromBytes(bytes);
+                if (format == null)
+                {
+                    return new ImageLoadResult { Success = false, ErrorMessage = Resources.GetString("Error_Image_UnsupportedFormat") };
+                }
+
+                return new ImageLoadResult
+                {
+                    Success = true,
+                    Base64Data = base64,
+                    Format = format
+                };
+            }
+            catch (FormatException)
+            {
+                return new ImageLoadResult { Success = false, ErrorMessage = "Invalid data URL (bad base64)" };
+            }
+            catch (Exception ex)
+            {
+                throw new ImageLoadException(
+                    Resources.GetString("Error_Image_LoadFailed"),
+                    $"Failed to load image from data URL. {ex.GetType().Name}: {ex.Message}",
+                    ex);
+            }
+        }
+
+        private static string GetImageFormatFromMime(string mime)
+        {
+            if (string.IsNullOrWhiteSpace(mime))
+            {
+                return null;
+            }
+
+            switch (mime.Trim().ToLowerInvariant())
+            {
+                case "image/png": return "png";
+                case "image/jpeg":
+                case "image/jpg": return "jpg";
+                case "image/gif": return "gif";
+                case "image/bmp": return "bmp";
+                case "image/webp": return "webp";
+                case "image/avif": return "avif";
+                default: return null;
+            }
+        }
+
+        private static string RemoveWhitespace(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
+            var sb = new StringBuilder(text.Length);
+            foreach (var c in text)
+            {
+                if (!char.IsWhiteSpace(c))
+                {
+                    sb.Append(c);
+                }
+            }
+            return sb.ToString();
+        }
+
+        private static int ApproximateDecodedSize(string base64)
+        {
+            if (string.IsNullOrEmpty(base64))
+            {
+                return 0;
+            }
+
+            int len = base64.Length;
+            int padding = 0;
+            if (len >= 2 && base64[len - 1] == '=')
+            {
+                padding++;
+                if (base64[len - 2] == '=')
+                {
+                    padding++;
+                }
+            }
+
+            // Each 4 base64 chars represent up to 3 bytes.
+            long bytes = ((long)len * 3) / 4 - padding;
+            if (bytes < 0)
+            {
+                return 0;
+            }
+            if (bytes > int.MaxValue)
+            {
+                return int.MaxValue;
+            }
+            return (int)bytes;
+        }
+
         /// <summary>
         /// Synchronous wrapper for LoadImageAsync.
         /// </summary>
         public static ImageLoadResult LoadImage(string source)
         {
-            return LoadImageAsync(source).GetAwaiter().GetResult();
+            // Avoid deadlocks when called from a UI thread; prefer LoadImageAsync for non-blocking behavior.
+            return LoadImageAsync(source).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         private static ImageLoadResult LoadFromFile(string filePath)
@@ -128,7 +334,14 @@ namespace TeXShift.Core.Utils
         {
             try
             {
-                using (var response = await _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false))
+                var httpClient = GetHttpClient();
+                if (httpClient == null)
+                {
+                    System.Diagnostics.Trace.WriteLine(_httpClientInitError);
+                    return new ImageLoadResult { Success = false, ErrorMessage = Resources.GetString("Error_Image_LoadFailed") };
+                }
+
+                using (var response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false))
                 {
                     if (!response.IsSuccessStatusCode)
                     {

@@ -60,6 +60,7 @@ namespace TeXShift.AddIn
                 {
                     WriteDebugFiles = writeDebugFiles,
                     ExportPdf = writeDebugFiles && (_appSettings?.Debug?.ExportPdf ?? true),
+                    DumpFullPageXml = writeDebugFiles && (_appSettings?.Debug?.DumpFullPageXml ?? false),
                     OutputDirectory = _appSettings?.Debug?.DebugOutputPath
                 });
 

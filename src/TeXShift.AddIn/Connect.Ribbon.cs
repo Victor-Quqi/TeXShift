@@ -21,7 +21,9 @@ namespace TeXShift.AddIn
                 ["grpSettings"] = "Ribbon_Group_Settings",
 
                 ["btnSilentConvert"] = "Ribbon_Button_Convert",
+                ["btnReverseConvert"] = "Ribbon_Button_ReverseConvert",
                 ["btnDebugConvert"] = "Ribbon_Button_DebugConvert",
+                ["btnDebugReverseConvert"] = "Ribbon_Button_DebugReverseConvert",
                 ["btnDebugXml"] = "Ribbon_Button_SavePageXml",
                 ["btnDebugSelectionXml"] = "Ribbon_Button_SaveSelectionXml",
                 ["btnSettings"] = "Ribbon_Button_Settings"

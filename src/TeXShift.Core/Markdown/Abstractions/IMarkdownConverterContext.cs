@@ -1,6 +1,7 @@
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Configuration;
 using TeXShift.Core.Math;
@@ -59,7 +60,7 @@ namespace TeXShift.Core.Markdown.Abstractions
         /// </summary>
         /// <param name="container">The container of inline elements.</param>
         /// <returns>An HTML-formatted string.</returns>
-        string ConvertInlinesToHtml(ContainerInline container);
+        Task<string> ConvertInlinesToHtmlAsync(ContainerInline container);
 
         /// <summary>
         /// Converts a collection of inline elements into an HTML string.
@@ -67,7 +68,7 @@ namespace TeXShift.Core.Markdown.Abstractions
         /// </summary>
         /// <param name="inlines">The collection of inline elements.</param>
         /// <returns>An HTML-formatted string.</returns>
-        string ConvertInlinesToHtml(IEnumerable<Inline> inlines);
+        Task<string> ConvertInlinesToHtmlAsync(IEnumerable<Inline> inlines);
 
         /// <summary>
         /// Recursively processes a collection of blocks using the main converter's logic.
@@ -75,7 +76,7 @@ namespace TeXShift.Core.Markdown.Abstractions
         /// </summary>
         /// <param name="blocks">The collection of blocks to process.</param>
         /// <returns>A collection of converted OneNote XML elements.</returns>
-        IEnumerable<XElement> ProcessBlocks(IEnumerable<Block> blocks);
+        Task<IReadOnlyList<XElement>> ProcessBlocksAsync(IEnumerable<Block> blocks);
 
         /// <summary>
         /// Increments the quote nesting depth for processing nested quote blocks.

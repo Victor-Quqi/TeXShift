@@ -220,4 +220,7 @@
   <data name="Error_Image_LoadFailed" xml:space="preserve">
     <value>Failed to load image</value>
   </data>
+  <data name="Reverse_MathSourceMissing" xml:space="preserve">
+    <value>[TeXShift: Formula source missing, cannot recover]</value>
+  </data>
 </root>

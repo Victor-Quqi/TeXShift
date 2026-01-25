@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Markdig.Syntax.Inlines;
 using Markdig.Extensions.Mathematics;
 using Markdig.Extensions.TaskLists;
@@ -30,16 +32,16 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
         /// <summary>
         /// Converts a container of inline elements to an HTML string.
         /// </summary>
-        public string Render(ContainerInline container)
+        public async Task<string> RenderAsync(ContainerInline container)
         {
             if (container == null) return string.Empty;
-            return Render((IEnumerable<Inline>)container);
+            return await RenderAsync((IEnumerable<Inline>)container).ConfigureAwait(false);
         }
 
         /// <summary>
         /// Converts a collection of inline elements to an HTML string.
         /// </summary>
-        public string Render(IEnumerable<Inline> inlines)
+        public async Task<string> RenderAsync(IEnumerable<Inline> inlines)
         {
             if (inlines == null) return string.Empty;
             var html = new StringBuilder();
@@ -58,7 +60,7 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                 }
                 else if (inline is EmphasisInline emphasis)
                 {
-                    RenderEmphasis(html, emphasis);
+                    await RenderEmphasisAsync(html, emphasis).ConfigureAwait(false);
                 }
                 else if (inline is CodeInline code)
                 {
@@ -66,7 +68,7 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                 }
                 else if (inline is LinkInline link)
                 {
-                    RenderLink(html, link);
+                    await RenderLinkAsync(html, link).ConfigureAwait(false);
                 }
                 else if (inline is LineBreakInline)
                 {
@@ -74,19 +76,19 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                 }
                 else if (inline is MathInline mathInline)
                 {
-                    RenderMath(html, mathInline);
+                    await RenderMathAsync(html, mathInline).ConfigureAwait(false);
                 }
                 else if (inline is ContainerInline nested)
                 {
-                    html.Append(Render(nested));
+                    html.Append(await RenderAsync(nested).ConfigureAwait(false));
                 }
             }
             return html.ToString();
         }
 
-        private void RenderEmphasis(StringBuilder html, EmphasisInline emphasis)
+        private async Task RenderEmphasisAsync(StringBuilder html, EmphasisInline emphasis)
         {
-            var content = Render(emphasis);
+            var content = await RenderAsync(emphasis).ConfigureAwait(false);
             if (emphasis.DelimiterChar == '*' || emphasis.DelimiterChar == '_')
             {
                 if (emphasis.DelimiterCount == 2)
@@ -120,14 +122,14 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
             html.Append($"<span style='{styleString}'>{padding}{HtmlEscaper.Escape(code.Content)}{padding}</span>");
         }
 
-        private void RenderLink(StringBuilder html, LinkInline link)
+        private async Task RenderLinkAsync(StringBuilder html, LinkInline link)
         {
             var url = link.Url ?? "";
 
             // Handle images: inline images are downgraded to links
             if (link.IsImage)
             {
-                var altText = Render(link);
+                var altText = await RenderAsync(link).ConfigureAwait(false);
                 if (string.IsNullOrEmpty(altText))
                 {
                     altText = "image";
@@ -137,7 +139,7 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
             }
             else
             {
-                var content = Render(link);
+                var content = await RenderAsync(link).ConfigureAwait(false);
                 // If link text is empty, display the URL as the link text
                 if (string.IsNullOrEmpty(content))
                 {
@@ -147,7 +149,7 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
             }
         }
 
-        private void RenderMath(StringBuilder html, MathInline mathInline)
+        private async Task RenderMathAsync(StringBuilder html, MathInline mathInline)
         {
             // Handle inline math ($...$) and display math ($$...$$)
             // DelimiterCount: 1 = $, 2 = $$
@@ -160,10 +162,11 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                 {
                     try
                     {
-                        _mathService.InitializeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+                        await _mathService.InitializeAsync().ConfigureAwait(false);
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        System.Diagnostics.Trace.WriteLine(ex);
                         // Initialization failed, show LaTeX source
                         var delim = isDisplayMath ? "$$" : "$";
                         html.Append($"[MathInit Error: {delim}{HtmlEscaper.Escape(mathInline.Content.ToString())}{delim}]");
@@ -179,12 +182,13 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                     {
                         latex = EntityDecoder(latex);
                     }
-                    var mathml = _mathService.LatexToMathMLAsync(latex, displayMode: isDisplayMath).ConfigureAwait(false).GetAwaiter().GetResult();
+                    var mathml = await _mathService.LatexToMathMLAsync(latex, displayMode: isDisplayMath).ConfigureAwait(false);
                     var wrappedMathml = _mathService.WrapMathMLForOneNote(mathml);
                     html.Append(wrappedMathml);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    System.Diagnostics.Trace.WriteLine(ex);
                     // On conversion error, show the LaTeX source as plain text
                     var delim = isDisplayMath ? "$$" : "$";
                     html.Append($"[LaTeX: {delim}{HtmlEscaper.Escape(mathInline.Content.ToString())}{delim}]");

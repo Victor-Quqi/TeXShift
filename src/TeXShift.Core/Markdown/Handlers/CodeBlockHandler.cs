@@ -1,6 +1,7 @@
 using Markdig.Syntax;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Markdown.Abstractions;
 using TeXShift.Core.Syntax;
@@ -10,7 +11,7 @@ namespace TeXShift.Core.Markdown.Handlers
 {
     internal class CodeBlockHandler : IBlockHandler
     {
-        public IEnumerable<XElement> Handle(Block block, IMarkdownConverterContext context)
+        public Task<IReadOnlyList<XElement>> HandleAsync(Block block, IMarkdownConverterContext context)
         {
             var codeBlock = block as CodeBlock;
             var ns = context.OneNoteNamespace;
@@ -98,7 +99,7 @@ namespace TeXShift.Core.Markdown.Handlers
             table.Add(row);
             outerOe.Add(table);
 
-            return new[] { outerOe };
+            return Task.FromResult<IReadOnlyList<XElement>>(new[] { outerOe });
         }
 
         /// <summary>

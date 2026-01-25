@@ -1,11 +1,15 @@
 using System;
 using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Abstractions;
+using TeXShift.Core.Logging;
 using TeXShift.Core.Localization;
+using TeXShift.Core.Utils;
 using OneNoteInterop = Microsoft.Office.Interop.OneNote;
 
 namespace TeXShift.Core.OneNote
@@ -16,6 +20,9 @@ namespace TeXShift.Core.OneNote
     public class OneNotePageReader : IContentReader
     {
         private readonly OneNoteInterop.Application _oneNoteApp;
+        private static readonly Regex BrTagWithFollowingNewlineRegex = new Regex(
+            "<br\\b[^>]*>(?:\\r\\n|\\r|\\n)?",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         public OneNotePageReader(OneNoteInterop.Application oneNoteApp)
         {
@@ -42,9 +49,13 @@ namespace TeXShift.Core.OneNote
             OneNoteInterop.Window window = null;
             try
             {
-                windows = _oneNoteApp.Windows;
-                window = windows.CurrentWindow;
-                string pageId = window?.CurrentPageId;
+                string pageId;
+                using (PerformanceTraceContext.Measure("Read.OneNote.GetCurrentPageId"))
+                {
+                    windows = _oneNoteApp.Windows;
+                    window = windows.CurrentWindow;
+                    pageId = window?.CurrentPageId;
+                }
 
                 if (string.IsNullOrEmpty(pageId))
                 {
@@ -52,14 +63,28 @@ namespace TeXShift.Core.OneNote
                 }
 
                 string xmlContent;
-                _oneNoteApp.GetPageContent(pageId, out xmlContent, OneNoteInterop.PageInfo.piAll);
+                using (PerformanceTraceContext.Measure("Read.OneNote.GetPageContent", "piSelection"))
+                {
+                    // piSelection includes selection markers but excludes binary payloads (e.g., InkDrawing/Data base64).
+                    _oneNoteApp.GetPageContent(pageId, out xmlContent, OneNoteInterop.PageInfo.piSelection, OneNoteInterop.XMLSchema.xs2013);
+                }
+
+                if (PerformanceTraceContext.GetCurrent() != null)
+                {
+                    PerformanceTraceContext.AddMetric("Read.PageXmlChars", (xmlContent?.Length ?? 0).ToString());
+                    PerformanceTraceContext.AddMetric("Read.PageXml.InkDrawingCount", CountOccurrences(xmlContent, "<one:InkDrawing").ToString());
+                    PerformanceTraceContext.AddMetric("Read.PageXml.DataCount", CountOccurrences(xmlContent, "<one:Data").ToString());
+                }
 
                 if (string.IsNullOrEmpty(xmlContent))
                 {
                     return new ReadResult { IsSuccess = false, ErrorMessage = Resources.GetString("Error_GetPageContentFailed") };
                 }
 
-                return ParseXmlContent(xmlContent, pageId);
+                using (PerformanceTraceContext.Measure("Read.ParseXmlContent"))
+                {
+                    return ParseXmlContent(xmlContent, pageId);
+                }
             }
             finally
             {
@@ -71,12 +96,30 @@ namespace TeXShift.Core.OneNote
 
         private ReadResult ParseXmlContent(string xmlContent, string pageId)
         {
-            var doc = XDocument.Parse(xmlContent);
+            XDocument doc;
+            using (PerformanceTraceContext.Measure("Read.Parse.XDocument.Parse"))
+            {
+                doc = XDocument.Parse(xmlContent);
+            }
+
             var ns = doc.Root.Name.Namespace;
 
-            var deepestSelectedNodes = doc.Descendants()
-                .Where(e => e.Attribute("selected") != null && !e.Elements().Any(child => child.Attribute("selected") != null))
-                .ToList();
+            bool hasTodoTagDef = false;
+            using (PerformanceTraceContext.Measure("Read.Parse.FindTodoTagDef"))
+            {
+                hasTodoTagDef = doc.Root?.Elements(ns + "TagDef")
+                    .Any(e => string.Equals((string)e.Attribute("index"), "0", StringComparison.Ordinal)) == true;
+            }
+
+            System.Collections.Generic.List<XElement> deepestSelectedNodes;
+            using (PerformanceTraceContext.Measure("Read.Parse.FindSelectedNodes"))
+            {
+                deepestSelectedNodes = doc.Descendants()
+                    .Where(e => e.Attribute("selected") != null && !e.Elements().Any(child => child.Attribute("selected") != null))
+                    .ToList();
+            }
+
+            PerformanceTraceContext.AddMetric("Read.SelectedNodeCount", deepestSelectedNodes.Count.ToString());
 
             if (!deepestSelectedNodes.Any())
             {
@@ -89,11 +132,27 @@ namespace TeXShift.Core.OneNote
 
             if (isCursorMode)
             {
-                return HandleCursorMode(deepestSelectedNodes.First(), ns, pageId);
+                using (PerformanceTraceContext.Measure("Read.HandleCursorMode"))
+                {
+                    var result = HandleCursorMode(deepestSelectedNodes.First(), ns, pageId);
+                    if (result != null)
+                    {
+                        result.PageHasTodoTagDef = hasTodoTagDef;
+                    }
+                    return result;
+                }
             }
             else
             {
-                return HandleSelectionMode(deepestSelectedNodes, ns, pageId);
+                using (PerformanceTraceContext.Measure("Read.HandleSelectionMode"))
+                {
+                    var result = HandleSelectionMode(deepestSelectedNodes, ns, pageId);
+                    if (result != null)
+                    {
+                        result.PageHasTodoTagDef = hasTodoTagDef;
+                    }
+                    return result;
+                }
             }
         }
 
@@ -109,19 +168,47 @@ namespace TeXShift.Core.OneNote
             var rootChildren = outlineContainer.Element(ns + "OEChildren");
             if (rootChildren != null)
             {
-                ProcessOEChildren(rootChildren, ns, sb, 0);
+                PerformanceTraceContext.AddMetric("Read.Cursor.RootOeCount", rootChildren.Elements(ns + "OE").Count().ToString());
+                var cursorOe = cursorNode.Ancestors(ns + "OE").FirstOrDefault();
+                using (PerformanceTraceContext.Measure("Read.Cursor.BuildTextFromOEs"))
+                {
+                    if (ShouldSkipCursorOe(cursorOe, rootChildren, ns))
+                    {
+                        foreach (var oe in rootChildren.Elements(ns + "OE"))
+                        {
+                            if (oe == cursorOe)
+                            {
+                                continue;
+                            }
+                            ProcessOE(oe, ns, sb, 0);
+                        }
+                    }
+                    else
+                    {
+                        ProcessOEChildren(rootChildren, ns, sb, 0);
+                    }
+                }
             }
 
-            string extractedText = sb.ToString().TrimEnd('\r', '\n');
-
+            // ProcessOE appends a line terminator after each OE. Remove only the final terminator
+            // (artifact of the join), while preserving intentional trailing blank lines.
+            string extractedText = TrimSingleTrailingNewline(sb.ToString());
             if (string.IsNullOrWhiteSpace(extractedText))
             {
-                return new ReadResult
+                // Some OneNote objects (e.g., Table/Image) are not stored as text in <one:T>.
+                // In those cases, extractedText can be empty even though there is convertible content.
+                // Keep Cursor mode usable for reverse conversion/debug tooling.
+                if (!ContainsNonTextConvertibleContent(outlineContainer, ns))
                 {
-                    IsSuccess = false,
-                    Mode = DetectionMode.Cursor,
-                    ErrorMessage = Resources.GetString("Error_EmptyTextBox")
-                };
+                    return new ReadResult
+                    {
+                        IsSuccess = false,
+                        Mode = DetectionMode.Cursor,
+                        ErrorMessage = Resources.GetString("Error_EmptyTextBox")
+                    };
+                }
+
+                extractedText = string.Empty;
             }
 
             string objectId = outlineContainer.Attribute("objectID")?.Value;
@@ -144,16 +231,33 @@ namespace TeXShift.Core.OneNote
 
         private ReadResult HandleSelectionMode(System.Collections.Generic.List<XElement> selectedNodes, XNamespace ns, string pageId)
         {
-            var parentOEs = FindParentOENodes(selectedNodes, ns);
+            System.Collections.Generic.List<XElement> parentOEs;
+            using (PerformanceTraceContext.Measure("Read.Selection.FindParentOes"))
+            {
+                parentOEs = FindParentOENodes(selectedNodes, ns);
+            }
+
+            PerformanceTraceContext.AddMetric("Read.Selection.ParentOeCount", parentOEs.Count.ToString());
             if (!parentOEs.Any())
             {
                 return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = Resources.GetString("Error_NoValidTextContainer") };
             }
 
-            string extractedText = BuildTextFromOENodes(parentOEs, ns);
-            if (string.IsNullOrEmpty(extractedText))
+            string extractedText;
+            using (PerformanceTraceContext.Measure("Read.Selection.BuildTextFromOEs"))
             {
-                return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = Resources.GetString("Error_NoValidTextContent") };
+                extractedText = TrimSingleTrailingNewline(BuildTextFromOENodes(parentOEs, ns));
+            }
+            if (string.IsNullOrWhiteSpace(extractedText))
+            {
+                // Selection may target a non-text OE (e.g., selecting an embedded Image or a Table).
+                // Treat it as valid content for reverse conversion so we can emit placeholders/Markdown.
+                if (!ContainsNonTextConvertibleContent(parentOEs, ns))
+                {
+                    return new ReadResult { IsSuccess = false, Mode = DetectionMode.Selection, ErrorMessage = Resources.GetString("Error_NoValidTextContent") };
+                }
+
+                extractedText = string.Empty;
             }
 
             var outlineContainer = parentOEs.FirstOrDefault()?.Ancestors(ns + "Outline").FirstOrDefault();
@@ -202,6 +306,49 @@ namespace TeXShift.Core.OneNote
             return sb.ToString();
         }
 
+        private static string TrimSingleTrailingNewline(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
+            if (text.EndsWith("\r\n", StringComparison.Ordinal))
+            {
+                return text.Substring(0, text.Length - 2);
+            }
+
+            char last = text[text.Length - 1];
+            if (last == '\n' || last == '\r')
+            {
+                return text.Substring(0, text.Length - 1);
+            }
+
+            return text;
+        }
+
+        private static int CountOccurrences(string haystack, string needle)
+        {
+            if (string.IsNullOrEmpty(haystack) || string.IsNullOrEmpty(needle))
+            {
+                return 0;
+            }
+
+            int count = 0;
+            int index = 0;
+            while (true)
+            {
+                index = haystack.IndexOf(needle, index, StringComparison.OrdinalIgnoreCase);
+                if (index < 0)
+                {
+                    return count;
+                }
+
+                count++;
+                index += needle.Length;
+            }
+        }
+
         /// <summary>
         /// Collects object IDs from OE nodes and adds them to the result.
         /// </summary>
@@ -240,6 +387,15 @@ namespace TeXShift.Core.OneNote
             //   &amp;lt; → &lt; (preserves user's HTML entities)
             // Additional HtmlDecode would cause double-decoding and content loss.
             var oeText = string.Concat(oe.Elements(ns + "T").Select(t => t.Value));
+            // OneNote may wrap link-like text with a simple <a href="...">...</a> inside <one:T>.
+            // Strip that wrapper (keep displayed text) so the extracted Markdown stays pure.
+            oeText = OneNoteAutoLinkNormalizer.Normalize(oeText);
+            oeText = NormalizeBrToNewlines(oeText);
+
+            // OneNote stores HTML entities inside the <one:T> CDATA. Decode once so user-authored Markdown
+            // syntax (e.g., '>' for quotes, '"' for strings) is restored.
+            // User-typed entities are typically stored as "&amp;..." and remain entities after a single decode.
+            oeText = WebUtility.HtmlDecode(oeText ?? string.Empty);
             sb.AppendLine(oeText);
 
             var nestedChildren = oe.Element(ns + "OEChildren");
@@ -247,6 +403,92 @@ namespace TeXShift.Core.OneNote
             {
                 ProcessOEChildren(nestedChildren, ns, sb, indentLevel + 1);
             }
+        }
+
+        private bool ShouldSkipCursorOe(XElement cursorOe, XElement rootChildren, XNamespace ns)
+        {
+            if (cursorOe == null || rootChildren == null)
+            {
+                return false;
+            }
+
+            if (cursorOe.Parent != rootChildren)
+            {
+                return false;
+            }
+
+            var oeList = rootChildren.Elements(ns + "OE").ToList();
+            if (oeList.Count <= 1)
+            {
+                return false;
+            }
+
+            if (oeList.First() != cursorOe)
+            {
+                return false;
+            }
+
+            var nested = cursorOe.Element(ns + "OEChildren");
+            if (nested != null && nested.Elements(ns + "OE").Any())
+            {
+                return false;
+            }
+
+            foreach (var child in cursorOe.Elements())
+            {
+                var localName = child.Name.LocalName;
+                if (!string.Equals(localName, "T", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(localName, "Meta", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
+            var oeText = string.Concat(cursorOe.Elements(ns + "T").Select(t => t.Value));
+            return string.IsNullOrWhiteSpace(oeText);
+        }
+
+        private static string NormalizeBrToNewlines(string htmlOrText)
+        {
+            if (string.IsNullOrEmpty(htmlOrText) || htmlOrText.IndexOf("<br", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return htmlOrText;
+            }
+
+            // OneNote may serialize explicit line breaks as <br /> tags inside <one:T> HTML.
+            // Normalize them to plain newlines so Markdown parsing stays correct.
+            // OneNote's CDATA often contains a literal newline after the <br /> (XML pretty printing), which would
+            // otherwise become a doubled blank line after normalization.
+            return BrTagWithFollowingNewlineRegex.Replace(htmlOrText, "\n");
+        }
+
+        private static bool ContainsNonTextConvertibleContent(XElement element, XNamespace ns)
+        {
+            if (element == null)
+            {
+                return false;
+            }
+
+            // Keep this conservative: only allow elements we explicitly support in reverse conversion.
+            return element.Descendants(ns + "Table").Any() || element.Descendants(ns + "Image").Any();
+        }
+
+        private static bool ContainsNonTextConvertibleContent(System.Collections.Generic.IEnumerable<XElement> elements, XNamespace ns)
+        {
+            if (elements == null)
+            {
+                return false;
+            }
+
+            foreach (var e in elements)
+            {
+                if (ContainsNonTextConvertibleContent(e, ns))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
 
@@ -281,7 +523,8 @@ namespace TeXShift.Core.OneNote
                 catch (Exception ex)
                 {
                     // Log the exception but don't throw - object might already be released
-                    System.Diagnostics.Debug.WriteLine($"Warning: Failed to release COM object: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Warning: Failed to release COM object. {ex.GetType().Name}: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine(ex);
                 }
             }
         }

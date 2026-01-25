@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Abstractions;
 using TeXShift.Core.Errors;
+using TeXShift.Core.Logging;
 using TeXShift.Core.Localization;
 using OneNoteInterop = Microsoft.Office.Interop.OneNote;
 
@@ -50,62 +51,49 @@ namespace TeXShift.Core.OneNote
             if (!readResult.TargetObjectIds.Any())
                 throw new ArgumentException("TargetObjectIds is required", nameof(readResult));
 
-            string pageXml;
-            _oneNoteApp.GetPageContent(readResult.PageId, out pageXml, OneNoteInterop.PageInfo.piAll, OneNoteInterop.XMLSchema.xs2013);
-
-            var doc = XDocument.Parse(pageXml);
-            var ns = doc.Root.Name.Namespace;
-
-            // Ensure TagDef exists for task lists (Tag elements with index="0")
-            EnsureTagDefExists(doc, ns);
-
-            var targetNodes = readResult.TargetObjectIds
-                .Select(id => FindNodeByObjectId(doc, id, ns))
-                .Where(node => node != null)
-                .ToList();
-
-            if (!targetNodes.Any())
+            // Build a minimal page-changes XML so we don't have to round-trip the full page XML.
+            // This avoids massive stalls on pages with large binary payloads (e.g., InkDrawing/Data base64).
+            XElement updatedOutline;
+            bool needsTodoTagDef = false;
+            using (PerformanceTraceContext.Measure("Write.BuildUpdatedOutline", readResult.Mode.ToString()))
             {
-                throw new InvalidOperationException($"Cannot find any target nodes with ObjectIDs: {string.Join(", ", readResult.TargetObjectIds)}");
+                updatedOutline = BuildUpdatedOutline(readResult, newOutlineXml);
+
+                needsTodoTagDef = ContainsTodoTagIndexZero(updatedOutline);
             }
 
-            var firstTargetNode = targetNodes.First();
+            var page = new XElement(_ns + "Page",
+                new XAttribute("ID", readResult.PageId),
+                // Emit explicit prefix to match OneNote's typical serialization.
+                new XAttribute(XNamespace.Xmlns + "one", _ns));
 
-            bool isNewContentOutline = newOutlineXml.Name.LocalName == "Outline";
-
-            if (readResult.Mode == DetectionMode.Cursor)
+            if (needsTodoTagDef)
             {
-                // Cursor mode: Replace the entire Outline element
-                PreserveAttributes(newOutlineXml, firstTargetNode);
-                newOutlineXml.SetAttributeValue("objectID", readResult.TargetObjectIds.First());
-                firstTargetNode.ReplaceWith(newOutlineXml);
-            }
-            else // Selection mode: Replace OEs, not the entire Outline
-            {
-                var newOEChildren = isNewContentOutline
-                    ? newOutlineXml.Element(ns + "OEChildren")?.Elements(ns + "OE").ToList()
-                        ?? new System.Collections.Generic.List<XElement>()
-                    : new System.Collections.Generic.List<XElement> { newOutlineXml };
-
-                if (newOEChildren.Any())
+                // OneNote validates Tag nodes against TagDef definitions during UpdatePageContent.
+                // Empirically, some pages fail updates if TagDef(index="0") is not present in the *changes XML*,
+                // even when the page already contains the definition. Always include it when we emit <Tag index="0">.
+                using (PerformanceTraceContext.Measure("Write.AddTodoTagDef"))
                 {
-                    firstTargetNode.ReplaceWith(newOEChildren);
-                }
-                else
-                {
-                    firstTargetNode.Remove();
-                }
-
-                foreach (var nodeToRemove in targetNodes.Skip(1))
-                {
-                    nodeToRemove.Remove();
+                    var pageDoc = new XDocument(page);
+                    EnsureTagDefExists(pageDoc, _ns);
                 }
             }
 
-            string updatedXml = doc.ToString();
+            page.Add(updatedOutline);
+
+            string updatedXml;
+            using (PerformanceTraceContext.Measure("Write.Serialize.PageChangesXml"))
+            {
+                updatedXml = new XDocument(page).ToString();
+            }
+
+            PerformanceTraceContext.AddMetric("Write.PageChangesXmlChars", (updatedXml?.Length ?? 0).ToString());
             try
             {
-                _oneNoteApp.UpdatePageContent(updatedXml, DateTime.MinValue, OneNoteInterop.XMLSchema.xs2013, true);
+                using (PerformanceTraceContext.Measure("Write.OneNote.UpdatePageContent", "xs2013/force=true"))
+                {
+                    _oneNoteApp.UpdatePageContent(updatedXml, DateTime.MinValue, OneNoteInterop.XMLSchema.xs2013, true);
+                }
             }
             catch (System.Runtime.InteropServices.COMException comEx)
             {
@@ -119,6 +107,112 @@ namespace TeXShift.Core.OneNote
                 var technicalMessage = $"UpdatePageContent failed unexpectedly. {ex.GetType().Name}: {ex.Message}";
                 throw new ContentWriteException(userMessage, technicalMessage, ex);
             }
+        }
+
+        private XElement BuildUpdatedOutline(ReadResult readResult, XElement newOutlineXml)
+        {
+            if (readResult == null)
+            {
+                throw new ArgumentNullException(nameof(readResult));
+            }
+
+            if (newOutlineXml == null)
+            {
+                throw new ArgumentNullException(nameof(newOutlineXml));
+            }
+
+            if (readResult.Mode == DetectionMode.Cursor)
+            {
+                return BuildUpdatedOutlineForCursor(readResult, newOutlineXml);
+            }
+
+            return BuildUpdatedOutlineForSelection(readResult, newOutlineXml);
+        }
+
+        private XElement BuildUpdatedOutlineForCursor(ReadResult readResult, XElement newOutlineXml)
+        {
+            // Cursor mode: replace the entire Outline identified by TargetObjectIds[0].
+            if (readResult.OriginalXmlNode != null)
+            {
+                PreserveAttributes(newOutlineXml, readResult.OriginalXmlNode);
+            }
+            newOutlineXml.SetAttributeValue("objectID", readResult.TargetObjectIds.First());
+            RemoveSelectedAttributes(newOutlineXml);
+            return newOutlineXml;
+        }
+
+        private XElement BuildUpdatedOutlineForSelection(ReadResult readResult, XElement newOutlineXml)
+        {
+            // Selection mode: merge the converted selection back into the original Outline
+            // so non-selected siblings remain untouched.
+            var reference = readResult.OriginalXmlNode ?? readResult.OriginalXmlNodes.FirstOrDefault();
+            var sourceOutline = reference?.Ancestors(_ns + "Outline").FirstOrDefault();
+            if (sourceOutline == null)
+            {
+                throw new InvalidOperationException("Cannot locate source Outline for selection update.");
+            }
+
+            var updatedOutline = new XElement(sourceOutline);
+            RemoveSelectedAttributes(updatedOutline);
+
+            bool isNewContentOutline = newOutlineXml.Name.LocalName == "Outline";
+            var newOEChildren = isNewContentOutline
+                ? newOutlineXml.Element(_ns + "OEChildren")?.Elements(_ns + "OE").Select(oe => new XElement(oe)).ToList()
+                    ?? new System.Collections.Generic.List<XElement>()
+                : new System.Collections.Generic.List<XElement> { new XElement(newOutlineXml) };
+
+            var firstId = readResult.TargetObjectIds.First();
+            var firstTarget = updatedOutline.Descendants(_ns + "OE")
+                .FirstOrDefault(e => string.Equals((string)e.Attribute("objectID"), firstId, StringComparison.Ordinal));
+            if (firstTarget == null)
+            {
+                throw new InvalidOperationException($"Cannot find selection target OE with ObjectID: {firstId}");
+            }
+
+            using (PerformanceTraceContext.Measure("Write.Selection.ApplyReplacement", $"targets={readResult.TargetObjectIds.Count}"))
+            {
+                if (newOEChildren.Any())
+                {
+                    firstTarget.ReplaceWith(newOEChildren);
+                }
+                else
+                {
+                    firstTarget.Remove();
+                }
+
+                foreach (var id in readResult.TargetObjectIds.Skip(1))
+                {
+                    var nodeToRemove = updatedOutline.Descendants(_ns + "OE")
+                        .FirstOrDefault(e => string.Equals((string)e.Attribute("objectID"), id, StringComparison.Ordinal));
+                    nodeToRemove?.Remove();
+                }
+            }
+
+            return updatedOutline;
+        }
+
+        private static void RemoveSelectedAttributes(XElement element)
+        {
+            if (element == null)
+            {
+                return;
+            }
+
+            foreach (var node in element.DescendantsAndSelf())
+            {
+                node.Attribute("selected")?.Remove();
+            }
+        }
+
+        private bool ContainsTodoTagIndexZero(XElement outline)
+        {
+            if (outline == null)
+            {
+                return false;
+            }
+
+            return outline.Descendants(_ns + "Tag")
+                .Any(tag => string.Equals((string)tag.Attribute("index"), "0", StringComparison.Ordinal));
         }
 
         /// <summary>

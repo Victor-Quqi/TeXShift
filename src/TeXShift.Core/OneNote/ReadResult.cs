@@ -66,6 +66,12 @@ namespace TeXShift.Core.OneNote
         /// </summary>
         public double? SourceOutlineWidth { get; set; }
 
+        /// <summary>
+        /// Whether the source page already contains the built-in To-Do TagDef (index="0").
+        /// Used to avoid duplicating TagDef creation during minimal UpdatePageContent writes.
+        /// </summary>
+        public bool PageHasTodoTagDef { get; set; }
+
         public string ModeAsString()
         {
             switch (Mode)

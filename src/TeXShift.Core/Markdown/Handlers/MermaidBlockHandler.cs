@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using Markdig.Syntax;
 using TeXShift.Core.Markdown.Abstractions;
@@ -18,7 +19,7 @@ namespace TeXShift.Core.Markdown.Handlers
             _mermaidService = mermaidService;
         }
 
-        public IEnumerable<XElement> Handle(Block block, IMarkdownConverterContext context)
+        public async Task<IReadOnlyList<XElement>> HandleAsync(Block block, IMarkdownConverterContext context)
         {
             var fenced = block as FencedCodeBlock;
             if (fenced == null)
@@ -29,7 +30,7 @@ namespace TeXShift.Core.Markdown.Handlers
             var code = ExtractCode(fenced);
             if (string.IsNullOrWhiteSpace(code))
             {
-                return _codeBlockFallback.Handle(block, context);
+                return await _codeBlockFallback.HandleAsync(block, context).ConfigureAwait(false);
             }
 
             // Decode HTML entity placeholders before passing to Mermaid
@@ -37,7 +38,7 @@ namespace TeXShift.Core.Markdown.Handlers
 
             if (_mermaidService == null)
             {
-                return _codeBlockFallback.Handle(block, context);
+                return await _codeBlockFallback.HandleAsync(block, context).ConfigureAwait(false);
             }
 
             // Auto-initialize MermaidService if needed
@@ -45,29 +46,29 @@ namespace TeXShift.Core.Markdown.Handlers
             {
                 try
                 {
-                    _mermaidService.InitializeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+                    await _mermaidService.InitializeAsync().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"[TeXShift] MermaidService initialization failed: {ex.Message}");
-                    return _codeBlockFallback.Handle(block, context);
+                    return await _codeBlockFallback.HandleAsync(block, context).ConfigureAwait(false);
                 }
             }
 
             MermaidRenderResult result;
             try
             {
-                result = _mermaidService.RenderToImageAsync(code, context.MermaidOptions).ConfigureAwait(false).GetAwaiter().GetResult();
+                result = await _mermaidService.RenderToImageAsync(code, context.MermaidOptions).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[TeXShift] Mermaid render failed: {ex.Message}");
-                return _codeBlockFallback.Handle(block, context);
+                return await _codeBlockFallback.HandleAsync(block, context).ConfigureAwait(false);
             }
 
             if (result == null || !result.Success || string.IsNullOrWhiteSpace(result.Base64PngData))
             {
-                return _codeBlockFallback.Handle(block, context);
+                return await _codeBlockFallback.HandleAsync(block, context).ConfigureAwait(false);
             }
 
             var ns = context.OneNoteNamespace;

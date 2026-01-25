@@ -1,6 +1,7 @@
 using Markdig.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Markdown.Abstractions;
 
@@ -8,7 +9,7 @@ namespace TeXShift.Core.Markdown.Handlers
 {
     internal class HeadingHandler : IBlockHandler
     {
-        public IEnumerable<XElement> Handle(Block block, IMarkdownConverterContext context)
+        public async Task<IReadOnlyList<XElement>> HandleAsync(Block block, IMarkdownConverterContext context)
         {
             var heading = (HeadingBlock)block;
             var ns = context.OneNoteNamespace;
@@ -30,7 +31,7 @@ namespace TeXShift.Core.Markdown.Handlers
             var fontConfig = styleConfig.GetHeadingFont(heading.Level);
 
             // Convert inline content to HTML and apply font styles
-            var htmlContent = context.ConvertInlinesToHtml(heading.Inline);
+            var htmlContent = await context.ConvertInlinesToHtmlAsync(heading.Inline).ConfigureAwait(false);
             var styleAttributes = $"font-size:{fontConfig.FontSize}pt";
             if (fontConfig.IsBold)
             {

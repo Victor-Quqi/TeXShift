@@ -348,8 +348,10 @@
 
                         <materialDesign:Card Padding="16">
                             <StackPanel>
+                                <CheckBox Content="{Binding TryRecognizeNonTeXShiftFormatsText}" IsChecked="{Binding TryRecognizeNonTeXShiftFormats}" Margin="0,0,0,12"/>
                                 <CheckBox Content="{Binding ShowDebugButtonsText}" IsChecked="{Binding ShowDebugButtons}" Margin="0,0,0,12"/>
-                                <CheckBox Content="{Binding ExportPdfText}" IsChecked="{Binding ExportPdf}" Margin="0,0,0,16"/>
+                                <CheckBox Content="{Binding ExportPdfText}" IsChecked="{Binding ExportPdf}" Margin="0,0,0,12"/>
+                                <CheckBox Content="{Binding DumpFullPageXmlText}" IsChecked="{Binding DumpFullPageXml}" Margin="0,0,0,16"/>
                                 <TextBlock Text="{Binding DebugOutputPathDescription}" Margin="0,0,0,8"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>

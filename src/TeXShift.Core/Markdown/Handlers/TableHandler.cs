@@ -1,8 +1,11 @@
 using Markdig.Extensions.Tables;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Markdown.Abstractions;
 
@@ -12,7 +15,7 @@ namespace TeXShift.Core.Markdown.Handlers
     {
         private const double DefaultColumnWidth = 72.0; // Default width in points (1 inch)
 
-        public IEnumerable<XElement> Handle(Block block, IMarkdownConverterContext context)
+        public async Task<IReadOnlyList<XElement>> HandleAsync(Block block, IMarkdownConverterContext context)
         {
             var table = (Table)block;
             var ns = context.OneNoteNamespace;
@@ -21,7 +24,7 @@ namespace TeXShift.Core.Markdown.Handlers
             var columnCount = table.FirstOrDefault() is TableRow firstRow ? firstRow.Count : 0;
             if (columnCount == 0)
             {
-                return Enumerable.Empty<XElement>();
+                return Array.Empty<XElement>();
             }
 
             // Create Table element
@@ -62,21 +65,22 @@ namespace TeXShift.Core.Markdown.Handlers
                     if (singleImage != null)
                     {
                         // Use shared helper to create image OE
-                        var imageOe = ImageElementHelper.CreateImageOE(singleImage, ns, context);
+                        var imageOe = await ImageElementHelper.CreateImageOEAsync(singleImage, ns, context).ConfigureAwait(false);
                         ApplyAlignment(imageOe, alignment);
                         oeChildren.Add(imageOe);
                     }
                     else
                     {
                         // Process cell content - cells contain paragraphs
-                        var cellContent = "";
+                        var cellContentBuilder = new StringBuilder();
                         foreach (var cellChild in cell)
                         {
                             if (cellChild is ParagraphBlock paragraph)
                             {
-                                cellContent += context.ConvertInlinesToHtml(paragraph.Inline);
+                                cellContentBuilder.Append(await context.ConvertInlinesToHtmlAsync(paragraph.Inline).ConfigureAwait(false));
                             }
                         }
+                        var cellContent = cellContentBuilder.ToString();
 
                         // Apply bold for header row
                         if (row.IsHeader && !string.IsNullOrEmpty(cellContent))

@@ -73,8 +73,14 @@
   <data name="Ribbon_Button_Convert" xml:space="preserve">
     <value>Convert</value>
   </data>
+  <data name="Ribbon_Button_ReverseConvert" xml:space="preserve">
+    <value>Reverse Convert</value>
+  </data>
   <data name="Ribbon_Button_DebugConvert" xml:space="preserve">
     <value>Debug Convert</value>
+  </data>
+  <data name="Ribbon_Button_DebugReverseConvert" xml:space="preserve">
+    <value>Debug Reverse</value>
   </data>
   <data name="Ribbon_Button_SavePageXml" xml:space="preserve">
     <value>Save Page XML</value>
@@ -148,6 +154,9 @@
   <data name="Settings_Checkbox_ExportPdf" xml:space="preserve">
     <value>Export PDF to debug output folder</value>
   </data>
+  <data name="Settings_Checkbox_DumpFullPageXml" xml:space="preserve">
+    <value>Dump full page XML (slow; includes binary data)</value>
+  </data>
   <data name="Settings_Description_DebugOutputPath" xml:space="preserve">
     <value>Debug output folder (leave blank for default):</value>
   </data>
@@ -168,6 +177,12 @@
   </data>
   <data name="Message_Title_ConversionComplete" xml:space="preserve">
     <value>TeXShift - Conversion complete</value>
+  </data>
+  <data name="Message_Success_ReverseConversionComplete" xml:space="preserve">
+    <value>Reverse conversion succeeded!&#xA;&#xA;Mode: {0}&#xA;Generated {1} characters&#xA;&#xA;Debug files saved to:&#xA;{2}</value>
+  </data>
+  <data name="Message_Title_ReverseConversionComplete" xml:space="preserve">
+    <value>TeXShift - Reverse conversion complete</value>
   </data>
   <data name="Debug_Title" xml:space="preserve">
     <value>Debug Tools</value>
@@ -219,5 +234,8 @@
   </data>
   <data name="Settings_Checkbox_HorizontalRuleUseImage" xml:space="preserve">
     <value>Use image mode (unchecked: use text characters)</value>
+  </data>
+  <data name="Settings_Checkbox_TryRecognizeNonTeXShiftFormats" xml:space="preserve">
+    <value>Try to recognize non-TeXShift formatting</value>
   </data>
 </root>

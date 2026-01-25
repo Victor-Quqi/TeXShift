@@ -16,6 +16,7 @@ using TeXShift.Core.Markdown.Handlers.Inlines;
 using TeXShift.Core.Markdown.Processing;
 using TeXShift.Core.Math;
 using TeXShift.Core.Mermaid;
+using TeXShift.Core.OneNoteMeta;
 
 namespace TeXShift.Core.Markdown
 {
@@ -104,10 +105,12 @@ namespace TeXShift.Core.Markdown
             {
                 return CreateEmptyOutline();
             }
-            return await Task.Run(() => ConvertToOneNoteXml(markdown)).ConfigureAwait(false);
+
+            // Keep conversion off the caller thread (often UI/COM) while still allowing true async handlers.
+            return await Task.Run(() => ConvertToOneNoteXmlInternalAsync(markdown)).ConfigureAwait(false);
         }
 
-        private XElement ConvertToOneNoteXml(string markdown)
+        private async Task<XElement> ConvertToOneNoteXmlInternalAsync(string markdown)
         {
             // Step 1: Sanitize text (remove OneNote formatting spans)
             var sanitizedMarkdown = MarkdownSanitizer.Sanitize(markdown);
@@ -119,6 +122,7 @@ namespace TeXShift.Core.Markdown
             // Step 3: Convert LaTeX delimiters to Markdown math syntax
             // (e.g., \(...\) → $...$, \[...\] → $$...$$)
             sanitizedMarkdown = LatexDelimiterConverter.Convert(sanitizedMarkdown);
+            var sourceMarkdown = sanitizedMarkdown;
 
             // Step 4: Protect HTML entities from being decoded by Markdig
             var (protectedMarkdown, entityMap) = _entityProcessor.Protect(sanitizedMarkdown);
@@ -141,22 +145,32 @@ namespace TeXShift.Core.Markdown
 
             var oeChildren = new XElement(OneNoteNamespace + "OEChildren");
             var blocks = document.ToList();
-            var elements = PostProcessBlocks(blocks);
+            var elements = await PostProcessBlocksAsync(blocks).ConfigureAwait(false);
             oeChildren.Add(elements);
             outline.Add(oeChildren);
 
             // Step 6: Restore and DECODE HTML entities (except in code blocks)
-            _entityProcessor.RestoreAndDecode(outline, entityMap, OneNoteNamespace);
+            _entityProcessor.RestoreAndDecode(outline, entityMap, OneNoteNamespace, StyleConfig);
+
+            // Step 7: Persist source metadata for reverse conversion.
+            TeXShiftMetaWriter.WriteSourceMeta(outline, sourceMarkdown, TeXShiftMetaKeys.ModeRender);
 
             return outline;
         }
 
-        public IEnumerable<XElement> ProcessBlocks(IEnumerable<Block> blocks)
+        public async Task<IReadOnlyList<XElement>> ProcessBlocksAsync(IEnumerable<Block> blocks)
         {
-            return PostProcessBlocks(blocks.ToList());
+            if (blocks == null) return Array.Empty<XElement>();
+            return await PostProcessBlocksAsync(blocks.ToList()).ConfigureAwait(false);
         }
 
-        private List<XElement> PostProcessBlocks(List<Block> blocks)
+        [System.Obsolete("Use ProcessBlocksAsync instead. This method blocks on async work and may impact responsiveness.")]
+        public IEnumerable<XElement> ProcessBlocks(IEnumerable<Block> blocks)
+        {
+            return ProcessBlocksAsync(blocks).ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+
+        private async Task<IReadOnlyList<XElement>> PostProcessBlocksAsync(List<Block> blocks)
         {
             var elements = new List<XElement>();
             XElement lastContainerElement = null;
@@ -166,7 +180,7 @@ namespace TeXShift.Core.Markdown
                 var block = blocks[i];
                 if (block is LinkReferenceDefinitionGroup) continue;
 
-                var processed = HandleBlock(block).ToList();
+                var processed = await HandleBlockAsync(block).ConfigureAwait(false);
 
                 // Lists get nested under the preceding container element (heading, paragraph, or code block)
                 // This preserves document order while providing consistent indentation
@@ -192,9 +206,9 @@ namespace TeXShift.Core.Markdown
             return elements;
         }
 
-        private IEnumerable<XElement> HandleBlock(Block block)
+        private async Task<IReadOnlyList<XElement>> HandleBlockAsync(Block block)
         {
-            if (block is LinkReferenceDefinitionGroup) return Enumerable.Empty<XElement>();
+            if (block is LinkReferenceDefinitionGroup) return Array.Empty<XElement>();
 
             if (block is FencedCodeBlock fenced)
             {
@@ -202,7 +216,7 @@ namespace TeXShift.Core.Markdown
                 var language = info.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
                 if (string.Equals(language, "mermaid", StringComparison.OrdinalIgnoreCase))
                 {
-                    return _mermaidBlockHandler.Handle(block, this);
+                    return await _mermaidBlockHandler.HandleAsync(block, this).ConfigureAwait(false);
                 }
             }
 
@@ -211,7 +225,7 @@ namespace TeXShift.Core.Markdown
             {
                 handler = _fallbackHandler;
             }
-            return handler.Handle(block, this);
+            return await handler.HandleAsync(block, this).ConfigureAwait(false);
         }
 
         public void IncrementQuoteDepth()
@@ -242,14 +256,26 @@ namespace TeXShift.Core.Markdown
             return HtmlEntityProcessor.DecodeForLatex(text, _currentEntityMap);
         }
 
-        public string ConvertInlinesToHtml(ContainerInline container)
+        public Task<string> ConvertInlinesToHtmlAsync(ContainerInline container)
         {
-            return _inlineRenderer.Render(container);
+            return _inlineRenderer.RenderAsync(container);
         }
 
+        public Task<string> ConvertInlinesToHtmlAsync(IEnumerable<Inline> inlines)
+        {
+            return _inlineRenderer.RenderAsync(inlines);
+        }
+
+        [System.Obsolete("Use ConvertInlinesToHtmlAsync instead. This method blocks on async work and may impact responsiveness.")]
+        public string ConvertInlinesToHtml(ContainerInline container)
+        {
+            return ConvertInlinesToHtmlAsync(container).ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+
+        [System.Obsolete("Use ConvertInlinesToHtmlAsync instead. This method blocks on async work and may impact responsiveness.")]
         public string ConvertInlinesToHtml(IEnumerable<Inline> inlines)
         {
-            return _inlineRenderer.Render(inlines);
+            return ConvertInlinesToHtmlAsync(inlines).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         private XElement CreateEmptyOutline()

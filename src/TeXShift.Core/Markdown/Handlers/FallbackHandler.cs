@@ -1,5 +1,6 @@
 using Markdig.Syntax;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Markdown.Abstractions;
 using TeXShift.Core.Utils;
@@ -13,18 +14,18 @@ namespace TeXShift.Core.Markdown.Handlers
     /// </summary>
     internal class FallbackHandler : IBlockHandler
     {
-        public IEnumerable<XElement> Handle(Block block, IMarkdownConverterContext context)
+        public Task<IReadOnlyList<XElement>> HandleAsync(Block block, IMarkdownConverterContext context)
         {
             var ns = context.OneNoteNamespace;
             var oe = new XElement(ns + "OE");
 
             // Simply render the block's content as escaped plain text.
             var rawText = block.ToString(); // This might need adjustment based on block type
-            var escapedText = HtmlEscaper.Escape(rawText);
+            var escapedText = OneNoteHtmlTextEscaper.Escape(rawText);
 
             oe.Add(new XElement(ns + "T", new XCData(escapedText)));
 
-            return new[] { oe };
+            return Task.FromResult<IReadOnlyList<XElement>>(new[] { oe });
         }
     }
 }

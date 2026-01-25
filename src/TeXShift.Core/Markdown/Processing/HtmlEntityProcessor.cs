@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using TeXShift.Core.Configuration;
 
 namespace TeXShift.Core.Markdown.Processing
 {
@@ -47,7 +48,7 @@ namespace TeXShift.Core.Markdown.Processing
         /// Restores and DECODES HTML entities in the generated OneNote XML.
         /// Code elements (T elements inside code blocks) are NOT decoded.
         /// </summary>
-        public void RestoreAndDecode(XElement outline, Dictionary<string, string> entityMap, XNamespace ns)
+        public void RestoreAndDecode(XElement outline, Dictionary<string, string> entityMap, XNamespace ns, OneNoteStyleConfig styleConfig)
         {
             if (entityMap.Count == 0) return;
 
@@ -56,8 +57,10 @@ namespace TeXShift.Core.Markdown.Processing
                 var cdata = tElement.Nodes().OfType<XCData>().FirstOrDefault();
                 if (cdata == null) continue;
 
-                // Check if this T element is inside a code block (Cell with shadingColor)
-                var isInCodeBlock = IsInCodeBlock(tElement, ns);
+                var isCodeBlockLine = IsCodeBlockLine(tElement, ns, styleConfig);
+                var inlineCodeRanges = (!isCodeBlockLine && styleConfig != null)
+                    ? FindInlineCodeSpanRanges(cdata.Value, styleConfig.GetInlineCodeStyle()?.FontFamily)
+                    : null;
 
                 var modified = false;
                 var updated = PlaceholderRegex.Replace(cdata.Value, match =>
@@ -65,8 +68,9 @@ namespace TeXShift.Core.Markdown.Processing
                     if (entityMap.TryGetValue(match.Value, out var entity))
                     {
                         modified = true;
-                        // Decode entities for non-code content, preserve for code
-                        return isInCodeBlock ? entity : DecodeEntity(entity);
+                        // Decode entities for non-code content, preserve for code.
+                        var preserve = isCodeBlockLine || IsWithinRanges(match.Index, inlineCodeRanges);
+                        return preserve ? entity : DecodeEntity(entity);
                     }
                     return match.Value;
                 });
@@ -79,28 +83,30 @@ namespace TeXShift.Core.Markdown.Processing
         }
 
         /// <summary>
-        /// Check if a T element is inside a code block (Table Cell with shadingColor background).
+        /// Checks if the current T belongs to a code block line OE generated for fenced/indented code blocks.
         /// </summary>
-        private bool IsInCodeBlock(XElement tElement, XNamespace ns)
+        private static bool IsCodeBlockLine(XElement tElement, XNamespace ns, OneNoteStyleConfig styleConfig)
         {
-            var ancestor = tElement.Ancestors(ns + "Cell").FirstOrDefault();
-            if (ancestor != null && ancestor.Attribute("shadingColor") != null)
+            if (tElement == null || styleConfig == null)
             {
-                return true;
-            }
-            
-            // Also check for inline code by looking for font-family:Consolas in style
-            var oeParent = tElement.Parent;
-            if (oeParent != null)
-            {
-                var style = oeParent.Attribute("style")?.Value ?? "";
-                if (style.Contains("Consolas") || style.Contains("monospace"))
-                {
-                    return true;
-                }
+                return false;
             }
 
-            return false;
+            // Must be inside a table cell; quote blocks also use tables, so additionally match code font style.
+            if (!tElement.Ancestors(ns + "Cell").Any())
+            {
+                return false;
+            }
+
+            var oeParent = tElement.Parent;
+            var style = oeParent?.Attribute("style")?.Value ?? string.Empty;
+            var codeFontFamily = styleConfig.GetCodeBlockStyle()?.FontFamily ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(codeFontFamily))
+            {
+                return false;
+            }
+
+            return style.IndexOf(codeFontFamily, System.StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>
@@ -185,6 +191,87 @@ namespace TeXShift.Core.Markdown.Processing
             chars[PlaceholderDigits + 1] = PlaceholderSuffix;
 
             return new string(chars);
+        }
+
+        private static List<(int start, int end)> FindInlineCodeSpanRanges(string html, string inlineCodeFontFamily)
+        {
+            var ranges = new List<(int start, int end)>();
+            if (string.IsNullOrEmpty(html) || string.IsNullOrWhiteSpace(inlineCodeFontFamily))
+            {
+                return ranges;
+            }
+
+            const string openToken = "<span";
+            const string closeToken = "</span>";
+
+            int i = 0;
+            while (i < html.Length)
+            {
+                int open = html.IndexOf(openToken, i, System.StringComparison.OrdinalIgnoreCase);
+                if (open < 0)
+                {
+                    break;
+                }
+
+                int gt = html.IndexOf('>', open);
+                if (gt < 0)
+                {
+                    break;
+                }
+
+                var tag = html.Substring(open, gt - open + 1);
+                if (IsInlineCodeSpanTag(tag, inlineCodeFontFamily))
+                {
+                    int close = html.IndexOf(closeToken, gt + 1, System.StringComparison.OrdinalIgnoreCase);
+                    if (close < 0)
+                    {
+                        i = gt + 1;
+                        continue;
+                    }
+
+                    int end = close + closeToken.Length;
+                    ranges.Add((open, end));
+                    i = end;
+                    continue;
+                }
+
+                i = gt + 1;
+            }
+
+            return ranges;
+        }
+
+        private static bool IsInlineCodeSpanTag(string spanOpenTag, string inlineCodeFontFamily)
+        {
+            if (string.IsNullOrEmpty(spanOpenTag) || string.IsNullOrWhiteSpace(inlineCodeFontFamily))
+            {
+                return false;
+            }
+
+            if (spanOpenTag.IndexOf("background-color", System.StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return false;
+            }
+
+            return spanOpenTag.IndexOf(inlineCodeFontFamily, System.StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool IsWithinRanges(int index, List<(int start, int end)> ranges)
+        {
+            if (ranges == null || ranges.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var r in ranges)
+            {
+                if (index >= r.start && index < r.end)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

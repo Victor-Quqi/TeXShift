@@ -1,5 +1,6 @@
 using Markdig.Syntax;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Markdown.Abstractions;
 
@@ -17,7 +18,7 @@ namespace TeXShift.Core.Markdown.Handlers
         /// </summary>
         /// <param name="block">The Markdig block to process. This is guaranteed to be of the type the handler supports.</param>
         /// <param name="context">The converter context, providing access to styles, the XML namespace, and methods for recursive conversion.</param>
-        /// <returns>A collection of XElement objects representing the converted content.</returns>
-        IEnumerable<XElement> Handle(Block block, IMarkdownConverterContext context);
+        /// <returns>A task containing a collection of XElement objects representing the converted content.</returns>
+        Task<IReadOnlyList<XElement>> HandleAsync(Block block, IMarkdownConverterContext context);
     }
 }

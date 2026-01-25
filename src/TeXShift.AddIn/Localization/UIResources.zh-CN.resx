@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -73,8 +73,14 @@
   <data name="Ribbon_Button_Convert" xml:space="preserve">
     <value>一键转换</value>
   </data>
+  <data name="Ribbon_Button_ReverseConvert" xml:space="preserve">
+    <value>反向转换</value>
+  </data>
   <data name="Ribbon_Button_DebugConvert" xml:space="preserve">
     <value>调试转换</value>
+  </data>
+  <data name="Ribbon_Button_DebugReverseConvert" xml:space="preserve">
+    <value>调试反转</value>
   </data>
   <data name="Ribbon_Button_SavePageXml" xml:space="preserve">
     <value>保存整页XML</value>
@@ -107,7 +113,7 @@
     <value>代码块</value>
   </data>
   <data name="Settings_Section_InlineCode" xml:space="preserve">
-    <value>内联代码</value>
+    <value>行内代码</value>
   </data>
   <data name="Settings_Label_BackgroundColor" xml:space="preserve">
     <value>背景颜色</value>
@@ -148,11 +154,14 @@
   <data name="Settings_Checkbox_ExportPdf" xml:space="preserve">
     <value>导出 PDF 到调试输出目录</value>
   </data>
+  <data name="Settings_Checkbox_DumpFullPageXml" xml:space="preserve">
+    <value>输出完整页面 XML（较慢，包含二进制数据）</value>
+  </data>
   <data name="Settings_Description_DebugOutputPath" xml:space="preserve">
     <value>调试输出目录 (留空使用默认):</value>
   </data>
   <data name="Dialog_Confirm_ResetSettings" xml:space="preserve">
-    <value>确定要恢复所有设置为默认值吗？</value>
+    <value>确定要将所有设置恢复为默认值吗？</value>
   </data>
   <data name="Dialog_Confirm_ResetTitle" xml:space="preserve">
     <value>恢复默认</value>
@@ -161,19 +170,39 @@
     <value>选择调试输出目录</value>
   </data>
   <data name="Message_Error_OpenSettings" xml:space="preserve">
-    <value>打开设置失败:&#xA;&#xA;{0}</value>
+    <value>打开设置失败:
+
+{0}</value>
   </data>
   <data name="Message_Success_ConversionComplete" xml:space="preserve">
-    <value>转换成功!&#xA;&#xA;模式: {0}&#xA;处理了 {1} 个字符&#xA;&#xA;调试文件已保存至:&#xA;{2}</value>
+    <value>转换成功！
+
+模式: {0}
+处理 {1} 个字符
+
+调试文件已保存至:
+{2}</value>
   </data>
   <data name="Message_Title_ConversionComplete" xml:space="preserve">
     <value>TeXShift - 转换完成</value>
+  </data>
+  <data name="Message_Success_ReverseConversionComplete" xml:space="preserve">
+    <value>反向转换成功！
+
+模式: {0}
+生成 {1} 个字符
+
+调试文件已保存至:
+{2}</value>
+  </data>
+  <data name="Message_Title_ReverseConversionComplete" xml:space="preserve">
+    <value>TeXShift - 反向转换完成</value>
   </data>
   <data name="Debug_Title" xml:space="preserve">
     <value>调试工具</value>
   </data>
   <data name="Debug_NoXmlNode" xml:space="preserve">
-    <value>未能获取选中内容的XML节点。</value>
+    <value>未能获取选中内容的 XML 节点。</value>
   </data>
   <data name="Debug_NoPageContent" xml:space="preserve">
     <value>无法获取当前页面内容。</value>
@@ -182,19 +211,27 @@
     <value>选中内容 XML 结构 - {0} (已保存至: {1})</value>
   </data>
   <data name="Debug_SelectionXmlSaved" xml:space="preserve">
-    <value>选中内容的XML已保存至：&#xA;{0}&#xA;&#xA;模式: {1}&#xA;节点类型: {2}</value>
+    <value>选中内容的 XML 已保存至:
+{0}
+
+模式: {1}
+节点类型: {2}</value>
   </data>
   <data name="Debug_PageXmlCaption" xml:space="preserve">
     <value>OneNote XML 结构 (已保存至: {0})</value>
   </data>
   <data name="Debug_PageXmlSaved" xml:space="preserve">
-    <value>XML已保存至：&#xA;{0}&#xA;&#xA;文件大小: {1:F2} KB</value>
+    <value>XML 已保存至:
+{0}
+
+文件大小: {1:F2} KB</value>
   </data>
   <data name="Debug_SaveSuccess" xml:space="preserve">
     <value>调试工具 - 保存成功</value>
   </data>
   <data name="Debug_Exception" xml:space="preserve">
-    <value>调试功能发生错误：&#xA;{0}</value>
+    <value>调试功能发生错误:
+{0}</value>
   </data>
   <data name="Debug_ExceptionTitle" xml:space="preserve">
     <value>调试工具异常</value>
@@ -209,15 +246,18 @@
     <value>主题</value>
   </data>
   <data name="Settings_Label_MaxWidth" xml:space="preserve">
-    <value>分辨率上限 (宽)</value>
+    <value>分辨率上限(宽)</value>
   </data>
   <data name="Settings_Label_MaxHeight" xml:space="preserve">
-    <value>分辨率上限 (高)</value>
+    <value>分辨率上限(高)</value>
   </data>
   <data name="Settings_Section_HorizontalRule" xml:space="preserve">
     <value>分隔线</value>
   </data>
   <data name="Settings_Checkbox_HorizontalRuleUseImage" xml:space="preserve">
     <value>使用图片模式 (取消勾选则使用文字字符)</value>
+  </data>
+  <data name="Settings_Checkbox_TryRecognizeNonTeXShiftFormats" xml:space="preserve">
+    <value>尝试识别非 TeXShift 生成的格式</value>
   </data>
 </root>

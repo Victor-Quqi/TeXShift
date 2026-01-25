@@ -7,6 +7,8 @@ using TeXShift.Core.Markdown;
 using TeXShift.Core.Math;
 using TeXShift.Core.Mermaid;
 using TeXShift.Core.OneNote;
+using TeXShift.Core.OneNoteToMarkdown;
+using TeXShift.Core.OneNoteToMarkdown.Abstractions;
 using OneNoteApp = Microsoft.Office.Interop.OneNote;
 
 namespace TeXShift.Core.Services
@@ -106,6 +108,15 @@ namespace TeXShift.Core.Services
         }
 
         /// <summary>
+        /// Creates a new OneNote -> Markdown converter.
+        /// Transient lifetime: new instance per call.
+        /// </summary>
+        public IOneNoteToMarkdownConverter CreateOneNoteToMarkdownConverter()
+        {
+            return new OneNoteToMarkdownConverter(StyleConfig);
+        }
+
+        /// <summary>
         /// Creates a new IContentWriter instance.
         /// Transient lifetime: new instance per call.
         /// </summary>
@@ -139,6 +150,18 @@ namespace TeXShift.Core.Services
                 throw new ArgumentNullException(nameof(oneNoteApp));
 
             return new ConversionOrchestrator(this, oneNoteApp);
+        }
+
+        /// <summary>
+        /// Creates a new ReverseConversionOrchestrator instance.
+        /// Transient lifetime: new instance per call.
+        /// </summary>
+        public ReverseConversionOrchestrator CreateReverseConversionOrchestrator(OneNoteApp.Application oneNoteApp)
+        {
+            if (oneNoteApp == null)
+                throw new ArgumentNullException(nameof(oneNoteApp));
+
+            return new ReverseConversionOrchestrator(this, oneNoteApp);
         }
 
         /// <summary>
