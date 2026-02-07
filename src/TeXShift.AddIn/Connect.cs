@@ -73,16 +73,31 @@ namespace TeXShift.AddIn
 
         /// <summary>
         /// Handles assembly resolution for dependencies that can't be found in the default probe paths.
+        /// Also resolves satellite resource assemblies from culture subdirectories (e.g. zh-CN\).
         /// </summary>
         private static Assembly OnAssemblyResolve(object sender, ResolveEventArgs args)
         {
             var assemblyName = new AssemblyName(args.Name);
+
+            // Satellite resource assemblies have a non-empty CultureName.
+            // They reside in culture subdirectories, e.g. zh-CN\TeXShift.Core.resources.dll
+            if (!string.IsNullOrEmpty(assemblyName.CultureName))
+            {
+                var satellitePath = Path.Combine(
+                    _addInDirectory,
+                    assemblyName.CultureName,
+                    assemblyName.Name + ".dll");
+
+                if (File.Exists(satellitePath))
+                    return Assembly.LoadFrom(satellitePath);
+
+                return null;
+            }
+
             var assemblyPath = Path.Combine(_addInDirectory, assemblyName.Name + ".dll");
 
             if (File.Exists(assemblyPath))
-            {
                 return Assembly.LoadFrom(assemblyPath);
-            }
 
             return null;
         }

@@ -28,12 +28,6 @@
         "Entry"
         {
         "MsmKey" = "8:_1CB4C5BE78933A096D1428C71F143692"
-        "OwnerKey" = "8:_F4416478D50F460BA7348E0F3AA89DCB"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_1CB4C5BE78933A096D1428C71F143692"
         "OwnerKey" = "8:_CFA084147B6BAE9AE71631E2F2424EED"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -172,12 +166,6 @@
         "Entry"
         {
         "MsmKey" = "8:_5B6C6728FF8BEE9BEDB5F853BBEFCF1B"
-        "OwnerKey" = "8:_7530F19742664752856162C1959BF79E"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_5B6C6728FF8BEE9BEDB5F853BBEFCF1B"
         "OwnerKey" = "8:_3C6FB8601471BB57EFB86B91D35C5D42"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -310,43 +298,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_F4416478D50F460BA7348E0F3AA89DCB"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_F27E0A8B9C8C4D66A49D9D0A1E6F1C2B"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_DC4C9F06B5294B9D9568682829B58BC8"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_AB1EC75C498F4038AA0E58DA0242AF70"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_7530F19742664752856162C1959BF79E"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_4D6B0E1C292746AC9B19D6D2FC707339"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_170B5E04F87B440688B4BB1725F8E5F0"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -541,13 +493,8 @@
             "AssemblyAsmDisplayName" = "8:System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
-                    "_170B5E04F87B440688B4BB1725F8E5F0"
-                    {
-                    "Name" = "8:System.Threading.Tasks.Extensions.dll"
-                    "Attributes" = "3:512"
-                    }
                 }
-            "SourcePath" = "8:..\\..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\System.Threading.Tasks.Extensions.dll"
+            "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\System.Threading.Tasks.Extensions.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_E48D008FFF994C9392BAA34ADE1724E5"
@@ -722,7 +669,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_40C738A7B8734887BF43227880B94D21"
             {
-            "SourcePath" = "8:..\\..\\T&MtoN_256.ico"
+            "SourcePath" = "8:..\\..\\misc\\T&MtoN_256.ico"
             "TargetName" = "8:T&MtoN_256.ico"
             "Tag" = "8:"
             "Folder" = "8:_E48D008FFF994C9392BAA34ADE1724E5"
@@ -778,13 +725,8 @@
             "AssemblyAsmDisplayName" = "8:System.Drawing.Common, Version=10.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
-                    "_4D6B0E1C292746AC9B19D6D2FC707339"
-                    {
-                    "Name" = "8:System.Drawing.Common.dll"
-                    "Attributes" = "3:512"
-                    }
                 }
-            "SourcePath" = "8:..\\..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\System.Drawing.Common.dll"
+            "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\System.Drawing.Common.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_E48D008FFF994C9392BAA34ADE1724E5"
@@ -964,13 +906,8 @@
             "AssemblyAsmDisplayName" = "8:System.Text.Json, Version=8.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
-                    "_7530F19742664752856162C1959BF79E"
-                    {
-                    "Name" = "8:System.Text.Json.dll"
-                    "Attributes" = "3:512"
-                    }
                 }
-            "SourcePath" = "8:..\\..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\System.Text.Json.dll"
+            "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\System.Text.Json.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_E48D008FFF994C9392BAA34ADE1724E5"
@@ -990,7 +927,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_847C1B3D160F4ADFAAE251745BBCD193"
             {
-            "SourcePath" = "8:..\\..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\x64\\libonigwrap.dll"
+            "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\x64\\libonigwrap.dll"
             "TargetName" = "8:libonigwrap.dll"
             "Tag" = "8:"
             "Folder" = "8:_A4BAA259D0324F3894707D4003CA39D4"
@@ -1015,13 +952,8 @@
             "AssemblyAsmDisplayName" = "8:System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
-                    "_AB1EC75C498F4038AA0E58DA0242AF70"
-                    {
-                    "Name" = "8:System.ValueTuple.dll"
-                    "Attributes" = "3:512"
-                    }
                 }
-            "SourcePath" = "8:..\\..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\System.ValueTuple.dll"
+            "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\System.ValueTuple.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_E48D008FFF994C9392BAA34ADE1724E5"
@@ -1201,13 +1133,8 @@
             "AssemblyAsmDisplayName" = "8:Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
-                    "_DC4C9F06B5294B9D9568682829B58BC8"
-                    {
-                    "Name" = "8:Microsoft.Bcl.AsyncInterfaces.dll"
-                    "Attributes" = "3:512"
-                    }
                 }
-            "SourcePath" = "8:..\\..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\Microsoft.Bcl.AsyncInterfaces.dll"
+            "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\Microsoft.Bcl.AsyncInterfaces.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_E48D008FFF994C9392BAA34ADE1724E5"
@@ -1294,13 +1221,8 @@
             "AssemblyAsmDisplayName" = "8:Microsoft.Web.WebView2.Wpf, Version=1.0.3650.58, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
-                    "_F4416478D50F460BA7348E0F3AA89DCB"
-                    {
-                    "Name" = "8:Microsoft.Web.WebView2.Wpf.dll"
-                    "Attributes" = "3:512"
-                    }
                 }
-            "SourcePath" = "8:..\\..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\Microsoft.Web.WebView2.Wpf.dll"
+            "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\Microsoft.Web.WebView2.Wpf.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_E48D008FFF994C9392BAA34ADE1724E5"
@@ -2261,9 +2183,37 @@
         }
         "ProjectOutput"
         {
+            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_2A08EDE96BCB4E999B5CF3FC05C3F096"
+            {
+            "SourcePath" = "8:"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_E48D008FFF994C9392BAA34ADE1724E5"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:LocalizedResourceDlls"
+            "OutputProjectGuid" = "8:{3B65AA02-BE5B-4F7A-9DA5-89D210CC94D4}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_4994C9D1E5924A1D9B2EB985E5CFD128"
             {
-            "SourcePath" = "8:..\\..\\..\\src\\TeXShift.AddIn\\obj\\x64\\Debug\\TeXShift.AddIn.dll"
+            "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\obj\\x64\\Debug\\TeXShift.AddIn.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_E48D008FFF994C9392BAA34ADE1724E5"
