@@ -1,7 +1,5 @@
 # Fenced code blocks (languages + fence variants)
 
-目标：覆盖常见语言标注、不同 fence、以及 fence 内包含反引号的情况。
-
 ## JavaScript
 ```javascript
 const greeting = "Hello, World!";

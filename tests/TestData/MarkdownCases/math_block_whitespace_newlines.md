@@ -1,7 +1,5 @@
 ﻿# Block math: whitespace + newlines
 
-目标：覆盖 `$$` 与内容“紧贴/空格/换行”、以及矩阵/比较符号在不同换行方式下的表现（曾经常见问题点）。
-
 ## Tight `$$` (no spaces)
 $$\begin{pmatrix} a & b \\ c & d \end{pmatrix}$$
 

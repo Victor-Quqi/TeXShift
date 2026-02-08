@@ -1,7 +1,5 @@
 ﻿# Block math coverage (`$$...$$`)
 
-目标：用较少的样例覆盖常见块级数学结构。
-
 ## Arithmetic / fractions / roots
 $$ x + y = z $$
 $$ \frac{a+b}{c+d} = 1 $$

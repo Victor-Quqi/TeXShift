@@ -1,7 +1,5 @@
 # Indented code blocks (4 spaces)
 
-目标：验证 4 空格缩进的代码块被正确识别为 code block，并且与普通段落分隔正常。
-
 Basic indented block:
 
     using System;

@@ -1,7 +1,5 @@
 ﻿# Block math edge cases
 
-目标：覆盖相对容易触发解析/渲染问题的块级数学写法（嵌套、符号、cases、left/right 等）。
-
 ## Nested structures
 $$ \sqrt{\sqrt{\sqrt{x}}} $$
 $$ \frac{\frac{\frac{1}{2}}{3}}{4} $$

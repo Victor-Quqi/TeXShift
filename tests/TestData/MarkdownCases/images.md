@@ -1,7 +1,5 @@
 ﻿# Images
 
-目标：覆盖图片在不同块中的位置（段落/列表/引用/表格/内联）以及失效路径的处理。
-
 ## Standalone image
 ![local](<repo-root>/misc/T&MtoN_512.png)
 

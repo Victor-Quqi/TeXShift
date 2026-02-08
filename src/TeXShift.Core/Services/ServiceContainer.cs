@@ -37,11 +37,30 @@ namespace TeXShift.Core.Services
             // Initialize singletons lazily
             _styleConfig = new Lazy<OneNoteStyleConfig>(() => new OneNoteStyleConfig());
 
+            // NOTE: We explicitly list extensions instead of UseAdvancedExtensions() because
+            // UseGenericAttributes() (included in UseAdvancedExtensions) interprets {...} as
+            // HTML attributes, conflicting with LaTeX subscript/superscript syntax like _{total}.
+            // UseMathematics() must be added FIRST to take parsing precedence.
             _markdownPipeline = new Lazy<MarkdownPipeline>(() =>
                 new MarkdownPipelineBuilder()
-                    .UseAdvancedExtensions() // Includes most common extensions
-                    .UseListExtras()         // Add-on for more flexible list parsing (e.g., different indentations)
-                    .UseMathematics()        // Enable $...$ and $$...$$ math syntax
+                    .UseMathematics()        // Enable $...$ and $$...$$ math syntax - MUST BE FIRST
+                    .UseAbbreviations()
+                    .UseAutoIdentifiers()
+                    .UseCitations()
+                    .UseCustomContainers()
+                    .UseDefinitionLists()
+                    .UseEmphasisExtras()     // Strikethrough, subscript, superscript, etc.
+                    .UseFigures()
+                    .UseFooters()
+                    .UseFootnotes()
+                    .UseGridTables()
+                    .UseMediaLinks()
+                    .UsePipeTables()
+                    // .UseGenericAttributes() - EXCLUDED: conflicts with LaTeX {...} syntax
+                    .UseAutoLinks()
+                    .UseTaskLists()
+                    .UseDiagrams()
+                    .UseListExtras()         // Add-on for more flexible list parsing
                     .Build()
             );
 

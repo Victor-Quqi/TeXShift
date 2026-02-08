@@ -1,7 +1,5 @@
 # Links + tables
 
-目标：覆盖链接（含格式）与表格（含格式与边界），避免引入外部资源依赖。
-
 ## Links
 [simple](https://example.com)
 [**bold link**](https://example.com/bold)
