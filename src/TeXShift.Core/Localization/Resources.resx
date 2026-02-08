@@ -157,21 +157,6 @@
   <data name="Debug_ConversionFailed" xml:space="preserve">
     <value>Conversion failed&#xA;&#xA;Time: {0}&#xA;&#xA;Error message:&#xA;{1}&#xA;&#xA;Stack trace:&#xA;{2}</value>
   </data>
-  <data name="UI_LanguageTitle" xml:space="preserve">
-    <value>Language</value>
-  </data>
-  <data name="UI_LanguageLabel" xml:space="preserve">
-    <value>Language</value>
-  </data>
-  <data name="UI_Language_System" xml:space="preserve">
-    <value>Follow system</value>
-  </data>
-  <data name="UI_Language_Chinese" xml:space="preserve">
-    <value>中文</value>
-  </data>
-  <data name="UI_Language_English" xml:space="preserve">
-    <value>English</value>
-  </data>
   <data name="Dialog_ErrorTitle" xml:space="preserve">
     <value>TeXShift - Error</value>
   </data>
@@ -222,5 +207,8 @@
   </data>
   <data name="Reverse_MathSourceMissing" xml:space="preserve">
     <value>[TeXShift: Formula source missing, cannot recover]</value>
+  </data>
+  <data name="Error_WebView2NotInstalled" xml:space="preserve">
+    <value>WebView2 Runtime is not installed. Please download it from Microsoft to enable formula and diagram rendering.</value>
   </data>
 </root>

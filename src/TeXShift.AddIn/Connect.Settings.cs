@@ -23,6 +23,13 @@ namespace TeXShift.AddIn
         {
             try
             {
+                if (_initError != null)
+                {
+                    ShowTopMostMessageBox(
+                        $"Add-in initialization failed:\n\n{_initError}",
+                        "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
                 ShowWpfSettingsDialog();
             }
             catch (Exception ex)

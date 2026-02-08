@@ -170,7 +170,9 @@
     <Content Include="Lib\mathjax\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <EmbeddedResource Include="Lib\mermaid\mermaid.min.js" />
+    <Content Include="Lib\mermaid\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TeXShift.Core\TeXShift.Core.csproj">

@@ -21,6 +21,7 @@ namespace TeXShift.Core.Math
         private WebView2 _webView;
         private bool _isInitialized;
         private bool _isDisposed;
+        private Exception _initFailure;
         private readonly SemaphoreSlim _initLock = new SemaphoreSlim(1, 1);
 
         // STA thread for WebView2 operations
@@ -41,11 +42,14 @@ namespace TeXShift.Core.Math
         public async Task InitializeAsync()
         {
             if (_isInitialized) return;
+            if (_initFailure != null) throw _initFailure;
 
             await _initLock.WaitAsync().ConfigureAwait(false);
             try
             {
                 if (_isInitialized) return;
+                if (_initFailure != null) throw _initFailure;
+
                 try
                 {
                     // Start dedicated STA thread for WebView2
@@ -77,12 +81,21 @@ namespace TeXShift.Core.Math
                     await initTcs.Task.ConfigureAwait(false);
                     _isInitialized = true;
                 }
-                catch (Exception ex) when (!(ex is TeXShiftException))
+                catch (Exception ex)
                 {
-                    throw new MathConversionException(
+                    // Cache the failure so subsequent calls fail fast without retrying
+                    // expensive STA thread + WebView2 initialization.
+                    if (ex is TeXShiftException)
+                    {
+                        _initFailure = ex;
+                        throw;
+                    }
+
+                    _initFailure = new MathConversionException(
                         Resources.GetString("Error_MathInitFailed"),
                         ex.Message,
                         ex);
+                    throw _initFailure;
                 }
             }
             finally
@@ -109,11 +122,22 @@ namespace TeXShift.Core.Math
             _webView = new WebView2();
             _webView.Visible = false;
 
-            // Initialize WebView2 environment
             var userDataFolder = Path.Combine(Path.GetTempPath(), "TeXShift_WebView2");
             Directory.CreateDirectory(userDataFolder);
-            var env = await CoreWebView2Environment.CreateAsync(null, userDataFolder).ConfigureAwait(false);
-            await _webView.EnsureCoreWebView2Async(env).ConfigureAwait(false);
+
+            CoreWebView2Environment env;
+            try
+            {
+                env = await CoreWebView2Environment.CreateAsync(null, userDataFolder);
+                await _webView.EnsureCoreWebView2Async(env);
+            }
+            catch (WebView2RuntimeNotFoundException ex)
+            {
+                throw new MathConversionException(
+                    Resources.GetString("Error_WebView2NotInstalled"),
+                    "WebView2 Runtime not found on this system.",
+                    ex);
+            }
 
             // Find MathJax folder
             var mathjaxPath = FindMathJaxPath();
@@ -145,10 +169,10 @@ namespace TeXShift.Core.Math
             }
             _webView.CoreWebView2.NavigationCompleted += OnNavigationCompleted;
             _webView.CoreWebView2.Navigate("file:///" + loaderPath.Replace('\\', '/'));
-            await navTcs.Task.ConfigureAwait(false);
+            await navTcs.Task;
 
             // Wait for MathJax to be ready
-            await WaitForMathJaxReady().ConfigureAwait(false);
+            await WaitForMathJaxReady();
         }
 
         public async Task<string> LatexToMathMLAsync(string latex, bool displayMode)
@@ -288,13 +312,13 @@ namespace TeXShift.Core.Math
 
             while (elapsed < maxWaitMs)
             {
-                var result = await _webView.CoreWebView2.ExecuteScriptAsync("isMathJaxReady()").ConfigureAwait(false);
+                var result = await _webView.CoreWebView2.ExecuteScriptAsync("isMathJaxReady()");
                 if (result == "true")
                 {
                     return;
                 }
 
-                await Task.Delay(intervalMs).ConfigureAwait(false);
+                await Task.Delay(intervalMs);
                 elapsed += intervalMs;
             }
 

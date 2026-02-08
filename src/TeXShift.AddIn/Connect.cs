@@ -57,6 +57,7 @@ namespace TeXShift.AddIn
         private ServiceContainer _serviceContainer;
         private AppSettings _appSettings;
         private SettingsManager _settingsManager;
+        private Exception _initError;
 
         #endregion
 
@@ -111,20 +112,28 @@ namespace TeXShift.AddIn
         /// </summary>
         public void OnConnection(object Application, ext_ConnectMode ConnectMode, object AddInInst, ref Array custom)
         {
-            _oneNoteApp = (OneNote.Application)Application;
+            try
+            {
+                _oneNoteApp = (OneNote.Application)Application;
 
-            // Load settings from JSON file
-            _settingsManager = new SettingsManager();
-            _appSettings = _settingsManager.Load();
+                // Load settings from JSON file
+                _settingsManager = new SettingsManager();
+                _appSettings = _settingsManager.Load();
 
-            // Initialize localization based on settings or system culture
-            LocalizationManager.Initialize(_appSettings?.Language);
+                // Initialize localization based on settings or system culture
+                LocalizationManager.Initialize(_appSettings?.Language);
 
-            // Initialize dependency injection container
-            _serviceContainer = new ServiceContainer();
+                // Initialize dependency injection container
+                _serviceContainer = new ServiceContainer();
 
-            // Apply loaded settings to style configuration
-            ApplySettingsToStyleConfig();
+                // Apply loaded settings to style configuration
+                ApplySettingsToStyleConfig();
+            }
+            catch (Exception ex)
+            {
+                _initError = ex;
+                System.Diagnostics.Debug.WriteLine($"[TeXShift] OnConnection failed: {ex}");
+            }
         }
 
         /// <summary>

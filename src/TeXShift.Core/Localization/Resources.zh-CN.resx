@@ -157,21 +157,6 @@
   <data name="Debug_ConversionFailed" xml:space="preserve">
     <value>转换失败&#xA;&#xA;时间: {0}&#xA;&#xA;错误消息:&#xA;{1}&#xA;&#xA;堆栈跟踪:&#xA;{2}</value>
   </data>
-  <data name="UI_LanguageTitle" xml:space="preserve">
-    <value>语言</value>
-  </data>
-  <data name="UI_LanguageLabel" xml:space="preserve">
-    <value>语言</value>
-  </data>
-  <data name="UI_Language_System" xml:space="preserve">
-    <value>跟随系统</value>
-  </data>
-  <data name="UI_Language_Chinese" xml:space="preserve">
-    <value>中文</value>
-  </data>
-  <data name="UI_Language_English" xml:space="preserve">
-    <value>English</value>
-  </data>
   <data name="Dialog_ErrorTitle" xml:space="preserve">
     <value>TeXShift - 错误</value>
   </data>
@@ -222,5 +207,8 @@
   </data>
   <data name="Reverse_MathSourceMissing" xml:space="preserve">
     <value>【TeXShift：公式源码缺失，无法还原】</value>
+  </data>
+  <data name="Error_WebView2NotInstalled" xml:space="preserve">
+    <value>未安装 WebView2 运行时。请从微软官网下载安装，以启用公式和图表渲染功能。</value>
   </data>
 </root>

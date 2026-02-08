@@ -28,18 +28,40 @@ namespace TeXShift.AddIn
         /// </summary>
         public void OnConvertButtonClick(IRibbonControl control)
         {
-            // This is the new "Silent Convert" button.
-            // It does not show a success message box to avoid interrupting the user's workflow.
-            // It does NOT write debug files.
-            // Errors will still be displayed.
-            PerformConversionAsync(showSuccessDialog: false, writeDebugFiles: false);
+            try
+            {
+                if (_initError != null)
+                {
+                    ShowTopMostMessageBox(
+                        $"Add-in initialization failed:\n\n{_initError}",
+                        "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                PerformConversionAsync(showSuccessDialog: false, writeDebugFiles: false);
+            }
+            catch (Exception ex)
+            {
+                ShowTopMostMessageBox(ex.ToString(), "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         public void OnDebugConvertButtonClick(IRibbonControl control)
         {
-            // This is the original "Convert" button, now repurposed for debugging.
-            // It shows detailed success information and saves debug files.
-            PerformConversionAsync(showSuccessDialog: true, writeDebugFiles: true);
+            try
+            {
+                if (_initError != null)
+                {
+                    ShowTopMostMessageBox(
+                        $"Add-in initialization failed:\n\n{_initError}",
+                        "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                PerformConversionAsync(showSuccessDialog: true, writeDebugFiles: true);
+            }
+            catch (Exception ex)
+            {
+                ShowTopMostMessageBox(ex.ToString(), "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         #endregion
@@ -161,7 +183,16 @@ namespace TeXShift.AddIn
                 return debugFolderPath;
             }
 
-            return DebugLogger.ResolveDebugOutputFolder(_appSettings?.Debug?.DebugOutputPath);
+            try
+            {
+                return DebugLogger.ResolveDebugOutputFolder(_appSettings?.Debug?.DebugOutputPath);
+            }
+            catch
+            {
+                // Folder resolution may fail (e.g., UnauthorizedAccessException in Program Files).
+                // Return null so error dialogs can still be shown without cascading failures.
+                return null;
+            }
         }
 
         private string BuildTechnicalDetails(Exception ex, string debugFolderPath)

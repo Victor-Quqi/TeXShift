@@ -14,14 +14,40 @@ namespace TeXShift.AddIn
     {
         public void OnReverseConvertButtonClick(IRibbonControl control)
         {
-            // Silent reverse conversion: no success dialog, no debug files.
-            PerformReverseConversionAsync(showSuccessDialog: false, writeDebugFiles: false);
+            try
+            {
+                if (_initError != null)
+                {
+                    ShowTopMostMessageBox(
+                        $"Add-in initialization failed:\n\n{_initError}",
+                        "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                PerformReverseConversionAsync(showSuccessDialog: false, writeDebugFiles: false);
+            }
+            catch (Exception ex)
+            {
+                ShowTopMostMessageBox(ex.ToString(), "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         public void OnDebugReverseConvertButtonClick(IRibbonControl control)
         {
-            // Debug reverse conversion: show success dialog and save debug files.
-            PerformReverseConversionAsync(showSuccessDialog: true, writeDebugFiles: true);
+            try
+            {
+                if (_initError != null)
+                {
+                    ShowTopMostMessageBox(
+                        $"Add-in initialization failed:\n\n{_initError}",
+                        "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                PerformReverseConversionAsync(showSuccessDialog: true, writeDebugFiles: true);
+            }
+            catch (Exception ex)
+            {
+                ShowTopMostMessageBox(ex.ToString(), "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private async void PerformReverseConversionAsync(bool showSuccessDialog, bool writeDebugFiles)

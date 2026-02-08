@@ -293,11 +293,24 @@ namespace TeXShift.Core.Logging
             }
             else
             {
-                // Fall back to default: DebugOutput in project root
                 string assemblyLocation = Assembly.GetExecutingAssembly().Location;
                 string currentDir = Path.GetDirectoryName(assemblyLocation);
-                string projectRoot = FindProjectRoot(currentDir) ?? currentDir;
-                debugFolder = Path.Combine(projectRoot, "DebugOutput");
+                string projectRoot = FindProjectRoot(currentDir);
+
+                if (projectRoot != null)
+                {
+                    // Development: DebugOutput in project root (next to .sln)
+                    debugFolder = Path.Combine(projectRoot, "DebugOutput");
+                }
+                else
+                {
+                    // Installed environment: use %LOCALAPPDATA%\TeXShift\DebugOutput
+                    // to avoid UnauthorizedAccessException in Program Files.
+                    debugFolder = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "TeXShift",
+                        "DebugOutput");
+                }
             }
 
             if (!Directory.Exists(debugFolder))

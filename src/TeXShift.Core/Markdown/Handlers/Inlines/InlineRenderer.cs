@@ -167,9 +167,13 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                     catch (Exception ex)
                     {
                         System.Diagnostics.Trace.WriteLine(ex);
-                        // Initialization failed, show LaTeX source
+                        // Initialization failed, show error message + LaTeX source for diagnosis
                         var delim = isDisplayMath ? "$$" : "$";
-                        html.Append($"[MathInit Error: {delim}{HtmlEscaper.Escape(mathInline.Content.ToString())}{delim}]");
+                        var errType = ex.GetType().Name;
+                        var errMsg = ex.InnerException != null
+                            ? $"{ex.Message} -> {ex.InnerException.GetType().Name}: {ex.InnerException.Message}"
+                            : ex.Message;
+                        html.Append($"[MathInit Error ({errType}: {HtmlEscaper.Escape(errMsg)}): {delim}{HtmlEscaper.Escape(mathInline.Content.ToString())}{delim}]");
                         return;
                     }
                 }

@@ -238,4 +238,19 @@
   <data name="Settings_Checkbox_TryRecognizeNonTeXShiftFormats" xml:space="preserve">
     <value>Try to recognize non-TeXShift formatting</value>
   </data>
+  <data name="Settings_Section_Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Settings_Label_Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Settings_Language_System" xml:space="preserve">
+    <value>Follow system</value>
+  </data>
+  <data name="Settings_Language_Chinese" xml:space="preserve">
+    <value>中文</value>
+  </data>
+  <data name="Settings_Language_English" xml:space="preserve">
+    <value>English</value>
+  </data>
 </root>

@@ -229,13 +229,13 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
         public ObservableCollection<LanguageOption> AvailableLanguages { get; } =
             new ObservableCollection<LanguageOption>
             {
-                new LanguageOption("auto", Resources.GetString("UI_Language_System")),
-                new LanguageOption("zh-CN", Resources.GetString("UI_Language_Chinese")),
-                new LanguageOption("en-US", Resources.GetString("UI_Language_English"))
+                new LanguageOption("auto", UIResources.GetString("Settings_Language_System")),
+                new LanguageOption("zh-CN", UIResources.GetString("Settings_Language_Chinese")),
+                new LanguageOption("en-US", UIResources.GetString("Settings_Language_English"))
             };
 
-        public string LanguageSectionTitle { get; } = Resources.GetString("UI_LanguageTitle");
-        public string LanguageLabel { get; } = Resources.GetString("UI_LanguageLabel");
+        public string LanguageSectionTitle { get; } = UIResources.GetString("Settings_Section_Language");
+        public string LanguageLabel { get; } = UIResources.GetString("Settings_Label_Language");
 
         #endregion
 

@@ -20,7 +20,26 @@ namespace TeXShift.AddIn
         /// <summary>
         /// Debug button: Shows and saves the selected content's XML structure only.
         /// </summary>
-        public async void OnDebugSelectionXmlButtonClick(IRibbonControl control)
+        public void OnDebugSelectionXmlButtonClick(IRibbonControl control)
+        {
+            try
+            {
+                if (_initError != null)
+                {
+                    ShowTopMostMessageBox(
+                        $"Add-in initialization failed:\n\n{_initError}",
+                        "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                OnDebugSelectionXmlButtonClickAsync();
+            }
+            catch (Exception ex)
+            {
+                ShowTopMostMessageBox(ex.ToString(), "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void OnDebugSelectionXmlButtonClickAsync()
         {
             try
             {
@@ -87,7 +106,26 @@ namespace TeXShift.AddIn
         /// <summary>
         /// Debug button: Shows and saves the raw OneNote XML structure for entire page.
         /// </summary>
-        public async void OnDebugXmlButtonClick(IRibbonControl control)
+        public void OnDebugXmlButtonClick(IRibbonControl control)
+        {
+            try
+            {
+                if (_initError != null)
+                {
+                    ShowTopMostMessageBox(
+                        $"Add-in initialization failed:\n\n{_initError}",
+                        "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                OnDebugXmlButtonClickAsync();
+            }
+            catch (Exception ex)
+            {
+                ShowTopMostMessageBox(ex.ToString(), "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void OnDebugXmlButtonClickAsync()
         {
             try
             {
