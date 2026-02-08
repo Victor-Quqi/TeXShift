@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using TeXShift.Core.Configuration;
+using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.Markdown.Processing
 {
@@ -68,9 +69,10 @@ namespace TeXShift.Core.Markdown.Processing
                     if (entityMap.TryGetValue(match.Value, out var entity))
                     {
                         modified = true;
-                        // Decode entities for non-code content, preserve for code.
+                        // Decode entities for non-code content, double-encode for code.
+                        // For code, HtmlEscaper.Escape converts "&lt;" to "&amp;lt;" so OneNote renders "&lt;".
                         var preserve = isCodeBlockLine || IsWithinRanges(match.Index, inlineCodeRanges);
-                        return preserve ? entity : DecodeEntity(entity);
+                        return preserve ? HtmlEscaper.Escape(entity) : DecodeEntity(entity);
                     }
                     return match.Value;
                 });
@@ -115,6 +117,30 @@ namespace TeXShift.Core.Markdown.Processing
         private string DecodeEntity(string entity)
         {
             return DecodeEntityStatic(entity);
+        }
+
+        /// <summary>
+        /// Restores HTML entity placeholders to original entity text (not decoded characters).
+        /// Used for code blocks where entities should be preserved literally.
+        /// </summary>
+        /// <param name="text">Text potentially containing placeholders</param>
+        /// <param name="entityMap">The entity map from Protect()</param>
+        /// <returns>Text with placeholders restored to original entities (e.g., placeholder → "&lt;")</returns>
+        public static string RestoreForCode(string text, Dictionary<string, string> entityMap)
+        {
+            if (string.IsNullOrEmpty(text) || entityMap == null || entityMap.Count == 0)
+            {
+                return text;
+            }
+
+            return PlaceholderRegex.Replace(text, match =>
+            {
+                if (entityMap.TryGetValue(match.Value, out var entity))
+                {
+                    return entity; // Return original entity like "&lt;", not decoded "<"
+                }
+                return match.Value;
+            });
         }
 
         /// <summary>

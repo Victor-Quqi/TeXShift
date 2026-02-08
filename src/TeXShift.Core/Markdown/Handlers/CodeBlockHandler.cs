@@ -59,14 +59,16 @@ namespace TeXShift.Core.Markdown.Handlers
             // Get code content as lines
             var codeLines = GetCodeLines(codeBlock);
 
-            // Decode HTML entity placeholders before syntax highlighting
-            // This converts placeholders (from HtmlEntityProcessor.Protect) back to original characters
-            // so that TextMateSharp can correctly tokenize code (e.g., recognize string delimiters)
-            var decodedLines = codeLines.Select(line => context.DecodeEntityPlaceholders(line)).ToList();
+            // Restore HTML entity placeholders to original entity text before syntax highlighting.
+            // This converts placeholders (from HtmlEntityProcessor.Protect) back to entity strings
+            // (e.g., placeholder → "&lt;"), NOT to characters (e.g., "<").
+            // HtmlEscaper in the highlighter will then double-encode them (e.g., "&lt;" → "&amp;lt;"),
+            // so OneNote renders the literal entity text (e.g., "&lt;").
+            var restoredLines = codeLines.Select(line => context.RestoreEntityPlaceholders(line)).ToList();
 
             // Create syntax highlighter and highlight entire block with cross-line state
             var highlighter = new OneNoteCodeHighlighter(codeConfig);
-            var highlightedLines = highlighter.HighlightBlock(decodedLines, language);
+            var highlightedLines = highlighter.HighlightBlock(restoredLines, language);
             var oeStyle = codeConfig.GetOEStyle();
 
             // Create an OE for each line of code

@@ -256,6 +256,11 @@ namespace TeXShift.Core.Markdown
             return HtmlEntityProcessor.DecodeForLatex(text, _currentEntityMap);
         }
 
+        public string RestoreEntityPlaceholders(string text)
+        {
+            return HtmlEntityProcessor.RestoreForCode(text, _currentEntityMap);
+        }
+
         public Task<string> ConvertInlinesToHtmlAsync(ContainerInline container)
         {
             return _inlineRenderer.RenderAsync(container);

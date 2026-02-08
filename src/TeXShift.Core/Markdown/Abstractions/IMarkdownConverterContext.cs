@@ -108,5 +108,13 @@ namespace TeXShift.Core.Markdown.Abstractions
         /// <param name="text">The string potentially containing placeholders.</param>
         /// <returns>The string with placeholders decoded to original entities.</returns>
         string DecodeEntityPlaceholders(string text);
+
+        /// <summary>
+        /// Restores HTML entity placeholders to original entity text (not decoded characters).
+        /// Used for code blocks where entities should be preserved literally in the output.
+        /// </summary>
+        /// <param name="text">The string potentially containing placeholders.</param>
+        /// <returns>The string with placeholders restored to original entities (e.g., "&lt;", not "<").</returns>
+        string RestoreEntityPlaceholders(string text);
     }
 }
