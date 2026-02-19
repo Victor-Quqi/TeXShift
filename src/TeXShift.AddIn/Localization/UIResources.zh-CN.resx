@@ -236,6 +236,17 @@
   <data name="Debug_ExceptionTitle" xml:space="preserve">
     <value>调试工具异常</value>
   </data>
+  <data name="Debug_SelectionXmlNodeCount" xml:space="preserve">
+    <value>{0} 个节点</value>
+  </data>
+  <data name="Debug_SelectionXmlObjectIdsLabel" xml:space="preserve">
+    <value>对象 ID</value>
+  </data>
+  <data name="Message_AddInInitializationFailed" xml:space="preserve">
+    <value>加载项初始化失败:
+
+{0}</value>
+  </data>
   <data name="Settings_Tab_Mermaid" xml:space="preserve">
     <value>Mermaid</value>
   </data>

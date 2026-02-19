@@ -30,18 +30,15 @@ namespace TeXShift.AddIn
         {
             try
             {
-                if (_initError != null)
+                if (TryShowInitializationError())
                 {
-                    ShowTopMostMessageBox(
-                        $"Add-in initialization failed:\n\n{_initError}",
-                        "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
                 PerformConversionAsync(showSuccessDialog: false, writeDebugFiles: false);
             }
             catch (Exception ex)
             {
-                ShowTopMostMessageBox(ex.ToString(), "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                HandleConversionError(ex, null);
             }
         }
 
@@ -49,18 +46,15 @@ namespace TeXShift.AddIn
         {
             try
             {
-                if (_initError != null)
+                if (TryShowInitializationError())
                 {
-                    ShowTopMostMessageBox(
-                        $"Add-in initialization failed:\n\n{_initError}",
-                        "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
                 PerformConversionAsync(showSuccessDialog: true, writeDebugFiles: true);
             }
             catch (Exception ex)
             {
-                ShowTopMostMessageBox(ex.ToString(), "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                HandleConversionError(ex, null);
             }
         }
 

@@ -205,10 +205,31 @@
   <data name="Error_Image_LoadFailed" xml:space="preserve">
     <value>Failed to load image</value>
   </data>
+  <data name="Error_Image_InvalidDataUrlMissingComma" xml:space="preserve">
+    <value>Invalid data URL (missing comma)</value>
+  </data>
+  <data name="Error_Image_UnsupportedDataUrlNotBase64" xml:space="preserve">
+    <value>Unsupported data URL (not base64)</value>
+  </data>
+  <data name="Error_Image_UnsupportedDataUrlNotImage" xml:space="preserve">
+    <value>Unsupported data URL (not an image)</value>
+  </data>
+  <data name="Error_Image_InvalidDataUrlBadBase64" xml:space="preserve">
+    <value>Invalid data URL (bad base64)</value>
+  </data>
+  <data name="Error_Image_HttpStatus" xml:space="preserve">
+    <value>HTTP error: {0}</value>
+  </data>
+  <data name="Error_Image_RequestFailed" xml:space="preserve">
+    <value>Image request failed: {0}</value>
+  </data>
   <data name="Reverse_MathSourceMissing" xml:space="preserve">
     <value>[TeXShift: Formula source missing, cannot recover]</value>
   </data>
   <data name="Error_WebView2NotInstalled" xml:space="preserve">
     <value>WebView2 Runtime is not installed. Please download it from Microsoft to enable formula and diagram rendering.</value>
+  </data>
+  <data name="Error_MermaidRenderTimeout" xml:space="preserve">
+    <value>Mermaid render timed out.</value>
   </data>
 </root>

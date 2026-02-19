@@ -24,18 +24,19 @@ namespace TeXShift.AddIn
         {
             try
             {
-                if (_initError != null)
+                if (TryShowInitializationError())
                 {
-                    ShowTopMostMessageBox(
-                        $"Add-in initialization failed:\n\n{_initError}",
-                        "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
                 OnDebugSelectionXmlButtonClickAsync();
             }
             catch (Exception ex)
             {
-                ShowTopMostMessageBox(ex.ToString(), "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowTopMostMessageBox(
+                    string.Format(UIResources.GetString("Debug_Exception"), ex),
+                    UIResources.GetString("Debug_ExceptionTitle"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 
@@ -80,11 +81,13 @@ namespace TeXShift.AddIn
                     UIResources.GetString("Debug_SelectionXmlSaved"),
                     savedPath,
                     GetDetectionModeLabel(result.Mode),
-                    nodeCount > 1 ? $"{nodeCount} nodes" : result.OriginalXmlNode.Name.LocalName);
+                    nodeCount > 1
+                        ? string.Format(UIResources.GetString("Debug_SelectionXmlNodeCount"), nodeCount)
+                        : result.OriginalXmlNode.Name.LocalName);
 
                 if (result.TargetObjectIds != null && result.TargetObjectIds.Count > 0)
                 {
-                    savedMessage += $"{Environment.NewLine}ObjectIDs: {string.Join(", ", result.TargetObjectIds)}";
+                    savedMessage += $"{Environment.NewLine}{UIResources.GetString("Debug_SelectionXmlObjectIdsLabel")}: {string.Join(", ", result.TargetObjectIds)}";
                 }
 
                 ShowTopMostMessageBox(
@@ -110,18 +113,19 @@ namespace TeXShift.AddIn
         {
             try
             {
-                if (_initError != null)
+                if (TryShowInitializationError())
                 {
-                    ShowTopMostMessageBox(
-                        $"Add-in initialization failed:\n\n{_initError}",
-                        "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
                 OnDebugXmlButtonClickAsync();
             }
             catch (Exception ex)
             {
-                ShowTopMostMessageBox(ex.ToString(), "TeXShift Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowTopMostMessageBox(
+                    string.Format(UIResources.GetString("Debug_Exception"), ex),
+                    UIResources.GetString("Debug_ExceptionTitle"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 

@@ -28,6 +28,12 @@
         "Entry"
         {
         "MsmKey" = "8:_1CB4C5BE78933A096D1428C71F143692"
+        "OwnerKey" = "8:_F4416478D50F460BA7348E0F3AA89DCB"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_1CB4C5BE78933A096D1428C71F143692"
         "OwnerKey" = "8:_CFA084147B6BAE9AE71631E2F2424EED"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -166,6 +172,12 @@
         "Entry"
         {
         "MsmKey" = "8:_5B6C6728FF8BEE9BEDB5F853BBEFCF1B"
+        "OwnerKey" = "8:_7530F19742664752856162C1959BF79E"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_5B6C6728FF8BEE9BEDB5F853BBEFCF1B"
         "OwnerKey" = "8:_3C6FB8601471BB57EFB86B91D35C5D42"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -190,12 +202,6 @@
         "Entry"
         {
         "MsmKey" = "8:_847C1B3D160F4ADFAAE251745BBCD193"
-        "OwnerKey" = "8:_UNDEFINED"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_C7D2E8F3A1B04C5D9E6F7A8B3C2D1E4F"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -245,6 +251,12 @@
         {
         "MsmKey" = "8:_C24F9688036438DCC390D99819F43799"
         "OwnerKey" = "8:_CFA084147B6BAE9AE71631E2F2424EED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_C7D2E8F3A1B04C5D9E6F7A8B3C2D1E4F"
+        "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -304,7 +316,43 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_F4416478D50F460BA7348E0F3AA89DCB"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_F27E0A8B9C8C4D66A49D9D0A1E6F1C2B"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_DC4C9F06B5294B9D9568682829B58BC8"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_AB1EC75C498F4038AA0E58DA0242AF70"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_7530F19742664752856162C1959BF79E"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_4D6B0E1C292746AC9B19D6D2FC707339"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_170B5E04F87B440688B4BB1725F8E5F0"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -499,6 +547,11 @@
             "AssemblyAsmDisplayName" = "8:System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
+                    "_170B5E04F87B440688B4BB1725F8E5F0"
+                    {
+                    "Name" = "8:System.Threading.Tasks.Extensions.dll"
+                    "Attributes" = "3:512"
+                    }
                 }
             "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\System.Threading.Tasks.Extensions.dll"
             "TargetName" = "8:"
@@ -731,6 +784,11 @@
             "AssemblyAsmDisplayName" = "8:System.Drawing.Common, Version=10.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
+                    "_4D6B0E1C292746AC9B19D6D2FC707339"
+                    {
+                    "Name" = "8:System.Drawing.Common.dll"
+                    "Attributes" = "3:512"
+                    }
                 }
             "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\System.Drawing.Common.dll"
             "TargetName" = "8:"
@@ -912,6 +970,11 @@
             "AssemblyAsmDisplayName" = "8:System.Text.Json, Version=8.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
+                    "_7530F19742664752856162C1959BF79E"
+                    {
+                    "Name" = "8:System.Text.Json.dll"
+                    "Attributes" = "3:512"
+                    }
                 }
             "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\System.Text.Json.dll"
             "TargetName" = "8:"
@@ -951,26 +1014,6 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C7D2E8F3A1B04C5D9E6F7A8B3C2D1E4F"
-            {
-            "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\runtimes\\win-x64\\native\\WebView2Loader.dll"
-            "TargetName" = "8:WebView2Loader.dll"
-            "Tag" = "8:"
-            "Folder" = "8:_E48D008FFF994C9392BAA34ADE1724E5"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            }
             "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_AB1EC75C498F4038AA0E58DA0242AF70"
             {
             "AssemblyRegister" = "3:1"
@@ -978,6 +1021,11 @@
             "AssemblyAsmDisplayName" = "8:System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
+                    "_AB1EC75C498F4038AA0E58DA0242AF70"
+                    {
+                    "Name" = "8:System.ValueTuple.dll"
+                    "Attributes" = "3:512"
+                    }
                 }
             "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\System.ValueTuple.dll"
             "TargetName" = "8:"
@@ -1090,6 +1138,26 @@
             "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C7D2E8F3A1B04C5D9E6F7A8B3C2D1E4F"
+            {
+            "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\runtimes\\win-x64\\native\\WebView2Loader.dll"
+            "TargetName" = "8:WebView2Loader.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_E48D008FFF994C9392BAA34ADE1724E5"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
             "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_CAC11E7780BBBCA87BD89FB8A007054C"
             {
             "AssemblyRegister" = "3:1"
@@ -1159,11 +1227,36 @@
             "AssemblyAsmDisplayName" = "8:Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
+                    "_DC4C9F06B5294B9D9568682829B58BC8"
+                    {
+                    "Name" = "8:Microsoft.Bcl.AsyncInterfaces.dll"
+                    "Attributes" = "3:512"
+                    }
                 }
             "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\Microsoft.Bcl.AsyncInterfaces.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_E48D008FFF994C9392BAA34ADE1724E5"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_E5B9B2E3A5D64A8E904A82769D12D4AF"
+            {
+            "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\zh-CN\\TeXShift.Core.resources.dll"
+            "TargetName" = "8:TeXShift.Core.resources.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_3E4A5A87E1E24D7DA9C5324C0D2C6D6F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1247,6 +1340,11 @@
             "AssemblyAsmDisplayName" = "8:Microsoft.Web.WebView2.Wpf, Version=1.0.3650.58, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
+                    "_F4416478D50F460BA7348E0F3AA89DCB"
+                    {
+                    "Name" = "8:Microsoft.Web.WebView2.Wpf.dll"
+                    "Attributes" = "3:512"
+                    }
                 }
             "SourcePath" = "8:..\\..\\src\\TeXShift.AddIn\\bin\\x64\\Debug\\Microsoft.Web.WebView2.Wpf.dll"
             "TargetName" = "8:"
@@ -1304,6 +1402,17 @@
             "Property" = "8:TARGETDIR"
                 "Folders"
                 {
+                    "{9EF0B969-E518-4E46-987F-47570745A589}:_3E4A5A87E1E24D7DA9C5324C0D2C6D6F"
+                    {
+                    "Name" = "8:zh-CN"
+                    "AlwaysCreate" = "11:FALSE"
+                    "Condition" = "8:"
+                    "Transitive" = "11:FALSE"
+                    "Property" = "8:_1F1A9CD6B6D24C8EB8F58A3166F9BC11"
+                        "Folders"
+                        {
+                        }
+                    }
                     "{9EF0B969-E518-4E46-987F-47570745A589}:_A4BAA259D0324F3894707D4003CA39D4"
                     {
                     "Name" = "8:x64"
@@ -1333,15 +1442,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:TeXShift"
-        "ProductCode" = "8:{D76001CC-60B2-4FE5-967E-5D785F2A156D}"
-        "PackageCode" = "8:{36D06FDA-A839-48D6-B736-1AFFC45F0B03}"
+        "ProductCode" = "8:{0C2F4E84-EB41-44C9-8519-93AA79D793C2}"
+        "PackageCode" = "8:{6CD09765-763F-4C86-BB2A-C22F5919DC7E}"
         "UpgradeCode" = "8:{AC31220A-C96E-4A51-9AC5-647B9877502C}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:0.2.0"
+        "ProductVersion" = "8:0.2.2"
         "Manufacturer" = "8:VictorQuqi"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"

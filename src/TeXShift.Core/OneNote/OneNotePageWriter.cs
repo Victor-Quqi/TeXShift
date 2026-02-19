@@ -103,7 +103,7 @@ namespace TeXShift.Core.OneNote
             }
             catch (Exception ex)
             {
-                var userMessage = Resources.GetString("Error_UpdatePageFailed");
+                var userMessage = string.Format(Resources.GetString("Error_UpdatePageFailed"), ex.Message);
                 var technicalMessage = $"UpdatePageContent failed unexpectedly. {ex.GetType().Name}: {ex.Message}";
                 throw new ContentWriteException(userMessage, technicalMessage, ex);
             }

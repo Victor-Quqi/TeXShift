@@ -149,7 +149,11 @@ namespace TeXShift.Core.Utils
                 int comma = dataUrl.IndexOf(',');
                 if (comma < 0)
                 {
-                    return new ImageLoadResult { Success = false, ErrorMessage = "Invalid data URL (missing comma)" };
+                    return new ImageLoadResult
+                    {
+                        Success = false,
+                        ErrorMessage = Resources.GetString("Error_Image_InvalidDataUrlMissingComma")
+                    };
                 }
 
                 string meta = dataUrl.Substring("data:".Length, comma - "data:".Length);
@@ -160,12 +164,20 @@ namespace TeXShift.Core.Utils
 
                 if (!isBase64)
                 {
-                    return new ImageLoadResult { Success = false, ErrorMessage = "Unsupported data URL (not base64)" };
+                    return new ImageLoadResult
+                    {
+                        Success = false,
+                        ErrorMessage = Resources.GetString("Error_Image_UnsupportedDataUrlNotBase64")
+                    };
                 }
 
                 if (string.IsNullOrWhiteSpace(mediaType) || !mediaType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
                 {
-                    return new ImageLoadResult { Success = false, ErrorMessage = "Unsupported data URL (not an image)" };
+                    return new ImageLoadResult
+                    {
+                        Success = false,
+                        ErrorMessage = Resources.GetString("Error_Image_UnsupportedDataUrlNotImage")
+                    };
                 }
 
                 // Some writers percent-encode the payload; decode only when needed.
@@ -201,7 +213,11 @@ namespace TeXShift.Core.Utils
             }
             catch (FormatException)
             {
-                return new ImageLoadResult { Success = false, ErrorMessage = "Invalid data URL (bad base64)" };
+                return new ImageLoadResult
+                {
+                    Success = false,
+                    ErrorMessage = Resources.GetString("Error_Image_InvalidDataUrlBadBase64")
+                };
             }
             catch (Exception ex)
             {
@@ -345,7 +361,11 @@ namespace TeXShift.Core.Utils
                 {
                     if (!response.IsSuccessStatusCode)
                     {
-                        return new ImageLoadResult { Success = false, ErrorMessage = $"HTTP {response.StatusCode}" };
+                        return new ImageLoadResult
+                        {
+                            Success = false,
+                            ErrorMessage = string.Format(Resources.GetString("Error_Image_HttpStatus"), response.StatusCode)
+                        };
                     }
 
                     // Check content length if available
@@ -388,7 +408,11 @@ namespace TeXShift.Core.Utils
             }
             catch (HttpRequestException ex)
             {
-                return new ImageLoadResult { Success = false, ErrorMessage = ex.Message };
+                return new ImageLoadResult
+                {
+                    Success = false,
+                    ErrorMessage = string.Format(Resources.GetString("Error_Image_RequestFailed"), ex.Message)
+                };
             }
             catch (Exception ex)
             {

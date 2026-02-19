@@ -205,10 +205,31 @@
   <data name="Error_Image_LoadFailed" xml:space="preserve">
     <value>加载图片失败</value>
   </data>
+  <data name="Error_Image_InvalidDataUrlMissingComma" xml:space="preserve">
+    <value>无效的 data URL（缺少逗号）</value>
+  </data>
+  <data name="Error_Image_UnsupportedDataUrlNotBase64" xml:space="preserve">
+    <value>不支持的 data URL（不是 base64）</value>
+  </data>
+  <data name="Error_Image_UnsupportedDataUrlNotImage" xml:space="preserve">
+    <value>不支持的 data URL（不是图片）</value>
+  </data>
+  <data name="Error_Image_InvalidDataUrlBadBase64" xml:space="preserve">
+    <value>无效的 data URL（base64 格式错误）</value>
+  </data>
+  <data name="Error_Image_HttpStatus" xml:space="preserve">
+    <value>HTTP 错误: {0}</value>
+  </data>
+  <data name="Error_Image_RequestFailed" xml:space="preserve">
+    <value>图片请求失败: {0}</value>
+  </data>
   <data name="Reverse_MathSourceMissing" xml:space="preserve">
     <value>【TeXShift：公式源码缺失，无法还原】</value>
   </data>
   <data name="Error_WebView2NotInstalled" xml:space="preserve">
     <value>未安装 WebView2 运行时。请从微软官网下载安装，以启用公式和图表渲染功能。</value>
+  </data>
+  <data name="Error_MermaidRenderTimeout" xml:space="preserve">
+    <value>Mermaid 图表渲染超时。</value>
   </data>
 </root>

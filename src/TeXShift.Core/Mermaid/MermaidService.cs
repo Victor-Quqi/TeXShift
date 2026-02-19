@@ -241,7 +241,7 @@ namespace TeXShift.Core.Mermaid
                 return new MermaidRenderResult
                 {
                     Success = false,
-                    ErrorMessage = "Mermaid render timed out."
+                    ErrorMessage = Resources.GetString("Error_MermaidRenderTimeout")
                 };
             }
 

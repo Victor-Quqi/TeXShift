@@ -214,6 +214,15 @@
   <data name="Debug_ExceptionTitle" xml:space="preserve">
     <value>Debug Tools Error</value>
   </data>
+  <data name="Debug_SelectionXmlNodeCount" xml:space="preserve">
+    <value>{0} nodes</value>
+  </data>
+  <data name="Debug_SelectionXmlObjectIdsLabel" xml:space="preserve">
+    <value>Object IDs</value>
+  </data>
+  <data name="Message_AddInInitializationFailed" xml:space="preserve">
+    <value>Add-in initialization failed:&#xA;&#xA;{0}</value>
+  </data>
   <data name="Settings_Tab_Mermaid" xml:space="preserve">
     <value>Mermaid</value>
   </data>

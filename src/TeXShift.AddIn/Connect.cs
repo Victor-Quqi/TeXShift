@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Extensibility;
 using Microsoft.Office.Core;
+using TeXShift.AddIn.Localization;
 using TeXShift.Core.Configuration;
 using TeXShift.Core.Localization;
 using TeXShift.Core.Services;
@@ -224,6 +225,24 @@ namespace TeXShift.AddIn
         {
             var owner = new Win32Window(GetForegroundWindow());
             return MessageBox.Show(owner, text, caption, buttons, icon);
+        }
+
+        /// <summary>
+        /// Shows a localized add-in initialization failure message if initialization has failed.
+        /// </summary>
+        private bool TryShowInitializationError()
+        {
+            if (_initError == null)
+            {
+                return false;
+            }
+
+            ShowTopMostMessageBox(
+                string.Format(UIResources.GetString("Message_AddInInitializationFailed"), _initError),
+                Resources.GetString("Dialog_ErrorTitle"),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            return true;
         }
 
         /// <summary>
