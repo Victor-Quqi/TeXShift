@@ -728,7 +728,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_40C738A7B8734887BF43227880B94D21"
             {
-            "SourcePath" = "8:..\\..\\misc\\T&MtoN_256.ico"
+            "SourcePath" = "8:Assets\\T&MtoN_256.ico"
             "TargetName" = "8:T&MtoN_256.ico"
             "Tag" = "8:"
             "Folder" = "8:_E48D008FFF994C9392BAA34ADE1724E5"
@@ -1193,7 +1193,7 @@
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:TeXShift.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=99c2438e043e64c3, processorArchitecture=AMD64"
+            "AssemblyAsmDisplayName" = "8:TeXShift.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=71309bc535cd4fca, processorArchitecture=AMD64"
                 "ScatterAssemblies"
                 {
                     "_CFA084147B6BAE9AE71631E2F2424EED"
@@ -1770,7 +1770,7 @@
                                                     "Condition" = "8:"
                                                     "Transitive" = "11:FALSE"
                                                     "ValueTypes" = "3:1"
-                                                    "Value" = "8:TeXShift.AddIn, Version=1.0.0.0, Culture=neutral, PublicKeyToken=99c2438e043e64c3"
+                                                    "Value" = "8:TeXShift.AddIn, Version=1.0.0.0, Culture=neutral, PublicKeyToken=71309bc535cd4fca"
                                                     }
                                                     "{ADCFDA98-8FDD-45E4-90BC-E3D20B029870}:_6E068EC11EE94C98A45171D3976F6895"
                                                     {
@@ -1815,7 +1815,7 @@
                                             "Condition" = "8:"
                                             "Transitive" = "11:FALSE"
                                             "ValueTypes" = "3:1"
-                                            "Value" = "8:TeXShift.AddIn, Version=1.0.0.0, Culture=neutral, PublicKeyToken=99c2438e043e64c3"
+                                            "Value" = "8:TeXShift.AddIn, Version=1.0.0.0, Culture=neutral, PublicKeyToken=71309bc535cd4fca"
                                             }
                                             "{ADCFDA98-8FDD-45E4-90BC-E3D20B029870}:_7F20FF52A2CA422AAC6AEBBF411C4501"
                                             {

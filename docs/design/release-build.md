@@ -19,7 +19,7 @@
 
 3. **生成解决方案**：右键解决方案 → 重新生成解决方案
 
-4. **MSI 输出位置**：`misc/repos/TeXShiftSetup/Release/TeXShiftSetup.msi`
+4. **MSI 输出位置**：`setup/TeXShiftSetup/Release/TeXShiftSetup.msi`
 
 ## Setup 项目配置说明
 

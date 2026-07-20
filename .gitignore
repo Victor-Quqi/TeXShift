@@ -302,3 +302,6 @@ DebugOutput/
 
 # MathJax - downloaded from npm during setup
 src/TeXShift.AddIn/Lib/mathjax/
+
+# Local strong-name signing key
+/texshift_key.snk
