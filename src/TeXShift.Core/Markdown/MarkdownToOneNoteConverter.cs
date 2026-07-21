@@ -164,12 +164,6 @@ namespace TeXShift.Core.Markdown
             return await PostProcessBlocksAsync(blocks.ToList()).ConfigureAwait(false);
         }
 
-        [System.Obsolete("Use ProcessBlocksAsync instead. This method blocks on async work and may impact responsiveness.")]
-        public IEnumerable<XElement> ProcessBlocks(IEnumerable<Block> blocks)
-        {
-            return ProcessBlocksAsync(blocks).ConfigureAwait(false).GetAwaiter().GetResult();
-        }
-
         private async Task<IReadOnlyList<XElement>> PostProcessBlocksAsync(List<Block> blocks)
         {
             var elements = new List<XElement>();
@@ -269,18 +263,6 @@ namespace TeXShift.Core.Markdown
         public Task<string> ConvertInlinesToHtmlAsync(IEnumerable<Inline> inlines)
         {
             return _inlineRenderer.RenderAsync(inlines);
-        }
-
-        [System.Obsolete("Use ConvertInlinesToHtmlAsync instead. This method blocks on async work and may impact responsiveness.")]
-        public string ConvertInlinesToHtml(ContainerInline container)
-        {
-            return ConvertInlinesToHtmlAsync(container).ConfigureAwait(false).GetAwaiter().GetResult();
-        }
-
-        [System.Obsolete("Use ConvertInlinesToHtmlAsync instead. This method blocks on async work and may impact responsiveness.")]
-        public string ConvertInlinesToHtml(IEnumerable<Inline> inlines)
-        {
-            return ConvertInlinesToHtmlAsync(inlines).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         private XElement CreateEmptyOutline()
