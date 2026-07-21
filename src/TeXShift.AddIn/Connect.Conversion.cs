@@ -4,6 +4,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Windows.Interop;
 using Microsoft.Office.Core;
+using TeXShift.AddIn.Interop;
 using TeXShift.AddIn.Localization;
 using TeXShift.AddIn.UI.WPF;
 using TeXShift.AddIn.UI.WPF.ViewModels;
@@ -230,7 +231,7 @@ namespace TeXShift.AddIn
 
         private void ShowWpfErrorDialog(string userMessage, string technicalDetails, string debugFolderPath)
         {
-            var parentHwnd = GetForegroundWindow();
+            var parentHwnd = NativeMethods.GetForegroundWindow();
             Exception threadException = null;
 
             var thread = new System.Threading.Thread(() =>
@@ -263,7 +264,7 @@ namespace TeXShift.AddIn
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            SetForegroundWindow(parentHwnd);
+            NativeMethods.SetForegroundWindow(parentHwnd);
 
             if (threadException != null)
             {

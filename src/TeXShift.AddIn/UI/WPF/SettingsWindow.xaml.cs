@@ -1,10 +1,11 @@
 using System;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Animation;
+using TeXShift.AddIn.Interop;
 using TeXShift.AddIn.Localization;
+using TeXShift.AddIn.UI.WPF.Converters;
 using TeXShift.AddIn.UI.WPF.ViewModels;
 using TeXShift.Core.Configuration;
 
@@ -32,9 +33,6 @@ namespace TeXShift.AddIn.UI.WPF
     /// </summary>
     public partial class SettingsWindow : Window
     {
-        [DllImport("user32.dll")]
-        private static extern bool SetForegroundWindow(IntPtr hWnd);
-
         private IntPtr _ownerHandle;
 
         public SettingsViewModel ViewModel { get; }
@@ -54,7 +52,7 @@ namespace TeXShift.AddIn.UI.WPF
                 // Set focus back to Owner before closing to avoid focus flash
                 if (_ownerHandle != IntPtr.Zero)
                 {
-                    SetForegroundWindow(_ownerHandle);
+                    NativeMethods.SetForegroundWindow(_ownerHandle);
                 }
             };
         }
@@ -211,19 +209,8 @@ namespace TeXShift.AddIn.UI.WPF
 
         private static System.Drawing.Color HexToDrawingColor(string hex)
         {
-            try
-            {
-                hex = hex?.TrimStart('#') ?? "FFFFFF";
-                if (hex.Length == 6)
-                {
-                    return System.Drawing.Color.FromArgb(
-                        Convert.ToByte(hex.Substring(0, 2), 16),
-                        Convert.ToByte(hex.Substring(2, 2), 16),
-                        Convert.ToByte(hex.Substring(4, 2), 16));
-                }
-            }
-            catch { }
-            return System.Drawing.Color.White;
+            var color = HexColorParser.ParseOrDefault(hex, System.Windows.Media.Colors.White);
+            return System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B);
         }
 
         private static string DrawingColorToHex(System.Drawing.Color color)

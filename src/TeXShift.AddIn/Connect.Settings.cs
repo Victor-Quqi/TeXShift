@@ -2,6 +2,7 @@ using System;
 using System.Windows.Forms;
 using System.Windows.Interop;
 using Microsoft.Office.Core;
+using TeXShift.AddIn.Interop;
 using TeXShift.AddIn.Localization;
 using TeXShift.AddIn.UI.WPF;
 using TeXShift.Core.Localization;
@@ -48,7 +49,7 @@ namespace TeXShift.AddIn
         /// </summary>
         private void ShowWpfSettingsDialog()
         {
-            var parentHwnd = GetForegroundWindow();
+            var parentHwnd = NativeMethods.GetForegroundWindow();
             Core.Configuration.AppSettings updatedSettings = null;
             bool dialogResult = false;
             Exception threadException = null;
@@ -91,7 +92,7 @@ namespace TeXShift.AddIn
             GC.WaitForPendingFinalizers();
 
             // Restore focus to OneNote window
-            SetForegroundWindow(parentHwnd);
+            NativeMethods.SetForegroundWindow(parentHwnd);
 
             if (threadException != null)
                 throw threadException;

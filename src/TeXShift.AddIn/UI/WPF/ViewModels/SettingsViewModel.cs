@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows.Input;
 using System.Windows.Media;
 using TeXShift.AddIn.Localization;
+using TeXShift.AddIn.UI.WPF.Converters;
 using TeXShift.Core.Configuration;
 using TeXShift.Core.Localization;
 
@@ -439,10 +440,10 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
                 ?? AvailableLanguages.First();
 
             // Update Color properties for ColorPicker
-            CodeBlockBgColor = HexToColor(CodeBlockBackgroundColor);
-            CodeBlockTxtColor = HexToColor(CodeBlockTextColor);
-            InlineCodeBgColor = HexToColor(InlineCodeBackgroundColor);
-            QuoteBlockBgColor = HexToColor(QuoteBlockBackgroundColor);
+            CodeBlockBgColor = HexColorParser.ParseOrDefault(CodeBlockBackgroundColor, Colors.White);
+            CodeBlockTxtColor = HexColorParser.ParseOrDefault(CodeBlockTextColor, Colors.White);
+            InlineCodeBgColor = HexColorParser.ParseOrDefault(InlineCodeBackgroundColor, Colors.White);
+            QuoteBlockBgColor = HexColorParser.ParseOrDefault(QuoteBlockBackgroundColor, Colors.White);
         }
 
         /// <summary>
@@ -557,31 +558,6 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
         private void ResetToDefaults()
         {
             LoadFromSettings(AppSettings.CreateDefault());
-        }
-
-        private static Color HexToColor(string hex)
-        {
-            try
-            {
-                hex = hex?.TrimStart('#') ?? "FFFFFF";
-                if (hex.Length == 6)
-                {
-                    return Color.FromRgb(
-                        Convert.ToByte(hex.Substring(0, 2), 16),
-                        Convert.ToByte(hex.Substring(2, 2), 16),
-                        Convert.ToByte(hex.Substring(4, 2), 16));
-                }
-                if (hex.Length == 8)
-                {
-                    return Color.FromArgb(
-                        Convert.ToByte(hex.Substring(0, 2), 16),
-                        Convert.ToByte(hex.Substring(2, 2), 16),
-                        Convert.ToByte(hex.Substring(4, 2), 16),
-                        Convert.ToByte(hex.Substring(6, 2), 16));
-                }
-            }
-            catch { }
-            return Colors.White;
         }
 
         public class LanguageOption

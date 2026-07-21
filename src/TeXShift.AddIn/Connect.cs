@@ -6,6 +6,7 @@ using System.Threading;
 using System.Windows.Forms;
 using Extensibility;
 using Microsoft.Office.Core;
+using TeXShift.AddIn.Interop;
 using TeXShift.AddIn.Localization;
 using TeXShift.Core.Configuration;
 using TeXShift.Core.Localization;
@@ -37,19 +38,6 @@ namespace TeXShift.AddIn
     [ProgId(ComIdentity.ProgId)]
     public partial class Connect : IDTExtensibility2, IRibbonExtensibility
     {
-        #region Native Methods
-
-        [DllImport("user32.dll")]
-        private static extern IntPtr GetForegroundWindow();
-
-        [DllImport("user32.dll")]
-        private static extern bool EnableWindow(IntPtr hWnd, bool bEnable);
-
-        [DllImport("user32.dll")]
-        private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-        #endregion
-
         #region Fields
 
         private static readonly string _addInDirectory;
@@ -226,7 +214,7 @@ namespace TeXShift.AddIn
         /// </summary>
         private DialogResult ShowTopMostMessageBox(string text, string caption, MessageBoxButtons buttons, MessageBoxIcon icon)
         {
-            var owner = new Win32Window(GetForegroundWindow());
+            var owner = new Win32Window(NativeMethods.GetForegroundWindow());
             return MessageBox.Show(owner, text, caption, buttons, icon);
         }
 
@@ -253,7 +241,7 @@ namespace TeXShift.AddIn
         /// </summary>
         private void ShowTextInScrollableMessageBox(string text, string caption)
         {
-            var owner = new Win32Window(GetForegroundWindow());
+            var owner = new Win32Window(NativeMethods.GetForegroundWindow());
             using (Form form = new Form
             {
                 Text = caption,
