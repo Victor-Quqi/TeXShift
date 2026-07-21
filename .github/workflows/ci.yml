@@ -35,11 +35,13 @@ jobs:
           global-json-file: global.json
       - name: Install Inno Setup 7
         # chocolatey still ships 6.x, which lacks the SetupArchitecture directive
-        # the installer script uses; install the current stable from jrsoftware.
+        # the installer script uses; install the pinned stable from the official
+        # immutable GitHub release (see files.jrsoftware.org/is/7/readme.txt).
         shell: powershell
         run: |
-          Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile "$env:RUNNER_TEMP\is.exe"
-          Start-Process -Wait -FilePath "$env:RUNNER_TEMP\is.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART"
+          $url = "https://github.com/jrsoftware/issrc/releases/download/is-7_0_2/innosetup-7.0.2-x64.exe"
+          Invoke-WebRequest -Uri $url -OutFile "$env:RUNNER_TEMP\innosetup.exe"
+          Start-Process -Wait -FilePath "$env:RUNNER_TEMP\innosetup.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/ALLUSERS"
       - name: Generate ephemeral signing key
         # Package refuses unsigned payloads; CI signs with a throwaway key.
         # Real releases are built locally with the private texshift_key.snk.
