@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: windows-2022
+    runs-on: windows-2025
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -24,3 +24,32 @@ jobs:
       - name: Build and test
         shell: powershell
         run: ./build.ps1 -Target CI -Configuration Release
+
+  package:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Install Inno Setup
+        shell: powershell
+        run: choco install innosetup -y
+      - name: Generate ephemeral signing key
+        # Package refuses unsigned payloads; CI signs with a throwaway key.
+        # Real releases are built locally with the private texshift_key.snk.
+        shell: powershell
+        run: |
+          $rsa = New-Object System.Security.Cryptography.RSACryptoServiceProvider 2048
+          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\ci.snk", $rsa.ExportCspBlob($true))
+          "TEXSHIFT_SIGNING_KEY_PATH=$env:RUNNER_TEMP\ci.snk" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Build installer (smoke)
+        shell: powershell
+        run: ./build.ps1 -Target Package -Configuration Release -Version 0.0.0
+      - name: Upload installer
+        uses: actions/upload-artifact@v6
+        with:
+          name: TeXShift-installer
+          path: artifacts/package/*.exe
+          retention-days: 7
