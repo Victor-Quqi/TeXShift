@@ -168,7 +168,11 @@ namespace TeXShift.Core.Services.ReverseConversion
             return promoted.TargetObjectIds.Count > 0;
         }
 
-        internal static bool TryPromoteFullOutlineSelectionToCursorWithValidMeta(ReadResult readResult, out ReadResult promoted)
+        internal static bool TryPromoteFullOutlineSelectionToCursor(
+            ReadResult readResult,
+            bool requireValidMeta,
+            bool preservePageHasTodoTagDef,
+            out ReadResult promoted)
         {
             promoted = null;
             if (readResult == null || !readResult.IsSuccess)
@@ -233,10 +237,13 @@ namespace TeXShift.Core.Services.ReverseConversion
                 return false;
             }
 
-            var meta = TeXShiftMetaReader.ReadOutline(outline);
-            if (meta == null || !meta.HasTeXShiftMeta || !meta.IsValid)
+            if (requireValidMeta)
             {
-                return false;
+                var meta = TeXShiftMetaReader.ReadOutline(outline);
+                if (meta == null || !meta.HasTeXShiftMeta || !meta.IsValid)
+                {
+                    return false;
+                }
             }
 
             promoted = new ReadResult
@@ -247,7 +254,7 @@ namespace TeXShift.Core.Services.ReverseConversion
                 PageId = readResult.PageId,
                 OriginalXmlNode = outline,
                 SourceOutlineWidth = readResult.SourceOutlineWidth,
-                PageHasTodoTagDef = readResult.PageHasTodoTagDef
+                PageHasTodoTagDef = preservePageHasTodoTagDef && readResult.PageHasTodoTagDef
             };
             promoted.TargetObjectIds.Add(outlineObjectId);
             return true;
@@ -320,4 +327,3 @@ namespace TeXShift.Core.Services.ReverseConversion
         }
     }
 }
-

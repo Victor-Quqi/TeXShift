@@ -39,7 +39,17 @@ namespace TeXShift.Core.Services
 
             try
             {
-                InitializeDebugSession(options, result, out logger, out perfTrace, out perfSession);
+                OrchestratorDebugSessionHelper.InitializeDebugSession(
+                    _serviceContainer,
+                    options.WriteDebugFiles,
+                    options.OutputDirectory,
+                    options.DumpFullPageXml,
+                    DebugSessionKind.ReverseConversion,
+                    folder => result.DebugOutputFolder = folder,
+                    addSessionMetrics: null,
+                    out logger,
+                    out perfTrace,
+                    out perfSession);
 
                 var reader = _serviceContainer.CreateContentReader(_oneNoteApp);
                 ReadResult readResult;
@@ -57,7 +67,11 @@ namespace TeXShift.Core.Services
 
                 // If the selection covers the entire outline and TeXShift meta is valid,
                 // promote to Cursor mode so reverse conversion can restore the stored source verbatim.
-                if (ReverseSelectionPromoter.TryPromoteFullOutlineSelectionToCursorWithValidMeta(readResult, out var promotedFullOutline))
+                if (ReverseSelectionPromoter.TryPromoteFullOutlineSelectionToCursor(
+                    readResult,
+                    requireValidMeta: true,
+                    preservePageHasTodoTagDef: true,
+                    out var promotedFullOutline))
                 {
                     readResult = promotedFullOutline;
                     result.ReadResult = promotedFullOutline;
@@ -157,7 +171,7 @@ namespace TeXShift.Core.Services
                 // IMPORTANT: Do not store the whole Markdown as a single OE with <br/> inside <one:T>.
                 // OneNote will re-serialize those <br/> with extra newlines in CDATA, which breaks the next forward conversion
                 // (tables/quotes/code fences rely on contiguous lines). Splitting into one OE per line avoids that.
-                var ns = XNamespace.Get("http://schemas.microsoft.com/office/onenote/2013/onenote");
+                var ns = XNamespace.Get(OneNoteXml.Namespace);
                 XElement outline;
                 using (PerformanceTraceContext.Measure("Reverse.BuildWriteBackOutline"))
                 {
@@ -177,7 +191,12 @@ namespace TeXShift.Core.Services
                     await writer.ReplaceContentAsync(readResult, outline).ConfigureAwait(false);
                 }
 
-                await LogFinalPageXmlAsync(options, logger, readResult.PageId).ConfigureAwait(false);
+                await OrchestratorDebugSessionHelper.LogFinalPageXmlAsync(
+                    _oneNoteApp,
+                    options.WriteDebugFiles,
+                    options.DumpFullPageXml,
+                    logger,
+                    readResult.PageId).ConfigureAwait(false);
 
                 result.Success = true;
                 return result;
@@ -193,94 +212,11 @@ namespace TeXShift.Core.Services
             }
             finally
             {
-                await TryLogPerformanceAsync(options, logger, perfTrace).ConfigureAwait(false);
+                await OrchestratorDebugSessionHelper.TryLogPerformanceAsync(
+                    options.WriteDebugFiles,
+                    logger,
+                    perfTrace).ConfigureAwait(false);
                 perfSession?.Dispose();
-            }
-        }
-
-        private void InitializeDebugSession(
-            ReverseConversionOptions options,
-            ReverseConversionPipelineResult result,
-            out IDebugLogger logger,
-            out PerformanceTrace perfTrace,
-            out IDisposable perfSession)
-        {
-            logger = null;
-            perfTrace = null;
-            perfSession = null;
-
-            if (options == null || result == null || !options.WriteDebugFiles)
-            {
-                return;
-            }
-
-            logger = _serviceContainer.CreateDebugLogger(options.OutputDirectory);
-            logger.StartSession(DebugSessionKind.ReverseConversion);
-            result.DebugOutputFolder = logger.DebugSessionFolder;
-
-            perfTrace = new PerformanceTrace();
-            perfSession = PerformanceTraceContext.BeginSession(perfTrace);
-            PerformanceTraceContext.AddMetric("SessionKind", "ReverseConversion");
-            PerformanceTraceContext.AddMetric("DumpFullPageXml", options.DumpFullPageXml.ToString());
-        }
-
-        private async Task LogFinalPageXmlAsync(ReverseConversionOptions options, IDebugLogger logger, string pageId)
-        {
-            if (options == null || !options.WriteDebugFiles || logger == null || string.IsNullOrWhiteSpace(pageId))
-            {
-                return;
-            }
-
-            string finalPageXml;
-            using (PerformanceTraceContext.Measure("Write.GetFinalPageContent.Basic", "piBasic"))
-            {
-                finalPageXml = await Task.Run(() =>
-                {
-                    _oneNoteApp.GetPageContent(pageId, out string xml, OneNoteInterop.PageInfo.piBasic, OneNoteInterop.XMLSchema.xs2013);
-                    return xml;
-                }).ConfigureAwait(false);
-            }
-
-            using (PerformanceTraceContext.Measure("Debug.Write.FinalPageXml.Basic"))
-            {
-                await logger.LogFinalPageXmlAsync(finalPageXml).ConfigureAwait(false);
-            }
-
-            if (!options.DumpFullPageXml)
-            {
-                return;
-            }
-
-            string fullPageXml;
-            using (PerformanceTraceContext.Measure("Write.GetFinalPageContent.Full", "piAll"))
-            {
-                fullPageXml = await Task.Run(() =>
-                {
-                    _oneNoteApp.GetPageContent(pageId, out string xml, OneNoteInterop.PageInfo.piAll, OneNoteInterop.XMLSchema.xs2013);
-                    return xml;
-                }).ConfigureAwait(false);
-            }
-
-            using (PerformanceTraceContext.Measure("Debug.Write.FinalPageXml.Full"))
-            {
-                await logger.LogFinalPageXmlFullAsync(fullPageXml).ConfigureAwait(false);
-            }
-        }
-
-        private static async Task TryLogPerformanceAsync(ReverseConversionOptions options, IDebugLogger logger, PerformanceTrace perfTrace)
-        {
-            if (options == null || !options.WriteDebugFiles || logger == null || perfTrace == null)
-            {
-                return;
-            }
-
-            try
-            {
-                await logger.LogPerformanceAsync(perfTrace.FormatReport()).ConfigureAwait(false);
-            }
-            catch
-            {
-                // Avoid surfacing performance logging failures to the user.
             }
         }
 
