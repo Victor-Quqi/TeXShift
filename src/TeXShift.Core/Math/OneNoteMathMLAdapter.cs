@@ -34,7 +34,7 @@ namespace TeXShift.Core.Math
         /// This is the main public API that orchestrates all transformations.
         /// </summary>
         /// <param name="mathml">The MathML string to adapt.</param>
-        /// <returns>OneNote-compatible MathML wrapped in conditional comment with zero-width space sentinels.</returns>
+        /// <returns>OneNote-compatible MathML wrapped in a conditional comment and followed by a zero-width space sentinel.</returns>
         public static string AdaptToOneNote(string mathml)
         {
             if (string.IsNullOrWhiteSpace(mathml))
@@ -72,10 +72,13 @@ namespace TeXShift.Core.Math
             // visible stray quote characters around equations.
             mathml = ConvertAttributeQuotesToSingle(mathml);
 
-            // Step 10: Wrap in OneNote conditional comment with zero-width space sentinels.
-            // NOTE: Avoid hardcoding fonts here; users can configure fonts in settings and OneNote will rewrite spans anyway.
+            // Step 10: Wrap in a OneNote conditional comment with a trailing zero-width space sentinel.
+            // Never add a leading sentinel: on import, OneNote makes the formula zone's first plain run
+            // inherit the effective font of the immediately preceding run, so a fontless leading sentinel
+            // renders a leading numeric token in the body font instead of the math font.
+            // Avoid hardcoding fonts here; users can configure fonts in settings and OneNote will rewrite spans anyway.
             const string zeroWidthSpan = "<span lang='x-none'>\u200B</span>";
-            return $"{zeroWidthSpan}<!--[if mathML]>{mathml}<![endif]-->{zeroWidthSpan}";
+            return $"<!--[if mathML]>{mathml}<![endif]-->{zeroWidthSpan}";
         }
 
         private static string ConvertAttributeQuotesToSingle(string mathml)

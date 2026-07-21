@@ -15,6 +15,7 @@ LaTeX 到 MathML 转换使用 MathJax 实现，但 OneNote 对 MathML 的支持�
 | 页面更新时函数名变斜体 | 预先拆分多字符标识符为单字符 `<mml:mi>sin</mml:mi>` → `<mml:mrow><mml:mi>s</mml:mi>...</mml:mrow>` | ✅ 有效 |
 | 矩阵/分数括号不拉伸 | 检测高内容并转换 `<mo>` 为 `<mfenced>` | ✅ 有效 |
 | 间距命令无效 | `<mspace>` 转换为 Unicode 空格字符 | ✅ 有效（精度有限）|
+| 公式首 token 为数字时字体错误（继承正文字体而非 Cambria Math） | 移除前置零宽空格哨兵 span，仅保留尾部哨兵 | ✅ 有效 |
 
 ## 未解决的问题
 
@@ -71,7 +72,7 @@ LaTeX 到 MathML 转换使用 MathJax 实现，但 OneNote 对 MathML 的支持�
 
 ## 支持的公式类型
 
-基于测试，以下类型公式应该能正常工作：
+以下公式类型经测试可正常工作：
 - 基本运算：`a + b`, `a - b`, `a \times b`, `a \div b`
 - 分数：`\frac{a}{b}`
 - 上下标：`x^2`, `x_i`, `x_i^2`
@@ -90,15 +91,10 @@ LaTeX 到 MathML 转换使用 MathJax 实现，但 OneNote 对 MathML 的支持�
 - 连续多个带上下标的大运算符：`\sum_{i=1}^{n} \sum_{j=1}^{m}`
 - 非矩阵环境的换行：`a \\ b`
 
-## 建议
-
-1. 在用户文档中说明支持范围
-2. 对于不支持的公式，考虑降级为图片渲染
-3. 后续可研究 OneNote 原生公式的精确格式要求
-
 ## 相关文件
 
-- `TeXShift.Core/Math/MathService.cs` - MathML 后处理
+- `TeXShift.Core/Math/MathService.cs` - LaTeX 转 MathML（WebView2 + MathJax）
+- `TeXShift.Core/Math/OneNoteMathMLAdapter.cs` - MathML 后处理与 OneNote 适配
 - `TeXShift.Core/Resources/Math/mathjax-loader.html` - MathJax 配置
 - `docs/design/bracket-stretching.md` - 括号拉伸方案
 - `docs/design/mspace-unicode.md` - 间距转换方案
