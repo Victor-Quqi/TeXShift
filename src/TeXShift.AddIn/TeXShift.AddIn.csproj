@@ -4,21 +4,12 @@
     <OutputType>Library</OutputType>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <LangVersion>7.3</LangVersion>
-    <PlatformTarget>x64</PlatformTarget>
-    <Platforms>x64</Platforms>
     <RootNamespace>TeXShift.AddIn</RootNamespace>
     <AssemblyName>TeXShift.AddIn</AssemblyName>
     <EmbedOneNoteInteropTypes>true</EmbedOneNoteInteropTypes>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <TeXShiftSigningKeyPath Condition="'$(TeXShiftSigningKeyPath)' == ''">$(MSBuildThisFileDirectory)..\..\texshift_key.snk</TeXShiftSigningKeyPath>
-    <SignAssembly Condition="Exists('$(TeXShiftSigningKeyPath)')">true</SignAssembly>
-    <AssemblyOriginatorKeyFile Condition="'$(SignAssembly)' == 'true'">$(TeXShiftSigningKeyPath)</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>

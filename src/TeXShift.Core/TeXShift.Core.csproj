@@ -1,15 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
-    <LangVersion>7.3</LangVersion>
-    <PlatformTarget>x64</PlatformTarget>
     <RootNamespace>TeXShift.Core</RootNamespace>
     <AssemblyName>TeXShift.Core</AssemblyName>
     <EmbedOneNoteInteropTypes>true</EmbedOneNoteInteropTypes>
-    <TeXShiftSigningKeyPath Condition="'$(TeXShiftSigningKeyPath)' == ''">$(MSBuildThisFileDirectory)..\..\texshift_key.snk</TeXShiftSigningKeyPath>
-    <SignAssembly Condition="Exists('$(TeXShiftSigningKeyPath)')">true</SignAssembly>
-    <AssemblyOriginatorKeyFile Condition="'$(SignAssembly)' == 'true'">$(TeXShiftSigningKeyPath)</AssemblyOriginatorKeyFile>
-    <Platforms>AnyCPU;x64</Platforms>
     <!-- Force copy all NuGet dependencies to output (needed for System.Threading.Tasks.Extensions) -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
