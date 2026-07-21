@@ -28,4 +28,4 @@
 普通段落（下方）
 
 ## Quote with image
-> ![local](tests/TestData/Assets/T&MtoN_512.png)
+> ![local](tests/TestData/Assets/TeXShift_512.png)

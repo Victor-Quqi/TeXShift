@@ -40,7 +40,7 @@ SetupArchitecture=x64
 MinVersion=10.0
 OutputDir={#OutputDir}
 OutputBaseFilename=TeXShift-{#AppVersion}-x64-Setup
-SetupIconFile={#SourcePath}TeXShiftSetup\Assets\T&MtoN_256.ico
+SetupIconFile={#SourcePath}TeXShiftSetup\Assets\TeXShift_256.ico
 LicenseFile={#SourcePath}..\LICENSE
 Compression=lzma2/max
 SolidCompression=yes
@@ -57,7 +57,7 @@ Name: "zhcn"; MessagesFile: "compiler:Languages\ChineseSimplified.isl,Languages\
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#SourcePath}TeXShiftSetup\Assets\T&MtoN_256.ico"; DestDir: "{app}"; DestName: "TeXShift.ico"; Flags: ignoreversion
+Source: "{#SourcePath}TeXShiftSetup\Assets\TeXShift_256.ico"; DestDir: "{app}"; DestName: "TeXShift.ico"; Flags: ignoreversion
 
 [Registry]
 Root: HKLM64; Subkey: "Software\Classes\CLSID\{{1EE8F914-ECBD-4709-92C0-E770851C4966}"; ValueType: string; ValueName: ""; ValueData: "{#AddInClass}"; Flags: uninsdeletekey
