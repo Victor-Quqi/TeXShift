@@ -1,6 +1,6 @@
 # Math formulas with curly braces
 
-测试 LaTeX 公式中花括号（下标/上标）在各种位置的正确解析。
+测试 LaTeX 公式中的花括号（下标/上标）与标题、段落、列表、引用块、表格等 Markdown 结构互操作。
 
 ## 标题中的公式
 ### 热阻 $R''_{total}$

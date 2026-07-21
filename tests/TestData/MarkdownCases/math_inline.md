@@ -1,14 +1,20 @@
 ﻿# Inline math (`$...$`)
 
-## Basic
+测试行内公式与文本混排。
+
+## 基本行内公式
 这是一个简单公式：$x + y = z$。
 欧拉公式：$e^{i\pi} + 1 = 0$。
 
-## Multiple inline math in one sentence
+## 单句中的多个行内公式
 令 $f(x)=x^2$，则 $f'(x)=2x$，且 $f''(x)=2$。
 
-## Greek letters and vectors
+## 希腊字母与向量
 $\alpha,\beta,\gamma$，以及向量 $\vec{a}=(1,2,3)$。
 
-## Currency / literal dollar
+## 数字开头的行内公式（字体回归）
+
+结果为 $2(290) + 45 = x$，数字紧跟文字。
+
+## 货币与字面美元符负例
 价格写作：\$5（这里的 $ 应该是字面量，不应被当作数学起始符）。
