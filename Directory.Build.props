@@ -1,5 +1,14 @@
 <Project>
   <PropertyGroup>
     <Platform Condition="'$(Platform)' == ''">x64</Platform>
+    <Version Condition="'$(Version)' == ''">0.3.0-dev</Version>
+    <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">1.0.0.0</AssemblyVersion>
+    <FileVersion Condition="'$(FileVersion)' == ''">0.3.0.0</FileVersion>
+    <InformationalVersion Condition="'$(InformationalVersion)' == ''">$(Version)</InformationalVersion>
+    <Product>TeXShift</Product>
+    <Authors>Victor-Quqi</Authors>
+    <Copyright>Copyright © 2025-2026</Copyright>
+    <Deterministic>true</Deterministic>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 </Project>

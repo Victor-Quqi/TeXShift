@@ -143,7 +143,7 @@ namespace TeXShift.AddIn
                         window = windows.CurrentWindow;
                         string id = window?.CurrentPageId;
                         if (string.IsNullOrEmpty(id)) return (null, null);
-                        _oneNoteApp.GetPageContent(id, out string xml, OneNote.PageInfo.piAll);
+                        _oneNoteApp.GetPageContent(id, out string xml, OneNote.PageInfo.piAll, OneNote.XMLSchema.xs2013);
                         return (id, xml);
                     }
                     finally

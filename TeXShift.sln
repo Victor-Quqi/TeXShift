@@ -5,11 +5,11 @@ VisualStudioVersion = 17.14.36623.8
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeXShift.AddIn", "src\TeXShift.AddIn\TeXShift.AddIn.csproj", "{3B65AA02-BE5B-4F7A-9DA5-89D210CC94D4}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "TeXShiftSetup", "setup\TeXShiftSetup\TeXShiftSetup.vdproj", "{72B00B7E-9C7B-AEFD-5C44-8EBA7DBAEFC9}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeXShift.Core", "src\TeXShift.Core\TeXShift.Core.csproj", "{4782FD8C-C706-59DB-C4C4-FEFA8419C58E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeXShift.Tests.E2E", "tests\TeXShift.Tests.E2E\TeXShift.Tests.E2E.csproj", "{0E2EC54B-B6FF-919E-CD4E-E1FA2B772F2A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeXShift.Core.Tests", "tests\TeXShift.Core.Tests\TeXShift.Core.Tests.csproj", "{2A6CB54E-7DDC-47F2-9B1A-39AE49DA46E7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,10 +27,6 @@ Global
 		{3B65AA02-BE5B-4F7A-9DA5-89D210CC94D4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3B65AA02-BE5B-4F7A-9DA5-89D210CC94D4}.Release|x64.ActiveCfg = Release|x64
 		{3B65AA02-BE5B-4F7A-9DA5-89D210CC94D4}.Release|x64.Build.0 = Release|x64
-		{72B00B7E-9C7B-AEFD-5C44-8EBA7DBAEFC9}.Debug|Any CPU.ActiveCfg = Debug
-		{72B00B7E-9C7B-AEFD-5C44-8EBA7DBAEFC9}.Debug|x64.ActiveCfg = Debug
-		{72B00B7E-9C7B-AEFD-5C44-8EBA7DBAEFC9}.Release|Any CPU.ActiveCfg = Release
-		{72B00B7E-9C7B-AEFD-5C44-8EBA7DBAEFC9}.Release|x64.ActiveCfg = Release
 		{4782FD8C-C706-59DB-C4C4-FEFA8419C58E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4782FD8C-C706-59DB-C4C4-FEFA8419C58E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4782FD8C-C706-59DB-C4C4-FEFA8419C58E}.Debug|x64.ActiveCfg = Debug|x64
@@ -47,6 +43,14 @@ Global
 		{0E2EC54B-B6FF-919E-CD4E-E1FA2B772F2A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0E2EC54B-B6FF-919E-CD4E-E1FA2B772F2A}.Release|x64.ActiveCfg = Release|x64
 		{0E2EC54B-B6FF-919E-CD4E-E1FA2B772F2A}.Release|x64.Build.0 = Release|x64
+		{2A6CB54E-7DDC-47F2-9B1A-39AE49DA46E7}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{2A6CB54E-7DDC-47F2-9B1A-39AE49DA46E7}.Debug|Any CPU.Build.0 = Debug|x64
+		{2A6CB54E-7DDC-47F2-9B1A-39AE49DA46E7}.Debug|x64.ActiveCfg = Debug|x64
+		{2A6CB54E-7DDC-47F2-9B1A-39AE49DA46E7}.Debug|x64.Build.0 = Debug|x64
+		{2A6CB54E-7DDC-47F2-9B1A-39AE49DA46E7}.Release|Any CPU.ActiveCfg = Release|x64
+		{2A6CB54E-7DDC-47F2-9B1A-39AE49DA46E7}.Release|Any CPU.Build.0 = Release|x64
+		{2A6CB54E-7DDC-47F2-9B1A-39AE49DA46E7}.Release|x64.ActiveCfg = Release|x64
+		{2A6CB54E-7DDC-47F2-9B1A-39AE49DA46E7}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

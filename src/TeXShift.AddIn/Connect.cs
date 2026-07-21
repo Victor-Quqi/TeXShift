@@ -2,6 +2,7 @@
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows.Forms;
 using Extensibility;
 using Microsoft.Office.Core;
@@ -32,8 +33,8 @@ namespace TeXShift.AddIn
     /// - Connect.Debug.cs: Debug tools
     /// </summary>
     [ComVisible(true)]
-    [Guid("1EE8F914-ECBD-4709-92C0-E770851C4966")]
-    [ProgId("TeXShift.AddIn.Connect")]
+    [Guid(ComIdentity.Clsid)]
+    [ProgId(ComIdentity.ProgId)]
     public partial class Connect : IDTExtensibility2, IRibbonExtensibility
     {
         #region Native Methods
@@ -52,6 +53,8 @@ namespace TeXShift.AddIn
         #region Fields
 
         private static readonly string _addInDirectory;
+        private static readonly Mutex _processMutex =
+            new Mutex(false, @"Local\TeXShift.AddIn." + ComIdentity.Clsid);
 
         private OneNote.Application _oneNoteApp;
         private IRibbonUI _ribbon;

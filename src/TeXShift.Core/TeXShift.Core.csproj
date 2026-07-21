@@ -5,6 +5,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <RootNamespace>TeXShift.Core</RootNamespace>
     <AssemblyName>TeXShift.Core</AssemblyName>
+    <EmbedOneNoteInteropTypes>true</EmbedOneNoteInteropTypes>
     <TeXShiftSigningKeyPath Condition="'$(TeXShiftSigningKeyPath)' == ''">$(MSBuildThisFileDirectory)..\..\texshift_key.snk</TeXShiftSigningKeyPath>
     <SignAssembly Condition="Exists('$(TeXShiftSigningKeyPath)')">true</SignAssembly>
     <AssemblyOriginatorKeyFile Condition="'$(SignAssembly)' == 'true'">$(TeXShiftSigningKeyPath)</AssemblyOriginatorKeyFile>
@@ -17,15 +18,12 @@
     <!-- Framework references needed for .NET Framework 4.8 SDK-style project -->
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Net.Http" />
-    <!-- OneNote interop - must use EmbedInteropTypes to avoid strong name requirement -->
-    <Reference Include="Interop.Microsoft.Office.Interop.OneNote">
-      <HintPath>..\..\packages\Interop.Microsoft.Office.Interop.OneNote.1.1.0.2\lib\net40\Interop.Microsoft.Office.Interop.OneNote.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Interop.Microsoft.Office.Interop.OneNote" Version="1.1.0.2" ExcludeAssets="runtime" PrivateAssets="all" />
     <PackageReference Include="Markdig.Signed" Version="0.44.0" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" PrivateAssets="all" />
     <PackageReference Include="TextMateSharp" Version="2.0.2" />
     <PackageReference Include="TextMateSharp.Grammars" Version="2.0.2" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3650.58" />

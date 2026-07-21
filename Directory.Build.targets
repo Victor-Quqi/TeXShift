@@ -1,0 +1,12 @@
+<Project>
+  <Target Name="EmbedOneNoteInteropTypes"
+          Condition="'$(EmbedOneNoteInteropTypes)' == 'true'"
+          AfterTargets="ResolveReferences"
+          BeforeTargets="FindReferenceAssembliesForReferences">
+    <ItemGroup>
+      <ReferencePath Condition="'%(ReferencePath.NuGetPackageId)' == 'Interop.Microsoft.Office.Interop.OneNote'">
+        <EmbedInteropTypes>true</EmbedInteropTypes>
+      </ReferencePath>
+    </ItemGroup>
+  </Target>
+</Project>

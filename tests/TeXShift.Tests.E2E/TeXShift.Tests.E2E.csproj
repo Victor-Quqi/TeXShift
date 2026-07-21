@@ -6,19 +6,17 @@
     <PlatformTarget>x64</PlatformTarget>
     <IsPackable>false</IsPackable>
     <Platforms>AnyCPU;x64</Platforms>
+    <EmbedOneNoteInteropTypes>true</EmbedOneNoteInteropTypes>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Framework references -->
     <Reference Include="System.Windows.Forms" />
-    <!-- OneNote interop -->
-    <Reference Include="Interop.Microsoft.Office.Interop.OneNote">
-      <HintPath>..\..\packages\Interop.Microsoft.Office.Interop.OneNote.1.1.0.2\lib\net40\Interop.Microsoft.Office.Interop.OneNote.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Interop.Microsoft.Office.Interop.OneNote" Version="1.1.0.2" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" PrivateAssets="all" />
     <PackageReference Include="System.CommandLine" Version="2.0.1" />
     <PackageReference Include="System.Text.Json" Version="10.0.1" />
   </ItemGroup>

@@ -203,7 +203,7 @@ namespace TeXShift.Tests.E2E
                 if (!string.IsNullOrWhiteSpace(notebookId))
                 {
                     // Close the notebook first (required before deletion)
-                    _oneNoteApp.CloseNotebook(notebookId);
+                    _oneNoteApp.CloseNotebook(notebookId, false);
 
                     // Delete the notebook folder from disk
                     if (Directory.Exists(_notebookPath))
