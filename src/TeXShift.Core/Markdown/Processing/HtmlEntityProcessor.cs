@@ -72,7 +72,7 @@ namespace TeXShift.Core.Markdown.Processing
                         // Decode entities for non-code content, double-encode for code.
                         // For code, HtmlEscaper.Escape converts "&lt;" to "&amp;lt;" so OneNote renders "&lt;".
                         var preserve = isCodeBlockLine || IsWithinRanges(match.Index, inlineCodeRanges);
-                        return preserve ? HtmlEscaper.Escape(entity) : DecodeEntity(entity);
+                        return preserve ? HtmlEscaper.Escape(entity) : DecodeEntityStatic(entity);
                     }
                     return match.Value;
                 });
@@ -109,14 +109,6 @@ namespace TeXShift.Core.Markdown.Processing
             }
 
             return style.IndexOf(codeFontFamily, System.StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
-        /// <summary>
-        /// Decodes a single HTML entity to its character equivalent.
-        /// </summary>
-        private string DecodeEntity(string entity)
-        {
-            return DecodeEntityStatic(entity);
         }
 
         /// <summary>
@@ -168,7 +160,6 @@ namespace TeXShift.Core.Markdown.Processing
         }
 
         /// <summary>
-        /// Static version of DecodeEntity for use in static methods.
         /// Decodes a single HTML entity to its character equivalent.
         /// </summary>
         private static string DecodeEntityStatic(string entity)
@@ -183,24 +174,9 @@ namespace TeXShift.Core.Markdown.Processing
                 case "&#39;": return "'";
                 case "&nbsp;": return "\u00A0";
                 default:
-                    // Handle numeric entities
-                    if (entity.StartsWith("&#x") || entity.StartsWith("&#X"))
-                    {
-                        var hex = entity.Substring(3, entity.Length - 4);
-                        if (int.TryParse(hex, System.Globalization.NumberStyles.HexNumber, null, out int code) && code > 0 && code <= 0x10FFFF)
-                        {
-                            return char.ConvertFromUtf32(code);
-                        }
-                    }
-                    else if (entity.StartsWith("&#"))
-                    {
-                        var num = entity.Substring(2, entity.Length - 3);
-                        if (int.TryParse(num, out int code) && code > 0 && code <= 0x10FFFF)
-                        {
-                            return char.ConvertFromUtf32(code);
-                        }
-                    }
-                    return entity; // Unknown entity, preserve as-is
+                    return HtmlNumericEntityDecoder.DecodeEntity(
+                        entity,
+                        HtmlNumericEntityDecoder.DecodingPolicy.ProtectedMarkdownEntity);
             }
         }
 
