@@ -42,6 +42,11 @@ jobs:
           $url = "https://github.com/jrsoftware/issrc/releases/download/is-7_0_2/innosetup-7.0.2-x64.exe"
           Invoke-WebRequest -Uri $url -OutFile "$env:RUNNER_TEMP\innosetup.exe"
           Start-Process -Wait -FilePath "$env:RUNNER_TEMP\innosetup.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/ALLUSERS"
+          # The runner image preinstalls Inno Setup 6 on PATH; point build.ps1
+          # at the freshly installed 7 explicitly.
+          $iscc = "$env:ProgramFiles\Inno Setup 7\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "Inno Setup 7 not found at $iscc" }
+          "ISCC_PATH=$iscc" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
       - name: Generate ephemeral signing key
         # Package refuses unsigned payloads; CI signs with a throwaway key.
         # Real releases are built locally with the private texshift_key.snk.
