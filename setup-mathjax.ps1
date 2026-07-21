@@ -1,7 +1,14 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param()
 
 $ErrorActionPreference = "Stop"
+
+# A PSModulePath inherited from a PowerShell 7 host shadows Windows PowerShell's
+# built-in modules and breaks cmdlet autoloading (e.g. Get-FileHash); make sure
+# $PSHOME\Modules is searched first.
+if ($PSVersionTable.PSEdition -ne "Core") {
+    $env:PSModulePath = (Join-Path $PSHome "Modules") + ";" + $env:PSModulePath
+}
 
 $Version = "3.2.2"
 $ArchiveUrl = "https://registry.npmjs.org/mathjax/-/mathjax-$Version.tgz"

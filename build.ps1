@@ -23,6 +23,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# A PSModulePath inherited from a PowerShell 7 host shadows Windows PowerShell's
+# built-in modules and breaks cmdlet autoloading (e.g. Get-FileHash); make sure
+# $PSHOME\Modules is searched first.
+if ($PSVersionTable.PSEdition -ne "Core") {
+    $env:PSModulePath = (Join-Path $PSHome "Modules") + ";" + $env:PSModulePath
+}
+
 $RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $AddInProject = Join-Path $RepoRoot "src\TeXShift.AddIn\TeXShift.AddIn.csproj"
 $E2EProject = Join-Path $RepoRoot "tests\TeXShift.Tests.E2E\TeXShift.Tests.E2E.csproj"
