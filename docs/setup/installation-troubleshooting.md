@@ -1,8 +1,10 @@
 # TeXShift OneNote Add-in 安装问题排查记录
 
+> 当前入口见 `build.ps1` 与 `setup/Register-TeXShiftDev.ps1`。本文保留 OneNote Click-to-Run 与 `DllSurrogate` 问题的历史证据。
+
 ## 排查原则
 
-- 目标是确定加载失败的根本原因，保证用户用 MSI 安装包安装完即可正常使用。
+- 当时的目标是确定加载失败的根本原因，保证用户用旧 MSI 安装包安装完即可正常使用。
 - 测试过程中**尽量不要更改注册表**，避免引入干扰变量。如确需修改，改完后必须**立即还原**。
 
 ## 环境信息
@@ -136,7 +138,7 @@ VM（失败）缺少此条目。在 VM 上手动添加后，OneNote 成功加载
 
 ### 修复
 
-MSI 安装包需要额外创建：
+旧 MSI 安装包当时需要额外创建：
 
 ```
 [HKLM\Software\Classes\AppID\{1EE8F914-ECBD-4709-92C0-E770851C4966}]

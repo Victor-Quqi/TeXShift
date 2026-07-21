@@ -1,43 +1,30 @@
-# Release 构建
+# 构建与发布
 
-## 前置条件
+`build.ps1` 是本机、agent 和 CI 的统一入口。Visual Studio 仅作为可选编辑器。
 
-- Visual Studio 2022 + Microsoft Visual Studio Installer Projects 扩展
-- .NET Framework 4.8 SDK
-- 目标电脑需要：
-  - .NET Framework 4.8
-  - WebView2 Runtime
+```powershell
+.\build.ps1 -Target Build -Configuration Debug
+.\build.ps1 -Target Test -Configuration Debug
+.\build.ps1 -Target CI -Configuration Release
+```
 
-## 构建步骤
+脚本使用 `global.json` 固定 .NET SDK，按 lock file 恢复 NuGet 包，并校验 MathJax 下载哈希。CI 只执行 Release 构建、快速单元测试和 staging 校验；OneNote E2E 留在本机手动执行。
 
-1. **切换配置**：工具栏选择 `Release | x64`
+首次开发注册需要关闭 OneNote，并在管理员 PowerShell 中运行：
 
-2. **更新版本号**：
-   - 单击 TeXShiftSetup 项目，按 F4
-   - 修改 `Version` 属性（如 `1.0.0` → `1.0.1`）
-   - 提示更新 ProductCode 时选"是"
+```powershell
+.\setup\Register-TeXShiftDev.ps1 -Action Register
+```
 
-3. **生成解决方案**：右键解决方案 → 重新生成解决方案
+注册项指向固定的 Debug 输出路径，后续构建无需提权或重新注册。重启 OneNote 后加载新版。Debug 使用独立 CLSID/ProgID，可与已安装的 Release 并存；此时会出现两套 Ribbon。用管理员 PowerShell 执行 `-Action Unregister` 可移除 Debug 版。
 
-4. **MSI 输出位置**：`setup/TeXShiftSetup/Release/TeXShiftSetup.msi`
+Release 打包需要 Inno Setup 7 和本地强名称密钥。密钥可放在仓库根目录的 `texshift_key.snk`，或通过 `TEXSHIFT_SIGNING_KEY_PATH` 指定；两者均不得提交。
 
-## Setup 项目配置说明
+```powershell
+$Version = Read-Host "Release version (x.y.z)"
+.\build.ps1 -Target Package -Configuration Release -Version $Version
+```
 
-Application Folder 包含两个项目输出：
+输出位于 `artifacts/package/`，包含单文件安装器和 SHA-256 文件。打包会检查 Release COM 身份、x64、强名称、依赖文件和资源清单。安装器写入机器级 COM/OneNote 注册，安装和卸载需要管理员权限。卸载时可选择删除安装用户的默认 TeXShift 数据目录；用户配置的外部调试输出目录保留。
 
-- **Primary Output from TeXShift.AddIn**：主 DLL 及依赖
-- **Content Files from TeXShift.AddIn**：MathJax 资源文件（通过 csproj 中的 Content Include 自动包含）
-
-## 关键属性（F4 属性窗口）
-
-| 属性 | 说明 |
-|------|------|
-| ProductName | 安装后显示的程序名 |
-| Version | 版本号，每次发布需递增 |
-| Manufacturer | 制造商/作者 |
-| TargetPlatform | 必须是 x64 |
-
-## 注意事项
-
-- MathJax 文件通过 `src/TeXShift.AddIn/TeXShift.AddIn.csproj` 的 Content 配置自动复制到输出目录
-- 修改 MSI 文件名：右键 TeXShiftSetup → 属性 → Build → Output file name
+发布正文来自本地忽略的 `.release/release-template.local.md`，仓库不配置自动发布任务。

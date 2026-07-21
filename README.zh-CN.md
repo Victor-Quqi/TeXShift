@@ -78,7 +78,11 @@
 
 ## 安装
 
-从 [Releases](https://github.com/Victor-Quqi/TeXShift/releases) 页面下载最新的 `.msi` 安装包并运行即可。
+从 [Releases](https://github.com/Victor-Quqi/TeXShift/releases) 下载最新的 x64 Setup `.exe`。
+
+从 TeXShift 0.2.x 或更早版本升级时，请先卸载旧版。
+
+Setup `.exe` 安装的卸载程序可选择一并删除安装用户的 TeXShift 设置、缓存和默认位置调试日志。
 
 ## 从源码构建
 
@@ -90,18 +94,24 @@
    cd TeXShift
    ```
 
-2. **配置 MathJax**（仅首次需要）
-   ```powershell
-   .\setup-mathjax.ps1
-   ```
-   此脚本从 npm 下载 MathJax（约 23 MB）。需要安装 Node.js 和 npm。
+2. **构建与测试**
 
-3. **构建项目**
-   - **完整解决方案**（插件）：在 Visual Studio 中打开 → 生成 → 重新生成解决方案（Debug|x64）
-   - **仅核心库和测试**：
-     ```powershell
-     .\build.ps1 -Target Build -Configuration Debug
-     ```
+   ```powershell
+   .\build.ps1 -Target Build -Configuration Debug
+   .\build.ps1 -Target Test -Configuration Debug
+   ```
+
+   构建脚本会恢复固定版本的 MathJax 和 NuGet 依赖，无需 Visual Studio。
+
+3. **首次注册 Debug 加载项**
+
+   正常构建并关闭 OneNote，然后在管理员 PowerShell 中运行：
+
+   ```powershell
+   .\setup\Register-TeXShiftDev.ps1 -Action Register
+   ```
+
+   后续构建沿用同一路径，重启 OneNote 即会加载新 DLL。普通 PowerShell 可用 `-Action Status` 检查状态；管理员 PowerShell 可用 `-Action Unregister` 移除开发版 Ribbon。
 
 ## 许可证
 

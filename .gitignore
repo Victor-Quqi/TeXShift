@@ -305,3 +305,6 @@ src/TeXShift.AddIn/Lib/mathjax/
 
 # Local strong-name signing key
 /texshift_key.snk
+
+# Local release template and generated release files
+/.release/

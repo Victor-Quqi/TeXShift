@@ -78,7 +78,11 @@ English | [简体中文](README.zh-CN.md)
 
 ## Installation
 
-Download the latest `.msi` installer from the [Releases](https://github.com/Victor-Quqi/TeXShift/releases) page and run it.
+Download the latest x64 Setup `.exe` from [Releases](https://github.com/Victor-Quqi/TeXShift/releases).
+
+When upgrading from TeXShift 0.2.x or earlier, uninstall the old version first.
+
+The uninstaller installed by the Setup `.exe` can optionally remove the installing user's TeXShift settings, caches, and default-location debug logs.
 
 ## Building from Source
 
@@ -90,18 +94,24 @@ For developers who want to build TeXShift from source:
    cd TeXShift
    ```
 
-2. **Setup MathJax** (first time only)
-   ```powershell
-   .\setup-mathjax.ps1
-   ```
-   This downloads MathJax from npm (~23 MB). Requires Node.js and npm.
+2. **Build and test**
 
-3. **Build the project**
-   - **Full solution** (Add-in): Open in Visual Studio → Build → Rebuild Solution (Debug|x64)
-   - **Core + Tests only**:
-     ```powershell
-     .\build.ps1 -Target Build -Configuration Debug
-     ```
+   ```powershell
+   .\build.ps1 -Target Build -Configuration Debug
+   .\build.ps1 -Target Test -Configuration Debug
+   ```
+
+   The build script restores the pinned MathJax package and NuGet dependencies. Visual Studio is optional.
+
+3. **Register the Debug add-in once**
+
+   Build normally, close OneNote, then run the following command from an elevated PowerShell:
+
+   ```powershell
+   .\setup\Register-TeXShiftDev.ps1 -Action Register
+   ```
+
+   Later builds keep the same output path. Restart OneNote to load the newly built DLL. Use `-Action Status` without elevation to inspect the registration, or `-Action Unregister` from an elevated PowerShell to remove the development ribbon.
 
 ## License
 
