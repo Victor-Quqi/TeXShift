@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using TeXShift.Core.Logging;
 
 namespace TeXShift.Core.Configuration
 {
@@ -82,8 +83,7 @@ namespace TeXShift.Core.Configuration
             }
             catch (Exception ex)
             {
-                // Log error but don't crash
-                System.Diagnostics.Debug.WriteLine($"Failed to save settings: {ex.Message}");
+                RuntimeLog.Write($"Failed to save settings: {ex}");
                 throw;
             }
         }
@@ -102,7 +102,8 @@ namespace TeXShift.Core.Configuration
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to delete settings file: {ex.Message}");
+                RuntimeLog.Write($"Failed to delete settings file: {ex}");
+                throw;
             }
         }
 

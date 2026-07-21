@@ -286,4 +286,7 @@
   <data name="Settings_Language_English" xml:space="preserve">
     <value>English</value>
   </data>
+  <data name="Message_Error_ResetSettings" xml:space="preserve">
+    <value>恢复默认设置失败：&#xA;&#xA;{0}</value>
+  </data>
 </root>

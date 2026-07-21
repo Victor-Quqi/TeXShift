@@ -232,4 +232,7 @@
   <data name="Error_MermaidRenderTimeout" xml:space="preserve">
     <value>Mermaid 图表渲染超时。</value>
   </data>
+  <data name="Markdown_MermaidRenderFailureNote" xml:space="preserve">
+    <value>Mermaid 渲染失败，已在下方保留图表源码。</value>
+  </data>
 </root>

@@ -10,6 +10,7 @@ using TeXShift.AddIn.Interop;
 using TeXShift.AddIn.Localization;
 using TeXShift.Core.Configuration;
 using TeXShift.Core.Localization;
+using TeXShift.Core.Logging;
 using TeXShift.Core.Services;
 using OneNote = Microsoft.Office.Interop.OneNote;
 
@@ -111,6 +112,7 @@ namespace TeXShift.AddIn
                 // Load settings from JSON file
                 _settingsManager = new SettingsManager();
                 _appSettings = _settingsManager.Load();
+                RuntimeLog.Configure(_appSettings?.Debug?.DebugOutputPath);
 
                 // Initialize localization based on settings or system culture
                 LocalizationManager.Initialize(_appSettings?.Language);
@@ -124,7 +126,7 @@ namespace TeXShift.AddIn
             catch (Exception ex)
             {
                 _initError = ex;
-                System.Diagnostics.Debug.WriteLine($"[TeXShift] OnConnection failed: {ex}");
+                RuntimeLog.Write($"OnConnection failed: {ex}");
             }
         }
 
@@ -204,7 +206,7 @@ namespace TeXShift.AddIn
                 catch (Exception ex)
                 {
                     // Log the exception but don't throw - object might already be released
-                    System.Diagnostics.Debug.WriteLine($"Warning: Failed to release COM object: {ex.Message}");
+                    RuntimeLog.Write($"Failed to release COM object: {ex}");
                 }
             }
         }

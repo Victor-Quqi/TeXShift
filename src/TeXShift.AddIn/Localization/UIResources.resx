@@ -262,4 +262,7 @@
   <data name="Settings_Language_English" xml:space="preserve">
     <value>English</value>
   </data>
+  <data name="Message_Error_ResetSettings" xml:space="preserve">
+    <value>Failed to restore default settings:&#xA;&#xA;{0}</value>
+  </data>
 </root>

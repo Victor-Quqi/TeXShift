@@ -13,6 +13,7 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 using TeXShift.Core.Errors;
 using TeXShift.Core.Localization;
+using TeXShift.Core.Logging;
 
 namespace TeXShift.Core.Mermaid
 {
@@ -291,7 +292,7 @@ namespace TeXShift.Core.Mermaid
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[TeXShift] Malformed WebMessage ignored: {ex.Message}");
+                RuntimeLog.Write($"Malformed Mermaid WebMessage ignored: {ex}");
             }
         }
 

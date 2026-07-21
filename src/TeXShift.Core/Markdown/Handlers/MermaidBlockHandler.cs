@@ -6,6 +6,9 @@ using System.Xml.Linq;
 using Markdig.Syntax;
 using TeXShift.Core.Markdown.Abstractions;
 using TeXShift.Core.Mermaid;
+using TeXShift.Core.Localization;
+using TeXShift.Core.Logging;
+using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.Markdown.Handlers
 {
@@ -38,7 +41,10 @@ namespace TeXShift.Core.Markdown.Handlers
 
             if (_mermaidService == null)
             {
-                return await _codeBlockFallback.HandleAsync(block, context).ConfigureAwait(false);
+                return await CreateFallbackAsync(
+                    block,
+                    context,
+                    "Mermaid rendering unavailable: the service is not configured.").ConfigureAwait(false);
             }
 
             // Auto-initialize MermaidService if needed
@@ -50,8 +56,10 @@ namespace TeXShift.Core.Markdown.Handlers
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[TeXShift] MermaidService initialization failed: {ex.Message}");
-                    return await _codeBlockFallback.HandleAsync(block, context).ConfigureAwait(false);
+                    return await CreateFallbackAsync(
+                        block,
+                        context,
+                        $"Mermaid service initialization failed: {ex}").ConfigureAwait(false);
                 }
             }
 
@@ -62,13 +70,24 @@ namespace TeXShift.Core.Markdown.Handlers
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[TeXShift] Mermaid render failed: {ex.Message}");
-                return await _codeBlockFallback.HandleAsync(block, context).ConfigureAwait(false);
+                return await CreateFallbackAsync(
+                    block,
+                    context,
+                    $"Mermaid rendering failed: {ex}").ConfigureAwait(false);
             }
 
             if (result == null || !result.Success || string.IsNullOrWhiteSpace(result.Base64PngData))
             {
-                return await _codeBlockFallback.HandleAsync(block, context).ConfigureAwait(false);
+                var failureDetail = result == null
+                    ? "no render result was returned"
+                    : !string.IsNullOrWhiteSpace(result.ErrorMessage)
+                        ? result.ErrorMessage
+                        : "no image data was returned";
+
+                return await CreateFallbackAsync(
+                    block,
+                    context,
+                    $"Mermaid rendering failed: {failureDetail}").ConfigureAwait(false);
             }
 
             var ns = context.OneNoteNamespace;
@@ -78,6 +97,36 @@ namespace TeXShift.Core.Markdown.Handlers
                 new XElement(ns + "Data", result.Base64PngData));
 
             return new[] { new XElement(ns + "OE", new XAttribute("alignment", "center"), image) };
+        }
+
+        private async Task<IReadOnlyList<XElement>> CreateFallbackAsync(
+            Block block,
+            IMarkdownConverterContext context,
+            string logMessage)
+        {
+            RuntimeLog.Write(logMessage);
+
+            var fallbackElements = await _codeBlockFallback
+                .HandleAsync(block, context)
+                .ConfigureAwait(false);
+            var elements = new List<XElement>(fallbackElements.Count + 1)
+            {
+                CreateFailureNote(context)
+            };
+            elements.AddRange(fallbackElements);
+            return elements;
+        }
+
+        private static XElement CreateFailureNote(IMarkdownConverterContext context)
+        {
+            var ns = context.OneNoteNamespace;
+            var note = HtmlEscaper.Escape(Resources.GetString("Markdown_MermaidRenderFailureNote"));
+            var html = $"<span style='font-size:9pt;color:#767676;font-style:italic'>{note}</span>";
+
+            return new XElement(ns + "OE",
+                new XAttribute("spaceBefore", "4.0"),
+                new XAttribute("spaceAfter", "4.0"),
+                new XElement(ns + "T", new XCData(html)));
         }
 
         private static string ExtractCode(CodeBlock codeBlock)

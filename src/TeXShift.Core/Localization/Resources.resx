@@ -232,4 +232,7 @@
   <data name="Error_MermaidRenderTimeout" xml:space="preserve">
     <value>Mermaid render timed out.</value>
   </data>
+  <data name="Markdown_MermaidRenderFailureNote" xml:space="preserve">
+    <value>Mermaid rendering failed; the diagram source is preserved below.</value>
+  </data>
 </root>

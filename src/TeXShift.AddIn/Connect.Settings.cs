@@ -6,6 +6,7 @@ using TeXShift.AddIn.Interop;
 using TeXShift.AddIn.Localization;
 using TeXShift.AddIn.UI.WPF;
 using TeXShift.Core.Localization;
+using TeXShift.Core.Logging;
 using TeXShift.Core.Mermaid;
 
 namespace TeXShift.AddIn
@@ -52,6 +53,7 @@ namespace TeXShift.AddIn
             var parentHwnd = NativeMethods.GetForegroundWindow();
             Core.Configuration.AppSettings updatedSettings = null;
             bool dialogResult = false;
+            bool resetToDefaultsRequested = false;
             Exception threadException = null;
 
             // WPF requires STA thread
@@ -68,6 +70,7 @@ namespace TeXShift.AddIn
                     if (dialog.ShowDialog() == true)
                     {
                         updatedSettings = dialog.GetUpdatedSettings();
+                        resetToDefaultsRequested = dialog.ResetToDefaultsRequested;
                         dialogResult = true;
                     }
                 }
@@ -99,8 +102,26 @@ namespace TeXShift.AddIn
 
             if (dialogResult && updatedSettings != null)
             {
+                if (resetToDefaultsRequested)
+                {
+                    try
+                    {
+                        _settingsManager.ResetToDefaults();
+                    }
+                    catch (Exception ex)
+                    {
+                        ShowTopMostMessageBox(
+                            string.Format(UIResources.GetString("Message_Error_ResetSettings"), ex.Message),
+                            Resources.GetString("Dialog_ErrorTitle"),
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+                        return;
+                    }
+                }
+
+                _settingsManager.Save(updatedSettings);
                 _appSettings = updatedSettings;
-                _settingsManager.Save(_appSettings);
+                RuntimeLog.Configure(_appSettings?.Debug?.DebugOutputPath);
                 LocalizationManager.Initialize(_appSettings?.Language);
                 ApplySettingsToStyleConfig();
 

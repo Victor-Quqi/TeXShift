@@ -36,6 +36,7 @@ namespace TeXShift.AddIn.UI.WPF
         private IntPtr _ownerHandle;
 
         public SettingsViewModel ViewModel { get; }
+        public bool ResetToDefaultsRequested { get; private set; }
 
         public SettingsWindow()
         {
@@ -123,6 +124,7 @@ namespace TeXShift.AddIn.UI.WPF
         private void DialogConfirm_Click(object sender, RoutedEventArgs e)
         {
             HideDialog();
+            ResetToDefaultsRequested = true;
             ViewModel.LoadFromSettings(AppSettings.CreateDefault());
         }
 

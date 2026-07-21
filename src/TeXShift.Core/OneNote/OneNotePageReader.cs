@@ -524,8 +524,7 @@ namespace TeXShift.Core.OneNote
                 catch (Exception ex)
                 {
                     // Log the exception but don't throw - object might already be released
-                    System.Diagnostics.Debug.WriteLine($"Warning: Failed to release COM object. {ex.GetType().Name}: {ex.Message}");
-                    System.Diagnostics.Debug.WriteLine(ex);
+                    RuntimeLog.Write($"Failed to release OneNote COM object: {ex}");
                 }
             }
         }
