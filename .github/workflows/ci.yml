@@ -33,9 +33,13 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
-      - name: Install Inno Setup
+      - name: Install Inno Setup 7
+        # chocolatey still ships 6.x, which lacks the SetupArchitecture directive
+        # the installer script uses; install the current stable from jrsoftware.
         shell: powershell
-        run: choco install innosetup -y
+        run: |
+          Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile "$env:RUNNER_TEMP\is.exe"
+          Start-Process -Wait -FilePath "$env:RUNNER_TEMP\is.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART"
       - name: Generate ephemeral signing key
         # Package refuses unsigned payloads; CI signs with a throwaway key.
         # Real releases are built locally with the private texshift_key.snk.
