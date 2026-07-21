@@ -282,6 +282,7 @@ function Get-ReleaseAssemblyMetadata {
     param([string]$Path)
 
     $inspectionScript = @'
+$env:PSModulePath = (Join-Path $PSHome "Modules") + ";" + $env:PSModulePath
 $ErrorActionPreference = "Stop"
 $path = [Environment]::GetEnvironmentVariable("TEXSHIFT_INSPECTION_ASSEMBLY")
 $assemblyName = [Reflection.AssemblyName]::GetAssemblyName($path)
