@@ -16,6 +16,7 @@ using TeXShift.Core.Markdown.Handlers.Inlines;
 using TeXShift.Core.Markdown.Processing;
 using TeXShift.Core.Math;
 using TeXShift.Core.Mermaid;
+using TeXShift.Core.OneNote;
 using TeXShift.Core.OneNoteMeta;
 
 namespace TeXShift.Core.Markdown
@@ -39,7 +40,7 @@ namespace TeXShift.Core.Markdown
         private Dictionary<string, string> _currentEntityMap;  // Stored during conversion for Math handlers
 
         // Explicit implementation of IMarkdownConverterContext properties
-        public XNamespace OneNoteNamespace { get; } = "http://schemas.microsoft.com/office/onenote/2013/onenote";
+        public XNamespace OneNoteNamespace { get; } = OneNoteXml.Namespace;
         public OneNoteStyleConfig StyleConfig { get; }
         public IMathService MathService { get; }
         public IMermaidService MermaidService { get; }

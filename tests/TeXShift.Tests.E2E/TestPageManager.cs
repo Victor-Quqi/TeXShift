@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
 using OneNoteInterop = Microsoft.Office.Interop.OneNote;
+using TeXShift.Core.OneNote;
 using TeXShift.Core.Utils;
 
 namespace TeXShift.Tests.E2E
@@ -16,7 +17,7 @@ namespace TeXShift.Tests.E2E
     {
         private const string TestNotebookName = "TeXShift_E2E_Tests";
         private const string TestSectionName = "E2E";
-        private static readonly XNamespace OneNoteNamespace = "http://schemas.microsoft.com/office/onenote/2013/onenote";
+        private static readonly XNamespace OneNoteNamespace = OneNoteXml.Namespace;
 
         private static bool IsBoolAttributeTrue(XElement element, string attributeName)
         {
@@ -484,6 +485,7 @@ namespace TeXShift.Tests.E2E
                     }
                     catch
                     {
+                        // Ignore failures during best-effort COM cleanup
                     }
                 })).GetAwaiter().GetResult();
                 _oneNoteApp = null;

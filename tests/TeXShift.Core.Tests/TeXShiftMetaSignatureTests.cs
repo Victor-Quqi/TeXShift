@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using System.Xml.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TeXShift.Core.OneNote;
 using TeXShift.Core.OneNoteToMarkdown;
 
 namespace TeXShift.Core.Tests
@@ -9,8 +10,7 @@ namespace TeXShift.Core.Tests
     [TestClass]
     public class TeXShiftMetaSignatureTests
     {
-        private static readonly XNamespace OneNoteNamespace =
-            "http://schemas.microsoft.com/office/onenote/2013/onenote";
+        private static readonly XNamespace OneNoteNamespace = OneNoteXml.Namespace;
 
         [TestMethod]
         [DataRow("{", "", "<mo>{</mo><mi>x</mi>")]

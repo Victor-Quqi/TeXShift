@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TeXShift.Core.Configuration;
+using TeXShift.Core.OneNote;
 using TeXShift.Core.OneNoteToMarkdown;
 using TeXShift.Core.Services;
 
@@ -11,8 +12,7 @@ namespace TeXShift.Core.Tests
     [TestClass]
     public class ConversionSmokeTests
     {
-        private static readonly XNamespace OneNoteNamespace =
-            "http://schemas.microsoft.com/office/onenote/2013/onenote";
+        private static readonly XNamespace OneNoteNamespace = OneNoteXml.Namespace;
 
         [TestMethod]
         public async Task ForwardConversionProducesOneNoteOutline()

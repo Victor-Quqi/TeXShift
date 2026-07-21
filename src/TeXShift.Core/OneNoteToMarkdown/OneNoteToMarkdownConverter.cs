@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Configuration;
+using TeXShift.Core.OneNote;
 using TeXShift.Core.OneNoteMeta;
 using TeXShift.Core.OneNoteToMarkdown.Abstractions;
 using TeXShift.Core.OneNoteToMarkdown.Handlers;
@@ -13,8 +14,8 @@ using TeXShift.Core.OneNoteToMarkdown.Inlines;
 namespace TeXShift.Core.OneNoteToMarkdown
 {
     /// <summary>
-    /// Skeleton implementation of OneNote XML -> Markdown reverse conversion.
-    /// Phase 1: focuses on inline HTML parsing and basic traversal.
+    /// Converts OneNote XML to Markdown by dispatching elements to specialized handlers
+    /// and parsing inline formatting.
     /// </summary>
     public class OneNoteToMarkdownConverter : IOneNoteToMarkdownConverter, IOneNoteConverterContext
     {
@@ -23,7 +24,7 @@ namespace TeXShift.Core.OneNoteToMarkdown
         private readonly List<IElementHandler> _handlers;
 
         // Explicit IOneNoteConverterContext
-        public XNamespace OneNoteNamespace { get; } = "http://schemas.microsoft.com/office/onenote/2013/onenote";
+        public XNamespace OneNoteNamespace { get; } = OneNoteXml.Namespace;
         public OneNoteStyleConfig StyleConfig { get; }
         public int CurrentIndentLevel { get; set; }
         public int CurrentListIndex { get; set; }

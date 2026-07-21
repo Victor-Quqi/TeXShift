@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -111,7 +112,7 @@ namespace TeXShift.Core.OneNote
                     .Any(e => string.Equals((string)e.Attribute("index"), "0", StringComparison.Ordinal)) == true;
             }
 
-            System.Collections.Generic.List<XElement> deepestSelectedNodes;
+            List<XElement> deepestSelectedNodes;
             using (PerformanceTraceContext.Measure("Read.Parse.FindSelectedNodes"))
             {
                 deepestSelectedNodes = doc.Descendants()
@@ -229,9 +230,9 @@ namespace TeXShift.Core.OneNote
             return result;
         }
 
-        private ReadResult HandleSelectionMode(System.Collections.Generic.List<XElement> selectedNodes, XNamespace ns, string pageId)
+        private ReadResult HandleSelectionMode(List<XElement> selectedNodes, XNamespace ns, string pageId)
         {
-            System.Collections.Generic.List<XElement> parentOEs;
+            List<XElement> parentOEs;
             using (PerformanceTraceContext.Measure("Read.Selection.FindParentOes"))
             {
                 parentOEs = FindParentOENodes(selectedNodes, ns);
@@ -280,7 +281,7 @@ namespace TeXShift.Core.OneNote
         /// <summary>
         /// Finds all unique parent OE nodes from the selected nodes.
         /// </summary>
-        private System.Collections.Generic.List<XElement> FindParentOENodes(System.Collections.Generic.List<XElement> selectedNodes, XNamespace ns)
+        private List<XElement> FindParentOENodes(List<XElement> selectedNodes, XNamespace ns)
         {
             return selectedNodes
                 .Select(n => n.Name == ns + "OE" ? n : n.Ancestors(ns + "OE").FirstOrDefault())
@@ -292,7 +293,7 @@ namespace TeXShift.Core.OneNote
         /// <summary>
         /// Builds text from a hierarchical structure of OE nodes.
         /// </summary>
-        private string BuildTextFromOENodes(System.Collections.Generic.List<XElement> parentOEs, XNamespace ns)
+        private string BuildTextFromOENodes(List<XElement> parentOEs, XNamespace ns)
         {
             // Reconstruct hierarchical relationship: top-level OEs are those whose parent isn't also selected
             var sb = new StringBuilder();
@@ -352,7 +353,7 @@ namespace TeXShift.Core.OneNote
         /// <summary>
         /// Collects object IDs from OE nodes and adds them to the result.
         /// </summary>
-        private void CollectObjectIds(System.Collections.Generic.List<XElement> parentOEs, ReadResult result)
+        private void CollectObjectIds(List<XElement> parentOEs, ReadResult result)
         {
             foreach (var oe in parentOEs)
             {
@@ -473,7 +474,7 @@ namespace TeXShift.Core.OneNote
             return element.Descendants(ns + "Table").Any() || element.Descendants(ns + "Image").Any();
         }
 
-        private static bool ContainsNonTextConvertibleContent(System.Collections.Generic.IEnumerable<XElement> elements, XNamespace ns)
+        private static bool ContainsNonTextConvertibleContent(IEnumerable<XElement> elements, XNamespace ns)
         {
             if (elements == null)
             {

@@ -16,7 +16,7 @@ namespace TeXShift.Core.OneNote
     public class OneNotePageWriter : IContentWriter
     {
         private readonly OneNoteInterop.Application _oneNoteApp;
-        private readonly XNamespace _ns = "http://schemas.microsoft.com/office/onenote/2013/onenote";
+        private readonly XNamespace _ns = OneNoteXml.Namespace;
 
         public OneNotePageWriter(OneNoteInterop.Application oneNoteApp)
         {
@@ -213,15 +213,6 @@ namespace TeXShift.Core.OneNote
 
             return outline.Descendants(_ns + "Tag")
                 .Any(tag => string.Equals((string)tag.Attribute("index"), "0", StringComparison.Ordinal));
-        }
-
-        /// <summary>
-        /// Finds a node in the XML document by its objectID attribute.
-        /// </summary>
-        private XElement FindNodeByObjectId(XDocument doc, string objectId, XNamespace ns)
-        {
-            return doc.Descendants()
-                .FirstOrDefault(e => e.Attribute("objectID")?.Value == objectId);
         }
 
         /// <summary>
