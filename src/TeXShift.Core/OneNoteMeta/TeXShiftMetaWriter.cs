@@ -326,12 +326,13 @@ namespace TeXShift.Core.OneNoteMeta
                 string open = (string)element.Attribute("open");
                 string close = (string)element.Attribute("close");
 
-                // MathML mfenced defaults.
-                if (string.IsNullOrEmpty(open))
+                // MathML defaults apply only when the attribute is absent.
+                // An explicitly empty value represents a one-sided fence.
+                if (open == null)
                 {
                     open = "(";
                 }
-                if (string.IsNullOrEmpty(close))
+                if (close == null)
                 {
                     close = ")";
                 }
