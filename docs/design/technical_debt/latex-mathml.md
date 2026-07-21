@@ -19,34 +19,7 @@ LaTeX 到 MathML 转换使用 MathJax 实现，但 OneNote 对 MathML 的支持�
 
 ## 未解决的问题
 
-### 1. 连续多个 munderover 结构
-
-**现象**：`\sum_{i=1}^{n} \sum_{j=1}^{m} a_{ij}` 等连续多个带上下标的大运算符显示空白
-
-**正常的公式**：
-- 单个求和：`\sum_{i=1}^{n} i` ✅
-- 单个求积：`\prod_{i=1}^{n} i` ✅
-- 带复杂内容的单个求和：`\sum_{k=0}^{\infty} \frac{x^k}{k!}` ✅
-
-**有问题的公式**：
-- 双重求和：`\sum_{i=1}^{n} \sum_{j=1}^{m} a_{ij}` ❌
-
-**分析**：
-- OneMark 转换同类公式也失败（空白）
-- 只有 OneNote 原生手写公式能正常显示
-- 原生公式结构与 MathJax 生成的几乎一致
-
-**尝试过的修复（均无效）**：
-- 移除/保留 `display="block"`
-- `munderover` 转 `msubsup`
-- 添加 `stretchy="false"` 到运算符
-- HTML 实体转 Unicode 直接字符
-- 移除单元素 mrow 包裹
-- 移除零宽空格 span 包裹
-
-**结论**：可能是 OneNote API 对连续 munderover 的限制，暂无解决方案
-
-### 2. LaTeX 换行符 `\\`
+### 1. LaTeX 换行符 `\\`
 
 **现象**：非矩阵环境中的 `\\` 换行符不生效，`a \\ b` 显示为 `ab`
 
@@ -62,7 +35,7 @@ LaTeX 到 MathML 转换使用 MathJax 实现，但 OneNote 对 MathML 的支持�
 
 **注意**：矩阵内的 `\\` 正常工作，因为矩阵使用 `<mtr>` 行元素
 
-### 3. 页面其他公式变化
+### 2. 页面其他公式变化
 
 **现象**：转换某些公式时，页面上已有的其他公式会被重新解析，导致格式变化
 
@@ -83,12 +56,12 @@ LaTeX 到 MathML 转换使用 MathJax 实现，但 OneNote 对 MathML 的支持�
 - 极限（无上标）：`\lim_{x \to 0}`
 - 简单括号组合：`(a, b, c)`, `[a, b]`
 - 单个求和/求积：`\sum_{i=1}^{n} i`, `\prod_{i=1}^{n} i`
+- 连续多个带上下限的大运算符：`\sum_{i=1}^{n} \sum_{j=1}^{m} a_{ij}`
 - 矩阵：`pmatrix`, `bmatrix`, `vmatrix` 等（括号自动拉伸）
 - 自动拉伸括号：`\left( \frac{a}{b} \right)` 等
 
 ## 不支持/有问题的公式类型
 
-- 连续多个带上下标的大运算符：`\sum_{i=1}^{n} \sum_{j=1}^{m}`
 - 非矩阵环境的换行：`a \\ b`
 
 ## 相关文件
