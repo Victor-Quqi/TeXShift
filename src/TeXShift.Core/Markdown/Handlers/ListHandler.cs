@@ -16,14 +16,22 @@ namespace TeXShift.Core.Markdown.Handlers
         {
             var listBlock = (ListBlock)block;
             var elements = new List<XElement>();
+            var orderedStart = 1;
+            if (listBlock.IsOrdered && !int.TryParse(listBlock.OrderedStart, out orderedStart))
+            {
+                orderedStart = 1;
+            }
 
             // ProcessListItemBlock returns multiple elements: the list item OE followed by
             // any sibling content (code blocks, blockquotes) that should appear after it.
             // Nested lists remain as OEChildren for proper indentation.
+            var isFirstItem = true;
             foreach (var listItem in listBlock.OfType<ListItemBlock>())
             {
-                var itemElements = await ProcessListItemBlockAsync(listItem, listBlock.IsOrdered, context).ConfigureAwait(false);
+                var itemStart = isFirstItem ? orderedStart : 1;
+                var itemElements = await ProcessListItemBlockAsync(listItem, listBlock.IsOrdered, itemStart, context).ConfigureAwait(false);
                 elements.AddRange(itemElements);
+                isFirstItem = false;
             }
 
             return elements;
@@ -34,7 +42,7 @@ namespace TeXShift.Core.Markdown.Handlers
          /// - Nested ListBlocks remain as OEChildren (for proper indentation)
          /// - Other blocks (CodeBlock, QuoteBlock, etc.) become siblings for full-width display
          /// </summary>
-        private async Task<IReadOnlyList<XElement>> ProcessListItemBlockAsync(ListItemBlock listItem, bool isOrdered, IMarkdownConverterContext context)
+        private async Task<IReadOnlyList<XElement>> ProcessListItemBlockAsync(ListItemBlock listItem, bool isOrdered, int orderedStart, IMarkdownConverterContext context)
         {
             var ns = context.OneNoteNamespace;
             var styleConfig = context.StyleConfig;
@@ -44,7 +52,7 @@ namespace TeXShift.Core.Markdown.Handlers
             var taskList = GetTaskListFromBlock(firstBlock);
 
             // Create the main OE element with spacing and list marker
-            var oe = CreateListItemOE(ns, styleConfig, isOrdered, taskList);
+            var oe = CreateListItemOE(ns, styleConfig, isOrdered, orderedStart, taskList);
 
             // Add the main text/image content
             await AddMainContentAsync(oe, firstBlock, taskList, ns, context).ConfigureAwait(false);
@@ -71,7 +79,7 @@ namespace TeXShift.Core.Markdown.Handlers
         /// <summary>
         /// Creates the base OE element with spacing and list marker (Tag or List element).
         /// </summary>
-        private XElement CreateListItemOE(XNamespace ns, Configuration.OneNoteStyleConfig styleConfig, bool isOrdered, TaskList taskList)
+        private XElement CreateListItemOE(XNamespace ns, Configuration.OneNoteStyleConfig styleConfig, bool isOrdered, int orderedStart, TaskList taskList)
         {
             var oe = new XElement(ns + "OE");
 
@@ -88,7 +96,7 @@ namespace TeXShift.Core.Markdown.Handlers
             }
             else
             {
-                oe.Add(CreateListElement(ns, isOrdered));
+                oe.Add(CreateListElement(ns, isOrdered, orderedStart));
             }
 
             return oe;
@@ -116,16 +124,23 @@ namespace TeXShift.Core.Markdown.Handlers
         /// <summary>
         /// Creates a List element for bullet or numbered list.
         /// </summary>
-        private XElement CreateListElement(XNamespace ns, bool isOrdered)
+        private XElement CreateListElement(XNamespace ns, bool isOrdered, int orderedStart)
         {
             var listElement = new XElement(ns + "List");
 
             if (isOrdered)
             {
-                listElement.Add(new XElement(ns + "Number",
+                var numberElement = new XElement(ns + "Number",
                     new XAttribute("numberSequence", "0"),
                     new XAttribute("numberFormat", "##."),
-                    new XAttribute("fontSize", "11.0")));
+                    new XAttribute("fontSize", "11.0"));
+
+                if (orderedStart != 1)
+                {
+                    numberElement.Add(new XAttribute("restartNumberingAt", orderedStart));
+                }
+
+                listElement.Add(numberElement);
             }
             else
             {
