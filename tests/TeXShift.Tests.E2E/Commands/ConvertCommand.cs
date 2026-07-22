@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using TeXShift.Core.Services;
 using TeXShift.Tests.E2E.Models;
@@ -10,6 +12,8 @@ namespace TeXShift.Tests.E2E.Commands
 {
     internal static class ConvertCommand
     {
+        private static readonly Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
         public static async Task<int> RunAsync(FileInfo input, string markdown, DirectoryInfo output, bool cleanup)
         {
             if (output == null)
@@ -50,6 +54,8 @@ namespace TeXShift.Tests.E2E.Commands
             }
 
             var stopwatch = Stopwatch.StartNew();
+            var lifecycleStopwatch = Stopwatch.StartNew();
+            var lifecycleEntries = new List<LifecycleEntry>();
             var startUtc = DateTime.UtcNow;
             TestPageManager pageManager = null;
             ServiceContainer serviceContainer = null;
@@ -57,13 +63,42 @@ namespace TeXShift.Tests.E2E.Commands
 
             try
             {
-                pageManager = await TestPageManager.CreateAsync().ConfigureAwait(false);
+                var stepStopwatch = Stopwatch.StartNew();
+                try
+                {
+                    pageManager = await TestPageManager.CreateAsync().ConfigureAwait(false);
+                }
+                finally
+                {
+                    AddLifecycleEntry(
+                        lifecycleEntries,
+                        "E2E.AttachOrLaunchOneNote",
+                        stepStopwatch,
+                        pageManager == null ? string.Empty : pageManager.LaunchedOneNoteProcess ? "launched" : "attached");
+                }
+
                 serviceContainer = new ServiceContainer();
 
                 // Save current page so we can navigate back after test
-                await pageManager.SaveCurrentPageAsync().ConfigureAwait(false);
+                stepStopwatch = Stopwatch.StartNew();
+                try
+                {
+                    await pageManager.SaveCurrentPageAsync().ConfigureAwait(false);
+                }
+                finally
+                {
+                    AddLifecycleEntry(lifecycleEntries, "E2E.SaveCurrentPage", stepStopwatch);
+                }
 
-                pageId = await pageManager.CreateTestPageAsync(testName, markdownContent).ConfigureAwait(false);
+                stepStopwatch = Stopwatch.StartNew();
+                try
+                {
+                    pageId = await pageManager.CreateTestPageAsync(testName, markdownContent).ConfigureAwait(false);
+                }
+                finally
+                {
+                    AddLifecycleEntry(lifecycleEntries, "E2E.CreateTestPage", stepStopwatch);
+                }
 
                 var orchestrator = serviceContainer.CreateConversionOrchestrator(pageManager.OneNoteApp);
                 var options = new ConversionOptions
@@ -73,7 +108,21 @@ namespace TeXShift.Tests.E2E.Commands
                     OutputDirectory = output.FullName
                 };
 
-                var result = await orchestrator.ExecuteAsync(options).ConfigureAwait(false);
+                ConversionResult result;
+                stepStopwatch = Stopwatch.StartNew();
+                try
+                {
+                    result = await orchestrator.ExecuteAsync(options).ConfigureAwait(false);
+                }
+                finally
+                {
+                    AddLifecycleEntry(
+                        lifecycleEntries,
+                        "E2E.ConversionSession",
+                        stepStopwatch,
+                        "orchestrator ExecuteAsync");
+                }
+
                 stopwatch.Stop();
 
                 var files = CommandHelpers.CollectOutputFiles(output, startUtc, result?.PdfPath);
@@ -139,43 +188,153 @@ namespace TeXShift.Tests.E2E.Commands
             }
             finally
             {
-                if (cleanup && pageId != null && pageManager != null)
+                try
                 {
-                    try
+                    // Restore first so the view and restore pointer never sit on the Quick Notes fallback while artifacts are deleted.
+                    if (pageManager != null)
                     {
-                        await pageManager.DeletePageAsync(pageId).ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        CommandHelpers.EmitError("清理测试页面失败。", ex);
+                        var stepStopwatch = Stopwatch.StartNew();
+                        try
+                        {
+                            await pageManager.RestoreOriginalPageAsync().ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            CommandHelpers.EmitError("返回原始页面失败。", ex);
+                        }
+                        finally
+                        {
+                            AddLifecycleEntry(lifecycleEntries, "E2E.RestoreOriginalPage", stepStopwatch);
+                        }
                     }
 
-                    try
+                    if (cleanup && pageId != null && pageManager != null)
                     {
-                        await pageManager.CleanupTestResourcesAsync().ConfigureAwait(false);
+                        var stepStopwatch = Stopwatch.StartNew();
+                        try
+                        {
+                            await pageManager.DeletePageAsync(pageId).ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            CommandHelpers.EmitError("清理测试页面失败。", ex);
+                        }
+                        finally
+                        {
+                            AddLifecycleEntry(lifecycleEntries, "E2E.DeleteTestPage", stepStopwatch);
+                        }
+
+                        stepStopwatch = Stopwatch.StartNew();
+                        try
+                        {
+                            await pageManager.CleanupTestResourcesAsync().ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            CommandHelpers.EmitError("清理测试笔记本失败。", ex);
+                        }
+                        finally
+                        {
+                            AddLifecycleEntry(lifecycleEntries, "E2E.CleanupTestResources", stepStopwatch);
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        CommandHelpers.EmitError("清理测试笔记本失败。", ex);
-                    }
+
+                    serviceContainer?.Dispose();
+                    pageManager?.Dispose();
                 }
-
-                // Navigate back to original page after cleanup
-                if (pageManager != null)
+                finally
                 {
-                    try
-                    {
-                        await pageManager.RestoreOriginalPageAsync().ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        CommandHelpers.EmitError("返回原始页面失败。", ex);
-                    }
+                    lifecycleStopwatch.Stop();
+                    TryAppendLifecycleReport(output, startUtc, lifecycleStopwatch.ElapsedMilliseconds, lifecycleEntries);
                 }
-
-                serviceContainer?.Dispose();
-                pageManager?.Dispose();
             }
+        }
+
+        private static void AddLifecycleEntry(
+            ICollection<LifecycleEntry> entries,
+            string step,
+            Stopwatch stopwatch,
+            string detail = "")
+        {
+            stopwatch.Stop();
+            entries.Add(new LifecycleEntry
+            {
+                Step = step,
+                DurationMs = stopwatch.ElapsedMilliseconds,
+                Detail = detail ?? string.Empty
+            });
+        }
+
+        private static void TryAppendLifecycleReport(
+            DirectoryInfo output,
+            DateTime startUtc,
+            long totalMs,
+            IEnumerable<LifecycleEntry> entries)
+        {
+            try
+            {
+                string perfFileName = CommandHelpers.FindNewestFile(output, "F06_Perf_*.txt", startUtc);
+                string section = FormatLifecycleSection(totalMs, entries);
+
+                if (string.IsNullOrWhiteSpace(perfFileName))
+                {
+                    string newPerfPath = Path.Combine(output.FullName, $"F06_Perf_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+                    File.WriteAllText(newPerfPath, section, Utf8NoBom);
+                    return;
+                }
+
+                string perfPath = Path.Combine(output.FullName, perfFileName);
+                string existingReport = File.ReadAllText(perfPath);
+                string separator = GetSectionSeparator(existingReport);
+                File.AppendAllText(perfPath, separator + section, Utf8NoBom);
+            }
+            catch (Exception ex)
+            {
+                CommandHelpers.EmitError("追加 E2E 生命周期性能数据失败。", ex);
+            }
+        }
+
+        private static string FormatLifecycleSection(long totalMs, IEnumerable<LifecycleEntry> entries)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("E2E Lifecycle");
+            builder.AppendLine($"TotalMs\t{totalMs}");
+            builder.AppendLine();
+            builder.AppendLine("Depth\tStep\tDurationMs\tDetail");
+
+            foreach (var entry in entries)
+            {
+                builder.Append("0\t");
+                builder.Append(entry.Step);
+                builder.Append('\t');
+                builder.Append(entry.DurationMs);
+                builder.Append('\t');
+                builder.AppendLine(entry.Detail);
+            }
+
+            return builder.ToString();
+        }
+
+        private static string GetSectionSeparator(string existingReport)
+        {
+            if (string.IsNullOrEmpty(existingReport))
+            {
+                return string.Empty;
+            }
+
+            if (existingReport.EndsWith("\r\n\r\n", StringComparison.Ordinal) ||
+                existingReport.EndsWith("\n\n", StringComparison.Ordinal))
+            {
+                return string.Empty;
+            }
+
+            if (existingReport.EndsWith("\r\n", StringComparison.Ordinal) ||
+                existingReport.EndsWith("\n", StringComparison.Ordinal))
+            {
+                return Environment.NewLine;
+            }
+
+            return Environment.NewLine + Environment.NewLine;
         }
 
         private static bool IsPdfExportFailure(ConversionResult result)
@@ -192,6 +351,13 @@ namespace TeXShift.Tests.E2E.Commands
 
             return result.Error != null &&
                    result.Error.Message.IndexOf("PDF export", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private sealed class LifecycleEntry
+        {
+            public string Step { get; set; }
+            public long DurationMs { get; set; }
+            public string Detail { get; set; }
         }
     }
 }
