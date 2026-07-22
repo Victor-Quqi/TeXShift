@@ -14,6 +14,8 @@ namespace TeXShift.Tests.E2E
 
             rootCommand.Subcommands.Add(CreateConvertCommand());
             rootCommand.Subcommands.Add(CreateReverseXmlCommand());
+            rootCommand.Subcommands.Add(CreateDumpCommand());
+            rootCommand.Subcommands.Add(CreateVerifyRestoreCommand());
 
             return rootCommand.Parse(args).Invoke();
         }
@@ -93,6 +95,62 @@ namespace TeXShift.Tests.E2E
                 var strict = parseResult.GetValue(strictOption);
 
                 return await ReverseXmlCommand.RunAsync(inputXml, output, strict).ConfigureAwait(false);
+            });
+
+            return command;
+        }
+
+        private static Command CreateDumpCommand()
+        {
+            var hierarchyOption = new Option<bool>("--hierarchy")
+            {
+                Description = "Print the full OneNote page hierarchy XML"
+            };
+
+            var pageOption = new Option<string>("--page")
+            {
+                Description = "Print basic XML for the specified OneNote page ID"
+            };
+
+            var outputOption = new Option<FileInfo>("--output", "-o")
+            {
+                Description = "Write XML to a UTF-8 file instead of stdout"
+            };
+
+            var command = new Command("dump", "Inspect OneNote XML without changing content");
+            command.Options.Add(hierarchyOption);
+            command.Options.Add(pageOption);
+            command.Options.Add(outputOption);
+
+            command.SetAction(async (parseResult, cancellationToken) =>
+            {
+                var hierarchy = parseResult.GetValue(hierarchyOption);
+                var page = parseResult.GetValue(pageOption);
+                var output = parseResult.GetValue(outputOption);
+
+                return await DumpCommand.RunAsync(hierarchy, page, output).ConfigureAwait(false);
+            });
+
+            return command;
+        }
+
+        private static Command CreateVerifyRestoreCommand()
+        {
+            var pagesOption = new Option<string>("--pages")
+            {
+                Description = "Comma-separated OneNote page IDs",
+                Required = true
+            };
+
+            var command = new Command(
+                "verify-restore",
+                "Repeatedly closes and relaunches the running OneNote. Run deliberately on a dev machine; never run in CI.");
+            command.Options.Add(pagesOption);
+
+            command.SetAction(async (parseResult, cancellationToken) =>
+            {
+                var pages = parseResult.GetValue(pagesOption);
+                return await VerifyRestoreCommand.RunAsync(pages).ConfigureAwait(false);
             });
 
             return command;

@@ -29,6 +29,7 @@ namespace TeXShift.Tests.E2E
         private const int OneNoteMinimizeRetryIntervalMs = 300;
         private const int OneNoteComReadyTimeoutMs = 10000;
         private const int OneNoteComReadyPollIntervalMs = 250;
+        private const int OneNoteCloseTimeoutMs = 8000;
         private static readonly XNamespace OneNoteNamespace = OneNoteXml.Namespace;
 
         [DllImport("user32.dll")]
@@ -92,6 +93,145 @@ namespace TeXShift.Tests.E2E
         }
 
         public OneNoteInterop.Application OneNoteApp => _oneNoteApp;
+
+        public bool LaunchedOneNoteProcess => _launchedOneNoteProcess;
+
+        public Task<string> GetHierarchyPagesXmlAsync()
+        {
+            return Task.Run(() => _staRunner.Run(() =>
+            {
+                EnsureNotDisposed();
+                _oneNoteApp.GetHierarchy(null, OneNoteInterop.HierarchyScope.hsPages, out string hierarchyXml, OneNoteInterop.XMLSchema.xs2013);
+                return hierarchyXml;
+            }));
+        }
+
+        public Task<string> GetPageContentBasicXmlAsync(string pageId)
+        {
+            if (string.IsNullOrWhiteSpace(pageId))
+            {
+                throw new ArgumentException("Page ID is required.", nameof(pageId));
+            }
+
+            return Task.Run(() => _staRunner.Run(() =>
+            {
+                EnsureNotDisposed();
+                _oneNoteApp.GetPageContent(pageId, out string pageXml, OneNoteInterop.PageInfo.piBasic, OneNoteInterop.XMLSchema.xs2013);
+                return pageXml;
+            }));
+        }
+
+        public Task NavigateToAsync(string pageId)
+        {
+            if (string.IsNullOrWhiteSpace(pageId))
+            {
+                throw new ArgumentException("Page ID is required.", nameof(pageId));
+            }
+
+            return Task.Run(() => _staRunner.Run(() =>
+            {
+                EnsureNotDisposed();
+                _oneNoteApp.NavigateTo(pageId, null, false);
+            }));
+        }
+
+        public Task NavigateToWhenReadyAsync(string pageId)
+        {
+            if (string.IsNullOrWhiteSpace(pageId))
+            {
+                throw new ArgumentException("Page ID is required.", nameof(pageId));
+            }
+
+            return Task.Run(() => _staRunner.Run(() =>
+            {
+                EnsureNotDisposed();
+                var deadline = DateTime.UtcNow.AddMilliseconds(OneNoteComReadyTimeoutMs);
+
+                while (true)
+                {
+                    try
+                    {
+                        _oneNoteApp.NavigateTo(pageId, null, false);
+                        return;
+                    }
+                    catch (COMException)
+                    {
+                        if (DateTime.UtcNow >= deadline)
+                        {
+                            throw;
+                        }
+                    }
+
+                    Thread.Sleep(OneNoteComReadyPollIntervalMs);
+                }
+            }));
+        }
+
+        public Task WaitForOneNoteReadyAsync()
+        {
+            return Task.Run(() => _staRunner.Run(() =>
+            {
+                EnsureNotDisposed();
+                WaitForCurrentPage();
+                if (string.IsNullOrWhiteSpace(_originalPageId))
+                {
+                    throw new TimeoutException("OneNote did not expose a current page before the COM readiness timeout.");
+                }
+            }));
+        }
+
+        public void CloseLaunchedOneNoteOnDispose()
+        {
+            EnsureNotDisposed();
+            _shouldCloseOneNote = _launchedOneNoteProcess;
+        }
+
+        public static void CloseAllOneNoteProcesses()
+        {
+            Process[] processes = null;
+
+            try
+            {
+                processes = Process.GetProcessesByName("ONENOTE");
+                foreach (var process in processes)
+                {
+                    try
+                    {
+                        process.CloseMainWindow();
+                        if (!process.WaitForExit(OneNoteCloseTimeoutMs))
+                        {
+                            process.Kill();
+                        }
+                    }
+                    catch
+                    {
+                        // The process may exit while it is being closed
+                    }
+                    finally
+                    {
+                        process.Dispose();
+                    }
+                }
+
+                processes = null;
+            }
+            catch
+            {
+                // Process enumeration may fail while OneNote is shutting down
+            }
+            finally
+            {
+                if (processes != null)
+                {
+                    foreach (var process in processes)
+                    {
+                        process.Dispose();
+                    }
+                }
+            }
+
+            WaitForOneNoteProcessesToSettle();
+        }
 
         public Task<string> CreateTestPageAsync(string testName, string markdownContent)
         {
@@ -307,6 +447,26 @@ namespace TeXShift.Tests.E2E
                         process.Dispose();
                     }
                 }
+            }
+        }
+
+        private static void WaitForOneNoteProcessesToSettle()
+        {
+            var deadline = DateTime.UtcNow.AddMilliseconds(OneNoteStartupWindowTimeoutMs);
+            int consecutiveEmptyPolls = 0;
+
+            while (DateTime.UtcNow < deadline)
+            {
+                if (IsOneNoteProcessRunning())
+                {
+                    consecutiveEmptyPolls = 0;
+                }
+                else if (++consecutiveEmptyPolls >= 2)
+                {
+                    return;
+                }
+
+                Thread.Sleep(OneNoteStartupWindowPollIntervalMs);
             }
         }
 
