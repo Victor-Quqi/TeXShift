@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Management;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
+using Microsoft.Win32;
 using OneNoteInterop = Microsoft.Office.Interop.OneNote;
 using TeXShift.Core.OneNote;
 using TeXShift.Core.Utils;
@@ -17,7 +20,22 @@ namespace TeXShift.Tests.E2E
     {
         private const string TestNotebookName = "TeXShift_E2E_Tests";
         private const string TestSectionName = "E2E";
+        private const string OneNoteAppPathRegistryKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\onenote.exe";
+        private const string DefaultOneNoteExecutablePath = @"C:\Program Files\Microsoft Office\root\Office16\ONENOTE.EXE";
+        private const int SwShowMinNoActive = 7;
+        private const int OneNoteStartupWindowTimeoutMs = 10000;
+        private const int OneNoteStartupWindowPollIntervalMs = 200;
+        private const int OneNoteMinimizeTimeoutMs = 3000;
+        private const int OneNoteMinimizeRetryIntervalMs = 300;
+        private const int OneNoteComReadyTimeoutMs = 10000;
+        private const int OneNoteComReadyPollIntervalMs = 250;
         private static readonly XNamespace OneNoteNamespace = OneNoteXml.Namespace;
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        [DllImport("user32.dll")]
+        private static extern bool IsIconic(IntPtr hWnd);
 
         private static bool IsBoolAttributeTrue(XElement element, string attributeName)
         {
@@ -43,12 +61,24 @@ namespace TeXShift.Tests.E2E
         private bool _createdNotebook;  // Track if we created the notebook
         private string _notebookPath;   // Path to delete on cleanup
         private string _originalPageId; // Page ID to navigate back to after test
-        private bool _hadWindowsOnStart; // Track if OneNote had windows when we started
+        private bool _launchedOneNoteProcess; // Track if we launched OneNote
         private bool _shouldCloseOneNote; // Flag to close OneNote on dispose
 
         private TestPageManager()
         {
             _staRunner = new StaTaskRunner("TeXShift_E2E_OneNote_STA");
+
+            // OneNote does not expose its restore target without a real window. Navigating to
+            // and deleting E2E pages in that state can leave its saved page pointer dangling.
+            LaunchOneNoteWithWindowIfNeeded();
+
+            if (_launchedOneNoteProcess)
+            {
+                // Wait before COM activation so it attaches to the WMI-launched window instead
+                // of racing ahead and starting a headless -Embedding instance.
+                WaitForOneNoteMainWindow();
+            }
+
             _oneNoteApp = _staRunner.Run(() =>
             {
                 var appType = Type.GetTypeFromProgID("OneNote.Application");
@@ -114,6 +144,17 @@ namespace TeXShift.Tests.E2E
         {
             EnsureNotDisposed();
 
+            if (_launchedOneNoteProcess)
+            {
+                WaitForCurrentPage();
+                return;
+            }
+
+            SaveCurrentPageOnce();
+        }
+
+        private void SaveCurrentPageOnce()
+        {
             OneNoteInterop.Window window = null;
             OneNoteInterop.Windows windows = null;
 
@@ -122,11 +163,9 @@ namespace TeXShift.Tests.E2E
                 windows = _oneNoteApp.Windows;
                 if (windows == null || windows.Count == 0)
                 {
-                    _hadWindowsOnStart = false;
                     return;
                 }
 
-                _hadWindowsOnStart = true;
                 window = windows.CurrentWindow;
                 if (window != null)
                 {
@@ -140,20 +179,231 @@ namespace TeXShift.Tests.E2E
             }
         }
 
+        private void WaitForCurrentPage()
+        {
+            var deadline = DateTime.UtcNow.AddMilliseconds(OneNoteComReadyTimeoutMs);
+
+            while (DateTime.UtcNow < deadline)
+            {
+                OneNoteInterop.Window window = null;
+                OneNoteInterop.Windows windows = null;
+
+                try
+                {
+                    windows = _oneNoteApp.Windows;
+                    if (windows != null && windows.Count > 0)
+                    {
+                        window = windows.CurrentWindow;
+                        string currentPageId = window?.CurrentPageId;
+                        if (!string.IsNullOrWhiteSpace(currentPageId))
+                        {
+                            _originalPageId = currentPageId;
+                            return;
+                        }
+                    }
+                }
+                catch
+                {
+                    // OneNote may reject COM calls while its UI is still initializing
+                }
+                finally
+                {
+                    if (window != null)
+                    {
+                        try
+                        {
+                            Marshal.ReleaseComObject(window);
+                        }
+                        catch
+                        {
+                            // Ignore release failures during startup polling
+                        }
+                    }
+
+                    if (windows != null)
+                    {
+                        try
+                        {
+                            Marshal.ReleaseComObject(windows);
+                        }
+                        catch
+                        {
+                            // Ignore release failures during startup polling
+                        }
+                    }
+                }
+
+                Thread.Sleep(OneNoteComReadyPollIntervalMs);
+            }
+        }
+
         private void RestoreOriginalPage()
         {
             EnsureNotDisposed();
+
+            _shouldCloseOneNote = _launchedOneNoteProcess;
 
             if (!string.IsNullOrWhiteSpace(_originalPageId))
             {
                 _oneNoteApp.NavigateTo(_originalPageId, null, false);
                 return;
             }
+        }
 
-            // If OneNote wasn't open before, mark it for closing on dispose
-            if (!_hadWindowsOnStart)
+        private void LaunchOneNoteWithWindowIfNeeded()
+        {
+            if (IsOneNoteProcessRunning())
             {
-                _shouldCloseOneNote = true;
+                return;
+            }
+
+            try
+            {
+                string executablePath = GetOneNoteExecutablePath();
+                string commandLine = $"\"{executablePath.Trim().Trim('\"')}\"";
+
+                // WMI launches through WmiPrvSE so OneNote cannot inherit foreground activation rights.
+                using (var processClass = new ManagementClass("Win32_Process"))
+                using (var inputParameters = processClass.GetMethodParameters("Create"))
+                {
+                    inputParameters["CommandLine"] = commandLine;
+
+                    using (var outputParameters = processClass.InvokeMethod("Create", inputParameters, null))
+                    {
+                        if (outputParameters != null)
+                        {
+                            object returnValue = outputParameters["ReturnValue"];
+                            _launchedOneNoteProcess = returnValue != null && Convert.ToUInt32(returnValue) == 0;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Fall back to COM activation if WMI cannot launch OneNote
+            }
+        }
+
+        private static bool IsOneNoteProcessRunning()
+        {
+            Process[] processes = null;
+
+            try
+            {
+                processes = Process.GetProcessesByName("ONENOTE");
+                return processes.Length > 0;
+            }
+            catch
+            {
+                // Avoid starting a duplicate process when detection is unavailable
+                return true;
+            }
+            finally
+            {
+                if (processes != null)
+                {
+                    foreach (var process in processes)
+                    {
+                        process.Dispose();
+                    }
+                }
+            }
+        }
+
+        private static string GetOneNoteExecutablePath()
+        {
+            try
+            {
+                using (var key = Registry.LocalMachine.OpenSubKey(OneNoteAppPathRegistryKey))
+                {
+                    string registeredPath = key?.GetValue(null) as string;
+                    if (!string.IsNullOrWhiteSpace(registeredPath))
+                    {
+                        return registeredPath;
+                    }
+                }
+            }
+            catch
+            {
+                // Use the standard Office x64 installation path below
+            }
+
+            return DefaultOneNoteExecutablePath;
+        }
+
+        private static void WaitForOneNoteMainWindow()
+        {
+            var deadline = DateTime.UtcNow.AddMilliseconds(OneNoteStartupWindowTimeoutMs);
+
+            while (DateTime.UtcNow < deadline)
+            {
+                IntPtr mainWindowHandle = GetOneNoteMainWindowHandle();
+                if (mainWindowHandle != IntPtr.Zero)
+                {
+                    MinimizeOneNoteWindow(mainWindowHandle);
+                    return;
+                }
+
+                Thread.Sleep(OneNoteStartupWindowPollIntervalMs);
+            }
+        }
+
+        private static IntPtr GetOneNoteMainWindowHandle()
+        {
+            Process[] processes = null;
+
+            try
+            {
+                processes = Process.GetProcessesByName("ONENOTE");
+                foreach (var process in processes)
+                {
+                    try
+                    {
+                        process.Refresh();
+                        IntPtr mainWindowHandle = process.MainWindowHandle;
+                        if (mainWindowHandle != IntPtr.Zero)
+                        {
+                            return mainWindowHandle;
+                        }
+                    }
+                    catch
+                    {
+                        // The process may exit or still be initializing
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore process lookup failures while OneNote is starting
+            }
+            finally
+            {
+                if (processes != null)
+                {
+                    foreach (var process in processes)
+                    {
+                        process.Dispose();
+                    }
+                }
+            }
+
+            return IntPtr.Zero;
+        }
+
+        private static void MinimizeOneNoteWindow(IntPtr windowHandle)
+        {
+            var deadline = DateTime.UtcNow.AddMilliseconds(OneNoteMinimizeTimeoutMs);
+
+            // OneNote can override minimize requests while its startup sequence is still showing the window.
+            while (DateTime.UtcNow < deadline)
+            {
+                ShowWindow(windowHandle, SwShowMinNoActive);
+                Thread.Sleep(OneNoteMinimizeRetryIntervalMs);
+
+                if (IsIconic(windowHandle))
+                {
+                    return;
+                }
             }
         }
 

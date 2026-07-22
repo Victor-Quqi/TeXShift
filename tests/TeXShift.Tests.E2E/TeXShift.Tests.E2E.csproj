@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <!-- Framework references -->
+    <Reference Include="System.Management" />
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
 
