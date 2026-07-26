@@ -7,6 +7,7 @@ using Markdig.Extensions.Mathematics;
 using Markdig.Extensions.TaskLists;
 using TeXShift.Core.Configuration;
 using TeXShift.Core.Markdown.Abstractions;
+using TeXShift.Core.Markdown.Processing;
 using TeXShift.Core.Math;
 using TeXShift.Core.Utils;
 
@@ -73,6 +74,10 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                 else if (inline is LineBreakInline)
                 {
                     html.Append("\n");
+                }
+                else if (inline is HtmlInline htmlInline && HtmlLineBreakParser.IsLineBreakTag(htmlInline.Tag))
+                {
+                    html.Append('\n');
                 }
                 else if (inline is MathInline mathInline)
                 {

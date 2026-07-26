@@ -93,6 +93,7 @@ namespace TeXShift.Core.Markdown
                 { typeof(ListBlock), new ListHandler() },
                 { typeof(CodeBlock), new CodeBlockHandler() },
                 { typeof(FencedCodeBlock), new CodeBlockHandler() },
+                { typeof(HtmlBlock), new HtmlBlockHandler() },
                 { typeof(ThematicBreakBlock), new HorizontalRuleHandler() },
                 { typeof(QuoteBlock), new QuoteBlockHandler() },
                 { typeof(Table), new TableHandler() },
