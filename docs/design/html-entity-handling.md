@@ -8,8 +8,8 @@
 ## 解决方案：三阶段处理
 
 ```
-Stage 1: Protect     →  Stage 2: Code/Math处理  →  Stage 3: Restore & Decode
-(实体→占位符)           (代码还原,LaTeX解码)        (非代码解码,代码双重编码)
+Stage 1: Protect     →  Stage 2: Code/Math处理  →  Stage 3: Restore for OneNote HTML
+(实体→占位符)           (代码还原,LaTeX解码)        (非代码单层还原,代码双重编码)
 ```
 
 ## 关键代码
@@ -18,7 +18,7 @@ Stage 1: Protect     →  Stage 2: Code/Math处理  →  Stage 3: Restore & Deco
 - `Protect()`: 用占位符替换 HTML 实体，返回 entityMap
 - `RestoreForCode()`: 静态方法，将占位符还原为原始实体文本（不解码）
 - `DecodeForLatex()`: 静态方法，为 Math handlers 解码占位符
-- `RestoreAndDecode()`: 遍历 XML，非代码内容解码，代码内容双重编码
+- `RestoreForOneNoteHtml()`: 遍历 XML，非代码内容恢复为单层实体，代码内容双重编码
 
 ### MarkdownToOneNoteConverter.cs
 - `_currentEntityMap`: 存储当前转换的 entityMap
@@ -32,6 +32,16 @@ Stage 1: Protect     →  Stage 2: Code/Math处理  →  Stage 3: Restore & Deco
 
 ### MathBlockHandler.cs / InlineRenderer.cs
 - MathJax 处理前调用 `context.DecodeEntityPlaceholders(latex)`
+
+### 普通富文本的单层实体
+
+OneNote 会把 `<one:T>` 的 CDATA 解释为 HTML。普通文本中的实体应保留一层：
+
+```
+用户输入: &lt;br&gt;   (期望显示 "<br>")
+CDATA:    &lt;br&gt;
+渲染:     <br>          ✓ 字面文本，不会重新解释为标签
+```
 
 ## 代码块实体的双重编码
 

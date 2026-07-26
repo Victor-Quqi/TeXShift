@@ -150,8 +150,8 @@ namespace TeXShift.Core.Markdown
             oeChildren.Add(elements);
             outline.Add(oeChildren);
 
-            // Step 6: Restore and DECODE HTML entities (except in code blocks)
-            _entityProcessor.RestoreAndDecode(outline, entityMap, OneNoteNamespace, StyleConfig);
+            // Step 6: Restore HTML entities for OneNote (double-encode only in code)
+            _entityProcessor.RestoreForOneNoteHtml(outline, entityMap, OneNoteNamespace, StyleConfig);
 
             // Step 7: Persist source metadata for reverse conversion.
             TeXShiftMetaWriter.WriteSourceMeta(outline, sourceMarkdown, TeXShiftMetaKeys.ModeRender);

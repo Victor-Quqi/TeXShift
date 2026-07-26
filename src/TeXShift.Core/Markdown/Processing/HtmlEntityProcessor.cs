@@ -8,11 +8,11 @@ using TeXShift.Core.Utils;
 namespace TeXShift.Core.Markdown.Processing
 {
     /// <summary>
-    /// Protects HTML entities during Markdown processing, then decodes them in the final output.
-    /// This ensures proper LaTeX parsing while avoiding double-encoding issues.
+    /// Protects HTML entities during Markdown processing, then restores them for OneNote HTML.
+    /// This ensures proper LaTeX parsing while avoiding executable markup and double-encoding issues.
     /// 
-    /// For code blocks/inline code: entities are preserved as-is (no decoding)
-    /// For other content: entities are decoded (&amp;lt; → &lt;)
+    /// For code blocks/inline code: entities are double-encoded so their source remains visible.
+    /// For other content: entities are restored once so OneNote renders their character value.
     /// </summary>
     internal class HtmlEntityProcessor
     {
@@ -46,10 +46,10 @@ namespace TeXShift.Core.Markdown.Processing
         }
 
         /// <summary>
-        /// Restores and DECODES HTML entities in the generated OneNote XML.
-        /// Code elements (T elements inside code blocks) are NOT decoded.
+        /// Restores HTML entities in the generated OneNote XML.
+        /// Code elements are double-encoded so OneNote displays the entity source literally.
         /// </summary>
-        public void RestoreAndDecode(XElement outline, Dictionary<string, string> entityMap, XNamespace ns, OneNoteStyleConfig styleConfig)
+        public void RestoreForOneNoteHtml(XElement outline, Dictionary<string, string> entityMap, XNamespace ns, OneNoteStyleConfig styleConfig)
         {
             if (entityMap.Count == 0) return;
 
@@ -66,15 +66,16 @@ namespace TeXShift.Core.Markdown.Processing
                 var modified = false;
                 var updated = PlaceholderRegex.Replace(cdata.Value, match =>
                 {
-                    if (entityMap.TryGetValue(match.Value, out var entity))
+                    if (!entityMap.TryGetValue(match.Value, out var entity))
                     {
-                        modified = true;
-                        // Decode entities for non-code content, double-encode for code.
-                        // For code, HtmlEscaper.Escape converts "&lt;" to "&amp;lt;" so OneNote renders "&lt;".
-                        var preserve = isCodeBlockLine || IsWithinRanges(match.Index, inlineCodeRanges);
-                        return preserve ? HtmlEscaper.Escape(entity) : DecodeEntityStatic(entity);
+                        return match.Value;
                     }
-                    return match.Value;
+
+                    modified = true;
+                    var preserveSource = isCodeBlockLine || IsWithinRanges(match.Index, inlineCodeRanges);
+                    // OneNote interprets T/CDATA as HTML. A single entity layer renders the character safely;
+                    // code needs a second layer so the entity spelling itself remains visible.
+                    return preserveSource ? HtmlEscaper.Escape(entity) : entity;
                 });
 
                 if (modified)
