@@ -41,8 +41,8 @@
       },
       "Markdig.Signed": {
         "type": "Transitive",
-        "resolved": "0.44.0",
-        "contentHash": "mNxf8HrQA/clO8usqQhVc0BGlw0bJtZ76dic5KZGBPJZDX4UR67Jglwilkp5A//gPSMwcoY5EjLPppkZ/B4IMg==",
+        "resolved": "1.3.2",
+        "contentHash": "/jLOqXweEraazzn497/vJhbnHxjRfStMc6IOC9cHlBmlm03Mj50WOXdxX28bnAnk/wevjWQYnxrXMD5PKfxYYA==",
         "dependencies": {
           "System.Memory": "4.6.3"
         }
@@ -152,7 +152,7 @@
       "texshift.core": {
         "type": "Project",
         "dependencies": {
-          "Markdig.Signed": "[0.44.0, )",
+          "Markdig.Signed": "[1.3.2, )",
           "Microsoft.Web.WebView2": "[1.0.3650.58, )",
           "System.Buffers": "[4.6.1, )",
           "System.Drawing.Common": "[10.0.1, )",

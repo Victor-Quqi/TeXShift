@@ -66,6 +66,42 @@ namespace TeXShift.Core.Tests
         }
 
         [TestMethod]
+        public void AbbreviationBeforeEmphasisPreservesEmphasisNodes()
+        {
+            const string markdown =
+                "HTML supports **bold** and *italic*.\n\n" +
+                "*[HTML]: HyperText Markup Language";
+
+            using (var services = new ServiceContainer())
+            {
+                var document = Markdig.Markdown.Parse(markdown, services.MarkdownPipeline);
+                var delimiters = document
+                    .Descendants<EmphasisInline>()
+                    .Select(emphasis => emphasis.DelimiterCount)
+                    .ToArray();
+
+                CollectionAssert.AreEqual(new[] { 2, 1 }, delimiters);
+            }
+        }
+
+        [TestMethod]
+        public void PlusSignsParseInsideSuperscriptAndSubscript()
+        {
+            using (var services = new ServiceContainer())
+            {
+                var document = Markdig.Markdown.Parse(
+                    "Superscript^+^ and Subscript~+~.",
+                    services.MarkdownPipeline);
+                var delimiters = document
+                    .Descendants<EmphasisInline>()
+                    .Select(emphasis => $"{emphasis.DelimiterChar}:{emphasis.DelimiterCount}")
+                    .ToArray();
+
+                CollectionAssert.AreEqual(new[] { "^:1", "~:1" }, delimiters);
+            }
+        }
+
+        [TestMethod]
         public void BoldApproximatePricesDoNotCreatePhantomTableCells()
         {
             const string markdown =
