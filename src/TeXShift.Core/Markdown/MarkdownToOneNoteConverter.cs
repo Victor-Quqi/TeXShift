@@ -154,6 +154,9 @@ namespace TeXShift.Core.Markdown
             // Step 6: Restore HTML entities for OneNote (double-encode only in code)
             _entityProcessor.RestoreForOneNoteHtml(outline, entityMap, OneNoteNamespace, StyleConfig);
 
+            // OneNote preserves hyperlink colors from the containing OE style.
+            OneNoteHyperlinkColorWorkaround.Apply(outline, OneNoteNamespace);
+
             // Step 7: Persist source metadata for reverse conversion.
             TeXShiftMetaWriter.WriteSourceMeta(outline, sourceMarkdown, TeXShiftMetaKeys.ModeRender);
 

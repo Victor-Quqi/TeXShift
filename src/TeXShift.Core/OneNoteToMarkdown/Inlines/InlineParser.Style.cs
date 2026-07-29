@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using TeXShift.Core.OneNote;
+using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.OneNoteToMarkdown.Inlines
 {
@@ -80,6 +81,13 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             return flags;
         }
 
+        private static string GetSpanTextColor(string style)
+        {
+            return CssColorParser.TryGetColorFromStyle(style, out string color)
+                ? color
+                : null;
+        }
+
         private static string GetCssPropertyValue(string style, string propertyName)
         {
             if (string.IsNullOrWhiteSpace(style) || string.IsNullOrWhiteSpace(propertyName))
@@ -132,19 +140,66 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             return false;
         }
 
-        private static InlineStyle CurrentStyle(Stack<Frame> stack)
+        private static InlineFormat CurrentFormat(Stack<Frame> stack)
         {
             if (stack == null || stack.Count == 0)
             {
-                return InlineStyle.None;
+                return InlineFormat.None;
             }
 
             InlineStyle style = InlineStyle.None;
+            string textColor = null;
             foreach (var frame in stack)
             {
                 style |= frame.Style;
+                if (textColor == null && !string.IsNullOrWhiteSpace(frame.TextColor))
+                {
+                    textColor = frame.TextColor;
+                }
             }
-            return style;
+            return new InlineFormat(style, textColor);
+        }
+
+        private static InlineFormat MergeFormats(InlineFormat outer, InlineFormat inner)
+        {
+            return new InlineFormat(
+                outer.Style | inner.Style,
+                inner.TextColor ?? outer.TextColor);
+        }
+
+        private static void EnsureFormat(
+            InlineFormat desired,
+            ref InlineFormat emitted,
+            StringBuilder output)
+        {
+            if (desired.Equals(emitted) || output == null)
+            {
+                return;
+            }
+
+            bool colorChanged = !string.Equals(
+                desired.TextColor,
+                emitted.TextColor,
+                StringComparison.OrdinalIgnoreCase);
+            InlineStyle emittedStyle = emitted.Style;
+
+            if (colorChanged)
+            {
+                EnsureStyle(InlineStyle.None, ref emittedStyle, output);
+                if (!string.IsNullOrEmpty(emitted.TextColor))
+                {
+                    output.Append("</span>");
+                }
+                if (!string.IsNullOrEmpty(desired.TextColor))
+                {
+                    output.Append("<span style=\"color:")
+                        .Append(desired.TextColor)
+                        .Append("\">");
+                }
+            }
+
+            EnsureStyle(desired.Style, ref emittedStyle, output);
+            emitted = desired;
         }
 
         private static void EnsureStyle(InlineStyle desired, ref InlineStyle emitted, StringBuilder output)
@@ -241,10 +296,10 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
         }
 
         private static void FlushPendingWhitespace(
-            InlineStyle nextDesiredStyle,
+            InlineFormat nextDesiredFormat,
             ref string pendingWhitespace,
-            ref InlineStyle pendingWhitespaceStyle,
-            ref InlineStyle emittedStyle,
+            ref InlineFormat pendingWhitespaceFormat,
+            ref InlineFormat emittedFormat,
             StringBuilder output)
         {
             if (string.IsNullOrEmpty(pendingWhitespace))
@@ -252,17 +307,29 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
                 return;
             }
 
-            var wsStyle = pendingWhitespaceStyle & nextDesiredStyle;
-            EnsureStyle(wsStyle, ref emittedStyle, output);
+            bool sameColor = string.Equals(
+                pendingWhitespaceFormat.TextColor,
+                nextDesiredFormat.TextColor,
+                StringComparison.OrdinalIgnoreCase);
+            var whitespaceFormat = sameColor
+                ? new InlineFormat(
+                    pendingWhitespaceFormat.Style & nextDesiredFormat.Style,
+                    pendingWhitespaceFormat.TextColor)
+                : InlineFormat.None;
+            EnsureFormat(whitespaceFormat, ref emittedFormat, output);
             output.Append(pendingWhitespace);
             pendingWhitespace = null;
-            pendingWhitespaceStyle = InlineStyle.None;
+            pendingWhitespaceFormat = InlineFormat.None;
         }
 
-        private static string SplitTrailingWhitespaceIfStyled(string text, InlineStyle style, out string core)
+        private static string SplitTrailingWhitespaceIfStyled(
+            string text,
+            InlineFormat format,
+            out string core)
         {
             core = text ?? string.Empty;
-            if (string.IsNullOrEmpty(core) || style == InlineStyle.None)
+            if (string.IsNullOrEmpty(core) ||
+                (format.Style == InlineStyle.None && string.IsNullOrEmpty(format.TextColor)))
             {
                 return null;
             }
@@ -296,22 +363,28 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
 
         private static string SplitLeadingWhitespaceOnStyleChange(
             string text,
-            InlineStyle desiredStyle,
-            InlineStyle emittedStyle,
+            InlineFormat desiredFormat,
+            InlineFormat emittedFormat,
             out string core,
-            out InlineStyle leadingStyle)
+            out InlineFormat leadingFormat)
         {
             core = text ?? string.Empty;
-            leadingStyle = emittedStyle;
-            if (string.IsNullOrEmpty(core) || desiredStyle == emittedStyle)
+            leadingFormat = emittedFormat;
+            if (string.IsNullOrEmpty(core) || desiredFormat.Equals(emittedFormat))
             {
                 return null;
             }
 
-            var emittedStyles = GetOrderedStyles(emittedStyle);
-            var desiredStyles = GetOrderedStyles(desiredStyle);
+            bool sameColor = string.Equals(
+                desiredFormat.TextColor,
+                emittedFormat.TextColor,
+                StringComparison.OrdinalIgnoreCase);
+            var emittedStyles = sameColor
+                ? GetOrderedStyles(emittedFormat.Style)
+                : new List<InlineStyle>();
+            var desiredStyles = GetOrderedStyles(desiredFormat.Style);
             int common = 0;
-            leadingStyle = InlineStyle.None;
+            InlineStyle leadingStyle = InlineStyle.None;
             while (common < emittedStyles.Count &&
                    common < desiredStyles.Count &&
                    emittedStyles[common] == desiredStyles[common])
@@ -320,8 +393,14 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
                 common++;
             }
 
+            leadingFormat = new InlineFormat(
+                leadingStyle,
+                sameColor ? desiredFormat.TextColor : null);
+
             // Closing inner styles keeps the whitespace inside an already-open outer style.
-            if (common == desiredStyles.Count)
+            bool opensColor = !sameColor && !string.IsNullOrEmpty(desiredFormat.TextColor);
+            bool opensStyle = common < desiredStyles.Count;
+            if (!opensColor && !opensStyle)
             {
                 return null;
             }

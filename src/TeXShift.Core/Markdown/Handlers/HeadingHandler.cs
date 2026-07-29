@@ -17,9 +17,9 @@ namespace TeXShift.Core.Markdown.Handlers
 
             var oe = new XElement(ns + "OE");
 
-            // Map heading levels to OneNote quick styles
-            int styleIndex = System.Math.Min(heading.Level - 1, 5);
-            oe.Add(new XAttribute("quickStyleIndex", styleIndex.ToString()));
+            // Heading appearance is emitted inline; use the paragraph quick style so
+            // page-level color styles cannot collide with heading level numbers.
+            oe.Add(new XAttribute("quickStyleIndex", "1"));
 
             // Apply spacing based on heading level
             var spacing = styleConfig.GetHeadingSpacing(heading.Level);

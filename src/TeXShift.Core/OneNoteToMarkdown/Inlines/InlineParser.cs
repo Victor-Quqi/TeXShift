@@ -37,10 +37,45 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             Subscript = 1 << 6,
         }
 
+        private struct InlineFormat : IEquatable<InlineFormat>
+        {
+            public static readonly InlineFormat None = new InlineFormat(InlineStyle.None, null);
+
+            public InlineStyle Style { get; }
+            public string TextColor { get; }
+
+            public InlineFormat(InlineStyle style, string textColor)
+            {
+                Style = style;
+                TextColor = string.IsNullOrWhiteSpace(textColor) ? null : textColor;
+            }
+
+            public bool Equals(InlineFormat other)
+            {
+                return Style == other.Style &&
+                    string.Equals(TextColor, other.TextColor, StringComparison.OrdinalIgnoreCase);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is InlineFormat other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return ((int)Style * 397) ^
+                        (TextColor == null ? 0 : StringComparer.OrdinalIgnoreCase.GetHashCode(TextColor));
+                }
+            }
+        }
+
         private sealed class Frame
         {
             public string TagName { get; }
             public InlineStyle Style { get; }
+            public string TextColor { get; }
             public bool IsInlineCode { get; }
             public bool InlineCodeHasMonospace { get; }
             public string Href { get; }
@@ -49,6 +84,7 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             public Frame(
                 string tagName,
                 InlineStyle style = InlineStyle.None,
+                string textColor = null,
                 bool isInlineCode = false,
                 string href = null,
                 bool inlineCodeHasMonospace = false,
@@ -56,6 +92,7 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             {
                 TagName = tagName ?? string.Empty;
                 Style = style;
+                TextColor = textColor;
                 IsInlineCode = isInlineCode;
                 InlineCodeHasMonospace = inlineCodeHasMonospace;
                 Href = href;

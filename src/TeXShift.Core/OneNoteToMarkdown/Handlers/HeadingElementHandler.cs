@@ -53,7 +53,7 @@ namespace TeXShift.Core.OneNoteToMarkdown.Handlers
                 }
 
                 // Headings already carry structure via '#', so suppress bold markers (they're not recoverable anyway).
-                parts.Add(context.ParseInlineHtml(html, InlineParseMode.Heading));
+                parts.Add(context.ParseInlineHtml(html, element, InlineParseMode.Heading));
             }
 
             string content = string.Join("\n", parts).Trim();

@@ -13,28 +13,28 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             public readonly Stack<Frame> Stack;
             public readonly StringBuilder Output;
             public readonly StringBuilder CodeBuffer;
-            public InlineStyle EmittedStyle;
+            public InlineFormat EmittedFormat;
             public int InlineCodeDepth;
             public bool HasPendingInlineCode;
-            public InlineStyle PendingInlineCodeStyle;
+            public InlineFormat PendingInlineCodeFormat;
             public bool PendingInlineCodeHasMonospace;
             public bool SuppressLeadingNewlineAfterBreak;
             public string PendingWhitespace;
-            public InlineStyle PendingWhitespaceStyle;
+            public InlineFormat PendingWhitespaceFormat;
 
             public ParseState(int outputCapacity)
             {
                 Stack = new Stack<Frame>();
                 Output = new StringBuilder(outputCapacity);
                 CodeBuffer = new StringBuilder();
-                EmittedStyle = InlineStyle.None;
+                EmittedFormat = InlineFormat.None;
                 InlineCodeDepth = 0;
                 HasPendingInlineCode = false;
-                PendingInlineCodeStyle = InlineStyle.None;
+                PendingInlineCodeFormat = InlineFormat.None;
                 PendingInlineCodeHasMonospace = false;
                 SuppressLeadingNewlineAfterBreak = false;
                 PendingWhitespace = null;
-                PendingWhitespaceStyle = InlineStyle.None;
+                PendingWhitespaceFormat = InlineFormat.None;
             }
         }
 
@@ -194,21 +194,25 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
 
                     if (!treatAsInlineCode)
                     {
-                        state.Stack.Push(new Frame("span", GetSpanStyleFlags(style, ignoreBold)));
+                        state.Stack.Push(new Frame(
+                            "span",
+                            GetSpanStyleFlags(style, ignoreBold),
+                            GetSpanTextColor(style)));
                         return true;
                     }
 
                     var spanStyle = GetSpanStyleFlags(style, ignoreBold, includeBackgroundHighlight: false);
-                    var desiredCodeStyle = CurrentStyle(state.Stack) | spanStyle;
+                    var spanFormat = new InlineFormat(spanStyle, GetSpanTextColor(style));
+                    var desiredCodeFormat = MergeFormats(CurrentFormat(state.Stack), spanFormat);
                     bool continuesPendingCode = false;
                     if (state.HasPendingInlineCode)
                     {
-                        if (state.PendingInlineCodeStyle == desiredCodeStyle)
+                        if (state.PendingInlineCodeFormat.Equals(desiredCodeFormat))
                         {
                             continuesPendingCode = true;
                             hasMonospace |= state.PendingInlineCodeHasMonospace;
                             state.HasPendingInlineCode = false;
-                            state.PendingInlineCodeStyle = InlineStyle.None;
+                            state.PendingInlineCodeFormat = InlineFormat.None;
                             state.PendingInlineCodeHasMonospace = false;
                         }
                         else
@@ -224,12 +228,20 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
                     }
 
                     // Inline code suppresses other styles; capture literal text until the span closes.
-                    state.Stack.Push(new Frame("span", spanStyle, isInlineCode: true, inlineCodeHasMonospace: hasMonospace));
+                    state.Stack.Push(new Frame(
+                        "span",
+                        spanStyle,
+                        spanFormat.TextColor,
+                        isInlineCode: true,
+                        inlineCodeHasMonospace: hasMonospace));
                     return true;
                 }
 
                 FlushPendingInlineCode(state);
-                state.Stack.Push(new Frame("span", GetSpanStyleFlags(style, ignoreBold)));
+                state.Stack.Push(new Frame(
+                    "span",
+                    GetSpanStyleFlags(style, ignoreBold),
+                    GetSpanTextColor(style)));
                 return true;
             }
 
@@ -248,11 +260,11 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
 
                 if (state.InlineCodeDepth == 0)
                 {
-                    var desired = CurrentStyle(state.Stack);
-                    FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceStyle, ref state.EmittedStyle, state.Output);
-                    EnsureStyle(desired, ref state.EmittedStyle, state.Output);
+                    var desired = CurrentFormat(state.Stack);
+                    FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceFormat, ref state.EmittedFormat, state.Output);
+                    EnsureFormat(desired, ref state.EmittedFormat, state.Output);
                     state.Output.Append('[');
-                    state.Stack.Push(new Frame("a", InlineStyle.None, href: href, contentStartIndex: state.Output.Length));
+                    state.Stack.Push(new Frame("a", href: href, contentStartIndex: state.Output.Length));
                 }
                 return true;
             }
@@ -319,7 +331,7 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             if (state.InlineCodeDepth > 0)
             {
                 state.InlineCodeDepth = 0;
-                EmitInlineCode(state, CurrentStyle(state.Stack), inlineCodeHasMonospace: false);
+                EmitInlineCode(state, CurrentFormat(state.Stack), inlineCodeHasMonospace: false);
             }
             else
             {
@@ -337,8 +349,9 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
 
                 if (string.Equals(frame.TagName, "a", StringComparison.OrdinalIgnoreCase))
                 {
-                    FlushPendingWhitespace(CurrentStyle(state.Stack), ref state.PendingWhitespace, ref state.PendingWhitespaceStyle, ref state.EmittedStyle, state.Output);
-                    EnsureStyle(CurrentStyle(state.Stack), ref state.EmittedStyle, state.Output);
+                    var desired = CurrentFormat(state.Stack);
+                    FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceFormat, ref state.EmittedFormat, state.Output);
+                    EnsureFormat(desired, ref state.EmittedFormat, state.Output);
                     if (!TryReplaceImageLink(state.Output, frame))
                     {
                         state.Output.Append("](").Append(frame.Href ?? string.Empty).Append(')');
@@ -346,8 +359,8 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
                 }
             }
 
-            FlushPendingWhitespace(InlineStyle.None, ref state.PendingWhitespace, ref state.PendingWhitespaceStyle, ref state.EmittedStyle, state.Output);
-            EnsureStyle(InlineStyle.None, ref state.EmittedStyle, state.Output);
+            FlushPendingWhitespace(InlineFormat.None, ref state.PendingWhitespace, ref state.PendingWhitespaceFormat, ref state.EmittedFormat, state.Output);
+            EnsureFormat(InlineFormat.None, ref state.EmittedFormat, state.Output);
         }
 
         private void CloseUntil(
@@ -370,7 +383,9 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
                     {
                         QueueInlineCode(
                             state,
-                            CurrentStyle(state.Stack) | frame.Style,
+                            MergeFormats(
+                                CurrentFormat(state.Stack),
+                                new InlineFormat(frame.Style, frame.TextColor)),
                             frame.InlineCodeHasMonospace);
                     }
                 }
@@ -379,8 +394,9 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
                 {
                     if (string.Equals(needle, "a", StringComparison.OrdinalIgnoreCase) && state.InlineCodeDepth == 0)
                     {
-                        FlushPendingWhitespace(CurrentStyle(state.Stack), ref state.PendingWhitespace, ref state.PendingWhitespaceStyle, ref state.EmittedStyle, state.Output);
-                        EnsureStyle(CurrentStyle(state.Stack), ref state.EmittedStyle, state.Output);
+                        var desired = CurrentFormat(state.Stack);
+                        FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceFormat, ref state.EmittedFormat, state.Output);
+                        EnsureFormat(desired, ref state.EmittedFormat, state.Output);
                         if (!TryReplaceImageLink(state.Output, frame))
                         {
                             state.Output.Append("](").Append(frame.Href ?? string.Empty).Append(')');

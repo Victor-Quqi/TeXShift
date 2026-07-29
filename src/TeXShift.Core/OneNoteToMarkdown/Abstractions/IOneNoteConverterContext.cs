@@ -37,7 +37,10 @@ namespace TeXShift.Core.OneNoteToMarkdown.Abstractions
         /// <summary>
         /// Parses OneNote rich-text HTML into Markdown inlines.
         /// </summary>
-        string ParseInlineHtml(string oneNoteHtml, InlineParseMode mode = InlineParseMode.Default);
+        string ParseInlineHtml(
+            string oneNoteHtml,
+            XElement containingOe,
+            InlineParseMode mode = InlineParseMode.Default);
 
         /// <summary>
         /// Converts an OEChildren element to Markdown blocks using the current converter.

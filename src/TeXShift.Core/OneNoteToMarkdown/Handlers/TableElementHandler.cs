@@ -197,7 +197,7 @@ namespace TeXShift.Core.OneNoteToMarkdown.Handlers
                 html = innerHtml;
             }
 
-            var parsed = context.ParseInlineHtml(html);
+            var parsed = context.ParseInlineHtml(html, oe);
             return NormalizeCellText(parsed);
         }
 

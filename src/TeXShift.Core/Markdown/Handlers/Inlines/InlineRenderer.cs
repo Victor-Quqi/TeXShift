@@ -20,6 +20,15 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
     /// </summary>
     internal class InlineRenderer : IInlineRenderer
     {
+        private sealed class InlineRenderContext
+        {
+            public Stack<string> TextColors { get; } = new Stack<string>();
+
+            public string CurrentTextColor => TextColors.Count > 0
+                ? TextColors.Peek()
+                : null;
+        }
+
         private readonly OneNoteStyleConfig _styleConfig;
         private readonly IMathService _mathService;
 
@@ -37,13 +46,39 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
         public async Task<string> RenderAsync(ContainerInline container)
         {
             if (container == null) return string.Empty;
-            return await RenderAsync((IEnumerable<Inline>)container).ConfigureAwait(false);
+            return await RenderRootAsync((IEnumerable<Inline>)container).ConfigureAwait(false);
         }
 
         /// <summary>
         /// Converts a collection of inline elements to an HTML string.
         /// </summary>
         public async Task<string> RenderAsync(IEnumerable<Inline> inlines)
+        {
+            if (inlines == null) return string.Empty;
+            return await RenderRootAsync(inlines).ConfigureAwait(false);
+        }
+
+        private async Task<string> RenderRootAsync(IEnumerable<Inline> inlines)
+        {
+            var context = new InlineRenderContext();
+            string rendered = await RenderInlinesAsync(inlines, context).ConfigureAwait(false);
+            if (context.TextColors.Count == 0)
+            {
+                return rendered;
+            }
+
+            var html = new StringBuilder(rendered);
+            while (context.TextColors.Count > 0)
+            {
+                html.Append("</span>");
+                context.TextColors.Pop();
+            }
+            return html.ToString();
+        }
+
+        private async Task<string> RenderInlinesAsync(
+            IEnumerable<Inline> inlines,
+            InlineRenderContext context)
         {
             if (inlines == null) return string.Empty;
             var html = new StringBuilder();
@@ -62,7 +97,7 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                 }
                 else if (inline is EmphasisInline emphasis)
                 {
-                    await RenderEmphasisAsync(html, emphasis).ConfigureAwait(false);
+                    await RenderEmphasisAsync(html, emphasis, context).ConfigureAwait(false);
                 }
                 else if (inline is CodeInline code)
                 {
@@ -70,7 +105,7 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                 }
                 else if (inline is LinkInline link)
                 {
-                    await RenderLinkAsync(html, link).ConfigureAwait(false);
+                    await RenderLinkAsync(html, link, context).ConfigureAwait(false);
                 }
                 else if (inline is LineBreakInline)
                 {
@@ -80,7 +115,8 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                 {
                     html.Append('\n');
                 }
-                else if (inline is HtmlInline safeHtmlInline && TryGetSafeStyleTag(safeHtmlInline.Tag, out var safeStyleTag))
+                else if (inline is HtmlInline safeHtmlInline &&
+                    TryGetSafeStyleTag(safeHtmlInline.Tag, context.TextColors, out var safeStyleTag))
                 {
                     html.Append(safeStyleTag);
                 }
@@ -90,13 +126,16 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                 }
                 else if (inline is ContainerInline nested)
                 {
-                    html.Append(await RenderAsync(nested).ConfigureAwait(false));
+                    html.Append(await RenderInlinesAsync(nested, context).ConfigureAwait(false));
                 }
             }
             return html.ToString();
         }
 
-        private static bool TryGetSafeStyleTag(string tag, out string safeTag)
+        private static bool TryGetSafeStyleTag(
+            string tag,
+            Stack<string> textColors,
+            out string safeTag)
         {
             safeTag = null;
             if (string.IsNullOrWhiteSpace(tag))
@@ -155,6 +194,24 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                         ? "</span>"
                         : "<span style='" + OneNoteInlineStyles.ItalicCss + "'>";
                     return true;
+                case "span":
+                    if (isClosing)
+                    {
+                        if (textColors == null || textColors.Count == 0)
+                        {
+                            return false;
+                        }
+                        textColors.Pop();
+                        safeTag = "</span>";
+                        return true;
+                    }
+                    if (CssColorParser.TryGetColorFromAttributes(attributes, out string color))
+                    {
+                        textColors?.Push(color);
+                        safeTag = "<span style='color:" + color + "'>";
+                        return true;
+                    }
+                    return false;
                 case "mark":
                     safeTag = isClosing
                         ? "</span>"
@@ -183,9 +240,12 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
             }
         }
 
-        private async Task RenderEmphasisAsync(StringBuilder html, EmphasisInline emphasis)
+        private async Task RenderEmphasisAsync(
+            StringBuilder html,
+            EmphasisInline emphasis,
+            InlineRenderContext context)
         {
-            var content = await RenderAsync(emphasis).ConfigureAwait(false);
+            var content = await RenderInlinesAsync(emphasis, context).ConfigureAwait(false);
             if (emphasis.DelimiterChar == '*' || emphasis.DelimiterChar == '_')
             {
                 if (emphasis.DelimiterCount == 2)
@@ -247,14 +307,17 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
             html.Append($"<span style='{styleString}'>{padding}{HtmlEscaper.Escape(code.Content)}{padding}</span>");
         }
 
-        private async Task RenderLinkAsync(StringBuilder html, LinkInline link)
+        private async Task RenderLinkAsync(
+            StringBuilder html,
+            LinkInline link,
+            InlineRenderContext context)
         {
             var url = link.Url ?? "";
 
             // Handle images: inline images are downgraded to links
             if (link.IsImage)
             {
-                var altText = await RenderAsync(link).ConfigureAwait(false);
+                var altText = await RenderInlinesAsync(link, context).ConfigureAwait(false);
                 if (string.IsNullOrEmpty(altText))
                 {
                     altText = "image";
@@ -264,13 +327,17 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
             }
             else
             {
-                var content = await RenderAsync(link).ConfigureAwait(false);
+                string activeTextColor = context?.CurrentTextColor;
+                var content = await RenderInlinesAsync(link, context).ConfigureAwait(false);
                 // If link text is empty, display the URL as the link text
                 if (string.IsNullOrEmpty(content))
                 {
                     content = HtmlEscaper.Escape(url);
                 }
-                html.Append($"<a href=\"{HtmlEscaper.Escape(url)}\">{content}</a>");
+                string colorStyle = string.IsNullOrEmpty(activeTextColor)
+                    ? string.Empty
+                    : " style='color:" + activeTextColor + "'";
+                html.Append($"<a href=\"{HtmlEscaper.Escape(url)}\"{colorStyle}>{content}</a>");
             }
         }
 

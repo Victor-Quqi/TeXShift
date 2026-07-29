@@ -35,7 +35,7 @@ namespace TeXShift.Core.OneNoteToMarkdown.Handlers
             foreach (var t in tElements)
             {
                 string html = t.Value ?? string.Empty;
-                string parsed = context.ParseInlineHtml(html);
+                string parsed = context.ParseInlineHtml(html, element);
                 contentLines.Add(parsed);
             }
 
@@ -126,4 +126,3 @@ namespace TeXShift.Core.OneNoteToMarkdown.Handlers
         }
     }
 }
-

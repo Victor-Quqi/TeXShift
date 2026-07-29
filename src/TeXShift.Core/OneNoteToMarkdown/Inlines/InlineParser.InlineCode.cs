@@ -98,7 +98,7 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
 
         private void QueueInlineCode(
             ParseState state,
-            InlineStyle style,
+            InlineFormat format,
             bool inlineCodeHasMonospace)
         {
             if (state == null)
@@ -109,7 +109,7 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             // OneNote can split padding, content, and trailing padding into adjacent spans.
             // Delay emission so those spans can be reconstructed as one code run.
             state.HasPendingInlineCode = true;
-            state.PendingInlineCodeStyle = style;
+            state.PendingInlineCodeFormat = format;
             state.PendingInlineCodeHasMonospace = inlineCodeHasMonospace;
         }
 
@@ -120,23 +120,23 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
                 return;
             }
 
-            var style = state.PendingInlineCodeStyle;
+            var format = state.PendingInlineCodeFormat;
             bool hasMonospace = state.PendingInlineCodeHasMonospace;
             state.HasPendingInlineCode = false;
-            state.PendingInlineCodeStyle = InlineStyle.None;
+            state.PendingInlineCodeFormat = InlineFormat.None;
             state.PendingInlineCodeHasMonospace = false;
-            EmitInlineCode(state, style, hasMonospace);
+            EmitInlineCode(state, format, hasMonospace);
         }
 
-        private void EmitInlineCode(ParseState state, InlineStyle desired, bool inlineCodeHasMonospace)
+        private void EmitInlineCode(ParseState state, InlineFormat desired, bool inlineCodeHasMonospace)
         {
             if (state == null)
             {
                 return;
             }
 
-            FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceStyle, ref state.EmittedStyle, state.Output);
-            EnsureStyle(desired, ref state.EmittedStyle, state.Output);
+            FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceFormat, ref state.EmittedFormat, state.Output);
+            EnsureFormat(desired, ref state.EmittedFormat, state.Output);
 
             // Strict mode (TeXShift-only): background match is already strong enough.
             // Fuzzy mode: require either monospace font or TeXShift-style padding,

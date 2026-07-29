@@ -32,18 +32,18 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             }
 
             FlushPendingInlineCode(state);
-            var desired = CurrentStyle(state.Stack);
-            FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceStyle, ref state.EmittedStyle, state.Output);
+            var desired = CurrentFormat(state.Stack);
+            FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceFormat, ref state.EmittedFormat, state.Output);
 
             string leading = SplitLeadingWhitespaceOnStyleChange(
                 decoded,
                 desired,
-                state.EmittedStyle,
+                state.EmittedFormat,
                 out decoded,
-                out InlineStyle leadingStyle);
+                out InlineFormat leadingFormat);
             if (!string.IsNullOrEmpty(leading))
             {
-                EnsureStyle(leadingStyle, ref state.EmittedStyle, state.Output);
+                EnsureFormat(leadingFormat, ref state.EmittedFormat, state.Output);
                 state.Output.Append(leading);
             }
 
@@ -51,14 +51,14 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
 
             if (!string.IsNullOrEmpty(core))
             {
-                EnsureStyle(desired, ref state.EmittedStyle, state.Output);
+                EnsureFormat(desired, ref state.EmittedFormat, state.Output);
                 state.Output.Append(core);
             }
 
             if (!string.IsNullOrEmpty(tail))
             {
                 state.PendingWhitespace = tail;
-                state.PendingWhitespaceStyle = desired;
+                state.PendingWhitespaceFormat = desired;
             }
         }
 
@@ -77,9 +77,9 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
 
             state.SuppressLeadingNewlineAfterBreak = false;
             FlushPendingInlineCode(state);
-            var desired = CurrentStyle(state.Stack);
-            FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceStyle, ref state.EmittedStyle, state.Output);
-            EnsureStyle(desired, ref state.EmittedStyle, state.Output);
+            var desired = CurrentFormat(state.Stack);
+            FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceFormat, ref state.EmittedFormat, state.Output);
+            EnsureFormat(desired, ref state.EmittedFormat, state.Output);
             state.Output.Append(literal);
         }
 
@@ -92,9 +92,9 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             }
 
             FlushPendingInlineCode(state);
-            var desired = CurrentStyle(state.Stack);
-            FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceStyle, ref state.EmittedStyle, state.Output);
-            EnsureStyle(desired, ref state.EmittedStyle, state.Output);
+            var desired = CurrentFormat(state.Stack);
+            FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceFormat, ref state.EmittedFormat, state.Output);
+            EnsureFormat(desired, ref state.EmittedFormat, state.Output);
             state.Output.Append("\n");
             state.SuppressLeadingNewlineAfterBreak = true;
         }

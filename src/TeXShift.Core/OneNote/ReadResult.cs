@@ -72,6 +72,12 @@ namespace TeXShift.Core.OneNote
         /// </summary>
         public bool PageHasTodoTagDef { get; set; }
 
+        /// <summary>
+        /// Page-level quick styles available when the content was read.
+        /// Used when minimal writes need a derived style definition.
+        /// </summary>
+        public List<XElement> PageQuickStyleDefinitions { get; set; } = new List<XElement>();
+
         public string ModeAsString()
         {
             switch (Mode)

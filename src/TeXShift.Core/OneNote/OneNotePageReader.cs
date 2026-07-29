@@ -112,6 +112,11 @@ namespace TeXShift.Core.OneNote
                     .Any(e => string.Equals((string)e.Attribute("index"), "0", StringComparison.Ordinal)) == true;
             }
 
+            var quickStyleDefinitions = doc.Root?
+                .Elements(ns + "QuickStyleDef")
+                .Select(element => new XElement(element))
+                .ToList() ?? new List<XElement>();
+
             List<XElement> deepestSelectedNodes;
             using (PerformanceTraceContext.Measure("Read.Parse.FindSelectedNodes"))
             {
@@ -139,6 +144,7 @@ namespace TeXShift.Core.OneNote
                     if (result != null)
                     {
                         result.PageHasTodoTagDef = hasTodoTagDef;
+                        result.PageQuickStyleDefinitions = quickStyleDefinitions;
                     }
                     return result;
                 }
@@ -151,6 +157,7 @@ namespace TeXShift.Core.OneNote
                     if (result != null)
                     {
                         result.PageHasTodoTagDef = hasTodoTagDef;
+                        result.PageQuickStyleDefinitions = quickStyleDefinitions;
                     }
                     return result;
                 }

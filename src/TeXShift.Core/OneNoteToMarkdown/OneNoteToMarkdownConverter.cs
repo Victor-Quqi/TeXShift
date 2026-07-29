@@ -10,6 +10,7 @@ using TeXShift.Core.OneNoteMeta;
 using TeXShift.Core.OneNoteToMarkdown.Abstractions;
 using TeXShift.Core.OneNoteToMarkdown.Handlers;
 using TeXShift.Core.OneNoteToMarkdown.Inlines;
+using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.OneNoteToMarkdown
 {
@@ -55,9 +56,47 @@ namespace TeXShift.Core.OneNoteToMarkdown
             return Task.Run(() => ConvertToMarkdownCore(oneNoteElement));
         }
 
-        string IOneNoteConverterContext.ParseInlineHtml(string oneNoteHtml, InlineParseMode mode)
+        string IOneNoteConverterContext.ParseInlineHtml(
+            string oneNoteHtml,
+            XElement containingOe,
+            InlineParseMode mode)
         {
-            return _inlineParser.Parse(oneNoteHtml, mode);
+            string html = oneNoteHtml ?? string.Empty;
+            string oeStyle = (string)containingOe?.Attribute("style") ?? string.Empty;
+            string textColor = null;
+            if (!CssColorParser.TryGetColorFromStyle(oeStyle, out textColor))
+            {
+                textColor = GetQuickStyleTextColor(containingOe);
+            }
+
+            if (!string.IsNullOrEmpty(textColor))
+            {
+                html = "<span style='color:" + textColor + "'>" + html + "</span>";
+            }
+
+            return _inlineParser.Parse(html, mode);
+        }
+
+        private string GetQuickStyleTextColor(XElement containingOe)
+        {
+            string index = (string)containingOe?.Attribute("quickStyleIndex");
+            if (string.IsNullOrEmpty(index))
+            {
+                return null;
+            }
+
+            var page = containingOe.Ancestors(OneNoteNamespace + "Page").FirstOrDefault();
+            var quickStyle = page?.Elements(OneNoteNamespace + "QuickStyleDef")
+                .FirstOrDefault(element => string.Equals(
+                    (string)element.Attribute("index"),
+                    index,
+                    StringComparison.Ordinal));
+
+            return CssColorParser.TryNormalize(
+                (string)quickStyle?.Attribute("fontColor"),
+                out string color)
+                ? color
+                : null;
         }
 
         string IOneNoteConverterContext.ConvertOeChildrenToMarkdown(XElement oeChildren)
