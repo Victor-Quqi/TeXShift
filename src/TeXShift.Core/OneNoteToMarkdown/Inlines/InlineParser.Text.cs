@@ -6,7 +6,7 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
 {
     internal sealed partial class InlineParser
     {
-        private static void AppendText(string text, ParseState state)
+        private void AppendText(string text, ParseState state)
         {
             if (string.IsNullOrEmpty(text))
             {
@@ -14,6 +14,16 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             }
 
             string decoded = OneNoteHtmlEntityDecoder.Decode(text);
+            if (state.SuppressLeadingNewlineAfterBreak)
+            {
+                // OneNote serializes <br /> followed by a formatting newline in CDATA.
+                decoded = RemoveOneLeadingNewline(decoded);
+                state.SuppressLeadingNewlineAfterBreak = false;
+                if (decoded.Length == 0)
+                {
+                    return;
+                }
+            }
 
             if (state.InlineCodeDepth > 0)
             {
@@ -21,6 +31,7 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
                 return;
             }
 
+            FlushPendingInlineCode(state);
             var desired = CurrentStyle(state.Stack);
             FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceStyle, ref state.EmittedStyle, state.Output);
 
@@ -36,7 +47,7 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             }
         }
 
-        private static void AppendLiteral(string literal, ParseState state)
+        private void AppendLiteral(string literal, ParseState state)
         {
             if (string.IsNullOrEmpty(literal))
             {
@@ -49,13 +60,15 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
                 return;
             }
 
+            state.SuppressLeadingNewlineAfterBreak = false;
+            FlushPendingInlineCode(state);
             var desired = CurrentStyle(state.Stack);
             FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceStyle, ref state.EmittedStyle, state.Output);
             EnsureStyle(desired, ref state.EmittedStyle, state.Output);
             state.Output.Append(literal);
         }
 
-        private static void AppendLineBreak(ParseState state)
+        private void AppendLineBreak(ParseState state)
         {
             if (state.InlineCodeDepth > 0)
             {
@@ -63,10 +76,32 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
                 return;
             }
 
+            FlushPendingInlineCode(state);
             var desired = CurrentStyle(state.Stack);
             FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceStyle, ref state.EmittedStyle, state.Output);
             EnsureStyle(desired, ref state.EmittedStyle, state.Output);
             state.Output.Append("\n");
+            state.SuppressLeadingNewlineAfterBreak = true;
+        }
+
+        private static string RemoveOneLeadingNewline(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
+            if (text.StartsWith("\r\n", System.StringComparison.Ordinal))
+            {
+                return text.Substring(2);
+            }
+
+            if (text[0] == '\r' || text[0] == '\n')
+            {
+                return text.Substring(1);
+            }
+
+            return text;
         }
 
         private static string NormalizeText(string text)

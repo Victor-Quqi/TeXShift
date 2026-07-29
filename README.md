@@ -48,7 +48,7 @@ English | [简体中文](README.zh-CN.md)
   - Code blocks with syntax highlighting stripped
   - Math formulas (restore original LaTeX via metadata)
   - Mermaid diagrams (restore original source via metadata)
-  - Inline styles (bold, italic, strikethrough, code, links)
+  - Inline styles (bold, italic, strikethrough, highlight, underline, superscript, subscript, code, links)
 
 - **Localization** - UI available in English and Simplified Chinese
 

@@ -9,6 +9,7 @@ using TeXShift.Core.Configuration;
 using TeXShift.Core.Markdown.Abstractions;
 using TeXShift.Core.Markdown.Processing;
 using TeXShift.Core.Math;
+using TeXShift.Core.OneNote;
 using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.Markdown.Handlers.Inlines
@@ -79,6 +80,10 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                 {
                     html.Append('\n');
                 }
+                else if (inline is HtmlInline safeHtmlInline && TryGetSafeStyleTag(safeHtmlInline.Tag, out var safeStyleTag))
+                {
+                    html.Append(safeStyleTag);
+                }
                 else if (inline is MathInline mathInline)
                 {
                     await RenderMathAsync(html, mathInline).ConfigureAwait(false);
@@ -89,6 +94,28 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                 }
             }
             return html.ToString();
+        }
+
+        private static bool TryGetSafeStyleTag(string tag, out string safeTag)
+        {
+            safeTag = null;
+            if (string.IsNullOrWhiteSpace(tag))
+            {
+                return false;
+            }
+
+            string normalized = tag.Trim().ToLowerInvariant();
+            switch (normalized)
+            {
+                case "<sup>":
+                case "</sup>":
+                case "<sub>":
+                case "</sub>":
+                    safeTag = normalized;
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         private async Task RenderEmphasisAsync(StringBuilder html, EmphasisInline emphasis)
@@ -107,10 +134,38 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
             {
                 html.Append($"<span style='text-decoration:line-through'>{content}</span>");
             }
+            else if (emphasis.DelimiterChar == '=' && emphasis.DelimiterCount == 2)
+            {
+                AppendStyledSpan(html, OneNoteInlineStyles.HighlightCss, content);
+            }
+            else if (emphasis.DelimiterChar == '+' && emphasis.DelimiterCount == 2)
+            {
+                AppendStyledSpan(html, OneNoteInlineStyles.UnderlineCss, content);
+            }
+            else if (emphasis.DelimiterChar == '^' && emphasis.DelimiterCount == 1)
+            {
+                AppendInlineTag(html, "sup", content);
+            }
+            else if (emphasis.DelimiterChar == '~' && emphasis.DelimiterCount == 1)
+            {
+                AppendInlineTag(html, "sub", content);
+            }
             else
             {
                 html.Append(content);
             }
+        }
+
+        private static void AppendStyledSpan(StringBuilder html, string style, string content)
+        {
+            html.Append("<span style='").Append(style).Append("'>").Append(content).Append("</span>");
+        }
+
+        private static void AppendInlineTag(StringBuilder html, string tagName, string content)
+        {
+            html.Append('<').Append(tagName).Append('>')
+                .Append(content)
+                .Append("</").Append(tagName).Append('>');
         }
 
         private void RenderCodeInline(StringBuilder html, CodeInline code)

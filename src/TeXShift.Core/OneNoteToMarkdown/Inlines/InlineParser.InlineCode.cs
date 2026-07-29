@@ -96,14 +96,45 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             return string.Compare(text, startIndex, token, 0, token.Length, StringComparison.OrdinalIgnoreCase) == 0;
         }
 
-        private void EmitInlineCode(ParseState state, InlineStyle containerStyle, bool inlineCodeHasMonospace)
+        private void QueueInlineCode(
+            ParseState state,
+            InlineStyle style,
+            bool inlineCodeHasMonospace)
         {
             if (state == null)
             {
                 return;
             }
 
-            var desired = CurrentStyle(state.Stack) | containerStyle;
+            // OneNote can split padding, content, and trailing padding into adjacent spans.
+            // Delay emission so those spans can be reconstructed as one code run.
+            state.HasPendingInlineCode = true;
+            state.PendingInlineCodeStyle = style;
+            state.PendingInlineCodeHasMonospace = inlineCodeHasMonospace;
+        }
+
+        private void FlushPendingInlineCode(ParseState state)
+        {
+            if (state == null || !state.HasPendingInlineCode)
+            {
+                return;
+            }
+
+            var style = state.PendingInlineCodeStyle;
+            bool hasMonospace = state.PendingInlineCodeHasMonospace;
+            state.HasPendingInlineCode = false;
+            state.PendingInlineCodeStyle = InlineStyle.None;
+            state.PendingInlineCodeHasMonospace = false;
+            EmitInlineCode(state, style, hasMonospace);
+        }
+
+        private void EmitInlineCode(ParseState state, InlineStyle desired, bool inlineCodeHasMonospace)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
             FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceStyle, ref state.EmittedStyle, state.Output);
             EnsureStyle(desired, ref state.EmittedStyle, state.Output);
 
@@ -123,12 +154,14 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             if (!shouldEmitInlineCode)
             {
                 state.Output.Append(raw);
+                state.CodeBuffer.Clear();
                 return;
             }
 
             string codeText = TrimPadding(raw, _inlineCodePaddingCount);
             codeText = codeText.Replace("\r", string.Empty).Replace("\n", " ");
             state.Output.Append(WrapInlineCode(codeText));
+            state.CodeBuffer.Clear();
         }
 
         private static bool HasPadding(string text, int paddingCount)

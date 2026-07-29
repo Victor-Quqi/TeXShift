@@ -125,7 +125,7 @@ Read → Selection Promotion → Convert → Meta Table Restore → Write Back
 | Mermaid | `Image[@alt="mermaid"]` |
 | 水平线 | 居中 OE + (图片 <=4px 高 或 重复特殊字符) |
 | 内联代码 | 代码字体 + `background-color` 属性存在 |
-| 粗体/斜体/删除线 | CSS 样式属性 |
+| 粗体/斜体/删除线/高亮/下划线/上下标 | CSS 样式属性及受支持的内联标签 |
 
 ### 表格处理
 

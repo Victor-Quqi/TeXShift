@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -12,7 +13,11 @@ namespace TeXShift.Tests.E2E.Commands
 {
     internal static class ReverseXmlCommand
     {
-        public static async Task<int> RunAsync(string inputXml, DirectoryInfo output, bool strict)
+        public static async Task<int> RunAsync(
+            string inputXml,
+            DirectoryInfo output,
+            bool strict,
+            bool ignoreMeta)
         {
             if (output == null)
             {
@@ -38,6 +43,10 @@ namespace TeXShift.Tests.E2E.Commands
             {
                 var xml = File.ReadAllText(resolvedInputXml.FullName);
                 var doc = XDocument.Parse(xml);
+                if (ignoreMeta)
+                {
+                    RemoveTeXShiftMeta(doc);
+                }
 
                 var styleConfig = new OneNoteStyleConfig();
                 styleConfig.SetReverseConversionOptions(!strict);
@@ -82,6 +91,26 @@ namespace TeXShift.Tests.E2E.Commands
                     Error = message
                 });
                 return CommandHelpers.ExitReverseFailed;
+            }
+        }
+
+        private static void RemoveTeXShiftMeta(XDocument doc)
+        {
+            if (doc?.Root == null)
+            {
+                return;
+            }
+
+            var metaElements = doc.Root.DescendantsAndSelf()
+                .Where(element =>
+                    string.Equals(element.Name.LocalName, "Meta", StringComparison.OrdinalIgnoreCase) &&
+                    (((string)element.Attribute("name")) ?? string.Empty)
+                        .StartsWith("texshift-", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (var meta in metaElements)
+            {
+                meta.Remove();
             }
         }
 

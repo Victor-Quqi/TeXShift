@@ -83,18 +83,26 @@ namespace TeXShift.Tests.E2E
                 DefaultValueFactory = _ => false
             };
 
+            var ignoreMetaOption = new Option<bool>("--ignore-meta")
+            {
+                Description = "Ignore TeXShift source metadata and exercise rendered OneNote XML parsing",
+                DefaultValueFactory = _ => false
+            };
+
             var command = new Command("reverse-xml", "Convert OneNote XML to Markdown (best-effort)");
             command.Options.Add(xmlInputOption);
             command.Options.Add(outputOption);
             command.Options.Add(strictOption);
+            command.Options.Add(ignoreMetaOption);
 
             command.SetAction(async (parseResult, cancellationToken) =>
             {
                 var inputXml = parseResult.GetValue(xmlInputOption);
                 var output = parseResult.GetValue(outputOption);
                 var strict = parseResult.GetValue(strictOption);
+                var ignoreMeta = parseResult.GetValue(ignoreMetaOption);
 
-                return await ReverseXmlCommand.RunAsync(inputXml, output, strict).ConfigureAwait(false);
+                return await ReverseXmlCommand.RunAsync(inputXml, output, strict, ignoreMeta).ConfigureAwait(false);
             });
 
             return command;

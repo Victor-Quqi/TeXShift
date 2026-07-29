@@ -15,6 +15,10 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             public readonly StringBuilder CodeBuffer;
             public InlineStyle EmittedStyle;
             public int InlineCodeDepth;
+            public bool HasPendingInlineCode;
+            public InlineStyle PendingInlineCodeStyle;
+            public bool PendingInlineCodeHasMonospace;
+            public bool SuppressLeadingNewlineAfterBreak;
             public string PendingWhitespace;
             public InlineStyle PendingWhitespaceStyle;
 
@@ -25,6 +29,10 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
                 CodeBuffer = new StringBuilder();
                 EmittedStyle = InlineStyle.None;
                 InlineCodeDepth = 0;
+                HasPendingInlineCode = false;
+                PendingInlineCodeStyle = InlineStyle.None;
+                PendingInlineCodeHasMonospace = false;
+                SuppressLeadingNewlineAfterBreak = false;
                 PendingWhitespace = null;
                 PendingWhitespaceStyle = InlineStyle.None;
             }
@@ -76,7 +84,7 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             return NormalizeText(state.Output.ToString());
         }
 
-        private static bool TryConsumeHtmlComment(
+        private bool TryConsumeHtmlComment(
             string html,
             int lt,
             ParseState state,
@@ -150,7 +158,7 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             tagName = tagName.ToLowerInvariant();
 
             // Preserve unknown tags as literal text (they are often user-authored "<...>" sequences).
-            if (tagName != "span" && tagName != "a" && tagName != "br")
+            if (!IsSupportedInlineTag(tagName))
             {
                 AppendLiteral("<" + rawTag + ">", state);
                 return true;
@@ -158,6 +166,10 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
 
             if (isClosing)
             {
+                if (state.InlineCodeDepth == 0)
+                {
+                    FlushPendingInlineCode(state);
+                }
                 CloseUntil(tagName, state);
                 return true;
             }
@@ -186,10 +198,27 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
                         return true;
                     }
 
-                    var spanStyle = GetSpanStyleFlags(style, ignoreBold);
+                    var spanStyle = GetSpanStyleFlags(style, ignoreBold, includeBackgroundHighlight: false);
+                    var desiredCodeStyle = CurrentStyle(state.Stack) | spanStyle;
+                    bool continuesPendingCode = false;
+                    if (state.HasPendingInlineCode)
+                    {
+                        if (state.PendingInlineCodeStyle == desiredCodeStyle)
+                        {
+                            continuesPendingCode = true;
+                            hasMonospace |= state.PendingInlineCodeHasMonospace;
+                            state.HasPendingInlineCode = false;
+                            state.PendingInlineCodeStyle = InlineStyle.None;
+                            state.PendingInlineCodeHasMonospace = false;
+                        }
+                        else
+                        {
+                            FlushPendingInlineCode(state);
+                        }
+                    }
 
                     state.InlineCodeDepth++;
-                    if (state.InlineCodeDepth == 1)
+                    if (state.InlineCodeDepth == 1 && !continuesPendingCode)
                     {
                         state.CodeBuffer.Clear();
                     }
@@ -199,7 +228,16 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
                     return true;
                 }
 
+                FlushPendingInlineCode(state);
                 state.Stack.Push(new Frame("span", GetSpanStyleFlags(style, ignoreBold)));
+                return true;
+            }
+
+            FlushPendingInlineCode(state);
+            var tagStyle = GetTagStyle(tagName, ignoreBold);
+            if (tagName != "a")
+            {
+                state.Stack.Push(new Frame(tagName, tagStyle));
                 return true;
             }
 
@@ -210,6 +248,9 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
 
                 if (state.InlineCodeDepth == 0)
                 {
+                    var desired = CurrentStyle(state.Stack);
+                    FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceStyle, ref state.EmittedStyle, state.Output);
+                    EnsureStyle(desired, ref state.EmittedStyle, state.Output);
                     state.Output.Append('[');
                     state.Stack.Push(new Frame("a", InlineStyle.None, href: href, contentStartIndex: state.Output.Length));
                 }
@@ -219,12 +260,70 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             return true;
         }
 
+        private static bool IsSupportedInlineTag(string tagName)
+        {
+            switch (tagName)
+            {
+                case "span":
+                case "a":
+                case "br":
+                case "b":
+                case "strong":
+                case "i":
+                case "em":
+                case "u":
+                case "ins":
+                case "s":
+                case "strike":
+                case "del":
+                case "sup":
+                case "sub":
+                case "mark":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static InlineStyle GetTagStyle(string tagName, bool ignoreBold)
+        {
+            switch (tagName)
+            {
+                case "b":
+                case "strong":
+                    return ignoreBold ? InlineStyle.None : InlineStyle.Bold;
+                case "i":
+                case "em":
+                    return InlineStyle.Italic;
+                case "u":
+                case "ins":
+                    return InlineStyle.Underline;
+                case "s":
+                case "strike":
+                case "del":
+                    return InlineStyle.Strike;
+                case "sup":
+                    return InlineStyle.Superscript;
+                case "sub":
+                    return InlineStyle.Subscript;
+                case "mark":
+                    return InlineStyle.Highlight;
+                default:
+                    return InlineStyle.None;
+            }
+        }
+
         private void FinalizeParse(ParseState state)
         {
             // Flush unterminated inline code.
             if (state.InlineCodeDepth > 0)
             {
-                EmitInlineCode(state, InlineStyle.None, inlineCodeHasMonospace: false);
+                state.InlineCodeDepth = 0;
+                EmitInlineCode(state, CurrentStyle(state.Stack), inlineCodeHasMonospace: false);
+            }
+            else
+            {
+                FlushPendingInlineCode(state);
             }
 
             // Close any unclosed links.
@@ -269,7 +368,10 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
                     state.InlineCodeDepth = System.Math.Max(0, state.InlineCodeDepth - 1);
                     if (state.InlineCodeDepth == 0)
                     {
-                        EmitInlineCode(state, frame.Style, frame.InlineCodeHasMonospace);
+                        QueueInlineCode(
+                            state,
+                            CurrentStyle(state.Stack) | frame.Style,
+                            frame.InlineCodeHasMonospace);
                     }
                 }
 
