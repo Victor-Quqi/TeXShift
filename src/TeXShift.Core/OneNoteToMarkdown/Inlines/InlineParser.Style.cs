@@ -293,5 +293,59 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             core = core.Substring(0, split);
             return tail;
         }
+
+        private static string SplitLeadingWhitespaceOnStyleChange(
+            string text,
+            InlineStyle desiredStyle,
+            InlineStyle emittedStyle,
+            out string core,
+            out InlineStyle leadingStyle)
+        {
+            core = text ?? string.Empty;
+            leadingStyle = emittedStyle;
+            if (string.IsNullOrEmpty(core) || desiredStyle == emittedStyle)
+            {
+                return null;
+            }
+
+            var emittedStyles = GetOrderedStyles(emittedStyle);
+            var desiredStyles = GetOrderedStyles(desiredStyle);
+            int common = 0;
+            leadingStyle = InlineStyle.None;
+            while (common < emittedStyles.Count &&
+                   common < desiredStyles.Count &&
+                   emittedStyles[common] == desiredStyles[common])
+            {
+                leadingStyle |= emittedStyles[common];
+                common++;
+            }
+
+            // Closing inner styles keeps the whitespace inside an already-open outer style.
+            if (common == desiredStyles.Count)
+            {
+                return null;
+            }
+
+            int split = 0;
+            while (split < core.Length)
+            {
+                char c = core[split];
+                if (c == '\r' || c == '\n' || !char.IsWhiteSpace(c))
+                {
+                    break;
+                }
+
+                split++;
+            }
+
+            if (split == 0)
+            {
+                return null;
+            }
+
+            string leading = core.Substring(0, split);
+            core = core.Substring(split);
+            return leading;
+        }
     }
 }

@@ -104,14 +104,67 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
                 return false;
             }
 
-            string normalized = tag.Trim().ToLowerInvariant();
-            switch (normalized)
+            string normalized = tag.Trim();
+            if (normalized.Length < 3 || normalized[0] != '<' || normalized[normalized.Length - 1] != '>')
             {
-                case "<sup>":
-                case "</sup>":
-                case "<sub>":
-                case "</sub>":
-                    safeTag = normalized;
+                return false;
+            }
+
+            string rawTag = normalized.Substring(1, normalized.Length - 2).Trim();
+            bool isClosing = rawTag.StartsWith("/", StringComparison.Ordinal);
+            if (isClosing)
+            {
+                rawTag = rawTag.Substring(1).TrimStart();
+            }
+
+            if (rawTag.Length == 0 || rawTag.EndsWith("/", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            int nameLength = 0;
+            while (nameLength < rawTag.Length && char.IsLetter(rawTag[nameLength]))
+            {
+                nameLength++;
+            }
+
+            if (nameLength == 0 ||
+                (nameLength < rawTag.Length && !char.IsWhiteSpace(rawTag[nameLength])))
+            {
+                return false;
+            }
+
+            string attributes = rawTag.Substring(nameLength);
+            if (isClosing && !string.IsNullOrWhiteSpace(attributes))
+            {
+                return false;
+            }
+
+            string tagName = rawTag.Substring(0, nameLength).ToLowerInvariant();
+            switch (tagName)
+            {
+                case "mark":
+                    safeTag = isClosing
+                        ? "</span>"
+                        : "<span style='" + OneNoteInlineStyles.HighlightCss + "'>";
+                    return true;
+                case "u":
+                case "ins":
+                    safeTag = isClosing
+                        ? "</span>"
+                        : "<span style='" + OneNoteInlineStyles.UnderlineCss + "'>";
+                    return true;
+                case "s":
+                case "del":
+                    safeTag = isClosing
+                        ? "</span>"
+                        : "<span style='" + OneNoteInlineStyles.StrikeCss + "'>";
+                    return true;
+                case "sup":
+                case "sub":
+                    safeTag = isClosing
+                        ? "</" + tagName + ">"
+                        : "<" + tagName + ">";
                     return true;
                 default:
                     return false;
@@ -132,7 +185,7 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
             }
             else if (emphasis.DelimiterChar == '~' && emphasis.DelimiterCount == 2)
             {
-                html.Append($"<span style='text-decoration:line-through'>{content}</span>");
+                AppendStyledSpan(html, OneNoteInlineStyles.StrikeCss, content);
             }
             else if (emphasis.DelimiterChar == '=' && emphasis.DelimiterCount == 2)
             {

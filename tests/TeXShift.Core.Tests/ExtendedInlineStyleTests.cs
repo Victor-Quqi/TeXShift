@@ -34,6 +34,54 @@ namespace TeXShift.Core.Tests
         }
 
         [TestMethod]
+        public async Task ForwardConversionRendersInlineHtmlStyleTagsAndAliases()
+        {
+            const string source =
+                "<MARK data-source='external'>marked</MARK> " +
+                "<u>under-u</u> <ins class='added'>under-ins</ins> " +
+                "<s>strike-s</s> <del cite='history'>strike-del</del> " +
+                "<sup title='power'>super</sup> <sub>sub</sub>";
+
+            var outline = await ConvertForwardAsync(source);
+            string html = GetRichText(outline);
+
+            StringAssert.Contains(html, "<span style='background-color:#FFFF00'>marked</span>");
+            StringAssert.Contains(html, "<span style='text-decoration:underline'>under-u</span>");
+            StringAssert.Contains(html, "<span style='text-decoration:underline'>under-ins</span>");
+            StringAssert.Contains(html, "<span style='text-decoration:line-through'>strike-s</span>");
+            StringAssert.Contains(html, "<span style='text-decoration:line-through'>strike-del</span>");
+            StringAssert.Contains(html, "<sup>super</sup>");
+            StringAssert.Contains(html, "<sub>sub</sub>");
+            Assert.IsFalse(html.Contains("data-source"));
+            Assert.IsFalse(html.Contains("class='added'"));
+            Assert.IsFalse(html.Contains("cite='history'"));
+            Assert.IsFalse(html.Contains("title='power'"));
+        }
+
+        [TestMethod]
+        public async Task InlineHtmlStyleTagsComposeAndRemainLiteralInsideCode()
+        {
+            const string source =
+                "<mark>**Important [link](https://example.com)** and `code`</mark> " +
+                "<ins>*new*</ins> <del>old H<sub>2</sub>O</del> " +
+                "`<mark>literal</mark>`";
+
+            var outline = await ConvertForwardAsync(source);
+            string html = GetRichText(outline);
+
+            StringAssert.Contains(
+                html,
+                "<span style='background-color:#FFFF00'><span style='font-weight:bold'>Important <a href=\"https://example.com\">link</a></span> and ");
+            StringAssert.Contains(
+                html,
+                "<span style='text-decoration:underline'><span style='font-style:italic'>new</span></span>");
+            StringAssert.Contains(
+                html,
+                "<span style='text-decoration:line-through'>old H<sub>2</sub>O</span>");
+            StringAssert.Contains(html, "&lt;mark&gt;literal&lt;/mark&gt;");
+        }
+
+        [TestMethod]
         public async Task ReverseConversionParsesExtendedInlineStyles()
         {
             const string html =
@@ -57,6 +105,46 @@ namespace TeXShift.Core.Tests
             string markdown = await ConvertReverseAsync(html);
 
             Assert.AreEqual("++~~both~~++ ++under++ ^up^ ~down~", markdown);
+        }
+
+        [TestMethod]
+        public async Task ReverseConversionParsesInlineHtmlStyleAliases()
+        {
+            const string html =
+                "<mark>marked</mark> <u>under-u</u> <ins>under-ins</ins> " +
+                "<s>strike-s</s> <del>strike-del</del> " +
+                "<sup>super</sup> <sub>sub</sub>";
+
+            string markdown = await ConvertReverseAsync(html);
+
+            Assert.AreEqual(
+                "==marked== ++under-u++ ++under-ins++ ~~strike-s~~ ~~strike-del~~ ^super^ ~sub~",
+                markdown);
+        }
+
+        [TestMethod]
+        public async Task MetadataFreeRoundTripCanonicalizesMixedInlineHtmlStyles()
+        {
+            const string source =
+                "<mark>**Important [link](https://example.com)** and `code`</mark> " +
+                "<ins>*new*</ins> <del>old H<sub>2</sub>O</del>";
+            var outline = await ConvertForwardAsync(source);
+            RemoveTeXShiftMeta(outline);
+
+            var reverse = new OneNoteToMarkdownConverter(new OneNoteStyleConfig());
+            var result = await reverse.ConvertToMarkdownAsync(outline);
+
+            Assert.AreEqual(
+                "==**Important [link](https://example.com)** and `code`== " +
+                "++*new*++ ~~old H<sub>2</sub>O~~",
+                result.Markdown.Trim());
+
+            var roundTrip = await ConvertForwardAsync(result.Markdown);
+            string html = GetRichText(roundTrip);
+            StringAssert.Contains(html, "background-color:#FFFF00");
+            StringAssert.Contains(html, "text-decoration:underline");
+            StringAssert.Contains(html, "text-decoration:line-through");
+            StringAssert.Contains(html, "<sub>2</sub>");
         }
 
         [TestMethod]
@@ -159,6 +247,28 @@ namespace TeXShift.Core.Tests
             Assert.AreEqual(
                 "==**Highlighted bold** and== | ++*Underlined italic* and ~~old H<sub>2</sub>O~~++",
                 markdown);
+        }
+
+        [TestMethod]
+        public async Task ReverseConversionKeepsStyledWhitespaceAtDelimiterBoundariesParseable()
+        {
+            const string html =
+                "<span style='font-weight:bold;background:yellow'>Review </span>" +
+                "<a href='https://example.com/review'>" +
+                "<span style='font-weight:bold;background:yellow'>the change</span></a>" +
+                "<span style='background:yellow'> and </span>" +
+                "<span style='font-family:Consolas;background:#F1F1F1'>&nbsp;code&nbsp;</span>";
+
+            string markdown = await ConvertReverseAsync(html);
+
+            Assert.AreEqual(
+                "==**Review**== [==**the change**==](https://example.com/review) ==and== `code`",
+                markdown);
+
+            var roundTrip = await ConvertForwardAsync(markdown);
+            string richText = GetRichText(roundTrip);
+            StringAssert.Contains(richText, "background-color:#FFFF00'>and</span>");
+            Assert.IsFalse(richText.Contains("==and=="));
         }
 
         [TestMethod]

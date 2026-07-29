@@ -7,6 +7,7 @@ namespace TeXShift.Core.OneNote
         public const string HighlightColor = "#FFFF00";
         public const string HighlightCss = "background-color:" + HighlightColor;
         public const string UnderlineCss = "text-decoration:underline";
+        public const string StrikeCss = "text-decoration:line-through";
 
         public static bool IsCanonicalHighlightColor(string value)
         {

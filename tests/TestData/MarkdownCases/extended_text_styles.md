@@ -37,3 +37,10 @@ Math keeps precedence: $x_i^2 + y_{total}$ and ^annotation^.
 | Link | ==[documentation](https://example.com/docs)== |
 | Formula | $E = mc^2$ and x^note^ |
 | Decorations | ++*current* and ~~old H~2~O~~++ |
+
+## Inline HTML style tags
+
+<mark data-source="html">**Review [the change](https://example.com/review)** and `inline code`</mark>; <ins>*new H<sub>2</sub>O*</ins>; <del>old x<sup>2</sup></del>; math stays $x_i^2$.
+
+- Aliases: <u>underlined</u>, <s>obsolete</s>, <MARK>highlighted</MARK>.
+- Script positions: x<sup>2</sup> + H<sub>2</sub>O.

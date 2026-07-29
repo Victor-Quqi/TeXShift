@@ -35,10 +35,25 @@ namespace TeXShift.Core.OneNoteToMarkdown.Inlines
             var desired = CurrentStyle(state.Stack);
             FlushPendingWhitespace(desired, ref state.PendingWhitespace, ref state.PendingWhitespaceStyle, ref state.EmittedStyle, state.Output);
 
+            string leading = SplitLeadingWhitespaceOnStyleChange(
+                decoded,
+                desired,
+                state.EmittedStyle,
+                out decoded,
+                out InlineStyle leadingStyle);
+            if (!string.IsNullOrEmpty(leading))
+            {
+                EnsureStyle(leadingStyle, ref state.EmittedStyle, state.Output);
+                state.Output.Append(leading);
+            }
+
             string tail = SplitTrailingWhitespaceIfStyled(decoded, desired, out string core);
 
-            EnsureStyle(desired, ref state.EmittedStyle, state.Output);
-            state.Output.Append(core);
+            if (!string.IsNullOrEmpty(core))
+            {
+                EnsureStyle(desired, ref state.EmittedStyle, state.Output);
+                state.Output.Append(core);
+            }
 
             if (!string.IsNullOrEmpty(tail))
             {
