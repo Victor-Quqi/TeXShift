@@ -59,6 +59,47 @@ namespace TeXShift.Core.Tests
         }
 
         [TestMethod]
+        public async Task ForwardConversionRendersHtmlEmphasisTagsAndAliases()
+        {
+            const string source =
+                "<STRONG data-source='html'>strong</STRONG> <b>bold</b> " +
+                "<em>emphasis</em> <i title='note'>italic</i>";
+
+            var outline = await ConvertForwardAsync(source);
+            string html = GetRichText(outline);
+
+            StringAssert.Contains(html, "<span style='font-weight:bold'>strong</span>");
+            StringAssert.Contains(html, "<span style='font-weight:bold'>bold</span>");
+            StringAssert.Contains(html, "<span style='font-style:italic'>emphasis</span>");
+            StringAssert.Contains(html, "<span style='font-style:italic'>italic</span>");
+            Assert.IsFalse(html.Contains("data-source"));
+            Assert.IsFalse(html.Contains("title='note'"));
+        }
+
+        [TestMethod]
+        public async Task HtmlEmphasisTagsRoundTripWithNestedContentAndCode()
+        {
+            const string source =
+                "<strong>Bold <em>italic</em> and [link](https://example.com)</strong> " +
+                "`<strong>literal</strong>`";
+            var outline = await ConvertForwardAsync(source);
+            RemoveTeXShiftMeta(outline);
+
+            var reverse = new OneNoteToMarkdownConverter(new OneNoteStyleConfig());
+            var result = await reverse.ConvertToMarkdownAsync(outline);
+
+            Assert.AreEqual(
+                "**Bold *italic* and [link](https://example.com)** `<strong>literal</strong>`",
+                result.Markdown.Trim());
+
+            var roundTrip = await ConvertForwardAsync(result.Markdown);
+            string html = GetRichText(roundTrip);
+            StringAssert.Contains(html, "font-weight:bold");
+            StringAssert.Contains(html, "font-style:italic");
+            StringAssert.Contains(html, "&lt;strong&gt;literal&lt;/strong&gt;");
+        }
+
+        [TestMethod]
         public async Task InlineHtmlStyleTagsComposeAndRemainLiteralInsideCode()
         {
             const string source =

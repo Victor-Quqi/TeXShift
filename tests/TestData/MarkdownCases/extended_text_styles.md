@@ -43,4 +43,5 @@ Math keeps precedence: $x_i^2 + y_{total}$ and ^annotation^.
 <mark data-source="html">**Review [the change](https://example.com/review)** and `inline code`</mark>; <ins>*new H<sub>2</sub>O*</ins>; <del>old x<sup>2</sup></del>; math stays $x_i^2$.
 
 - Aliases: <u>underlined</u>, <s>obsolete</s>, <MARK>highlighted</MARK>.
+- Emphasis aliases: <strong>strong with <em>nested italic</em></strong>, <b>bold</b>, and <i>italic</i>.
 - Script positions: x<sup>2</sup> + H<sub>2</sub>O.

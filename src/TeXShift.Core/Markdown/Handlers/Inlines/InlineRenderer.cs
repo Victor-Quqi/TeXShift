@@ -143,6 +143,18 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
             string tagName = rawTag.Substring(0, nameLength).ToLowerInvariant();
             switch (tagName)
             {
+                case "strong":
+                case "b":
+                    safeTag = isClosing
+                        ? "</span>"
+                        : "<span style='" + OneNoteInlineStyles.BoldCss + "'>";
+                    return true;
+                case "em":
+                case "i":
+                    safeTag = isClosing
+                        ? "</span>"
+                        : "<span style='" + OneNoteInlineStyles.ItalicCss + "'>";
+                    return true;
                 case "mark":
                     safeTag = isClosing
                         ? "</span>"
@@ -177,9 +189,9 @@ namespace TeXShift.Core.Markdown.Handlers.Inlines
             if (emphasis.DelimiterChar == '*' || emphasis.DelimiterChar == '_')
             {
                 if (emphasis.DelimiterCount == 2)
-                    html.Append($"<span style='font-weight:bold'>{content}</span>");
+                    AppendStyledSpan(html, OneNoteInlineStyles.BoldCss, content);
                 else if (emphasis.DelimiterCount == 1)
-                    html.Append($"<span style='font-style:italic'>{content}</span>");
+                    AppendStyledSpan(html, OneNoteInlineStyles.ItalicCss, content);
                 else
                     html.Append(content);
             }
