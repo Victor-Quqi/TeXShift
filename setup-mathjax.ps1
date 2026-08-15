@@ -17,10 +17,12 @@ $RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $MathJaxPath = [IO.Path]::GetFullPath((Join-Path $RepoRoot "src\TeXShift.AddIn\Lib\mathjax"))
 $VersionFile = Join-Path $MathJaxPath ".texshift-version"
 $RequiredFile = Join-Path $MathJaxPath "es5\tex-mml-chtml.js"
+$LicenseFile = Join-Path $MathJaxPath "LICENSE"
 $ArtifactsRoot = [IO.Path]::GetFullPath((Join-Path $RepoRoot "artifacts"))
 $TempRoot = Join-Path $ArtifactsRoot ("temp\mathjax-" + [Guid]::NewGuid().ToString("N"))
 
 if ((Test-Path -LiteralPath $RequiredFile -PathType Leaf) -and
+    (Test-Path -LiteralPath $LicenseFile -PathType Leaf) -and
     (Test-Path -LiteralPath $VersionFile -PathType Leaf) -and
     ((Get-Content -LiteralPath $VersionFile -Raw).Trim() -eq $Version)) {
     Write-Host "MathJax $Version is ready."
@@ -60,8 +62,12 @@ try {
     }
 
     $sourcePath = Join-Path $extractPath "package\es5"
+    $sourceLicensePath = Join-Path $extractPath "package\LICENSE"
     if (-not (Test-Path -LiteralPath (Join-Path $sourcePath "tex-mml-chtml.js") -PathType Leaf)) {
         throw "The MathJax archive does not contain the expected es5 payload."
+    }
+    if (-not (Test-Path -LiteralPath $sourceLicensePath -PathType Leaf)) {
+        throw "The MathJax archive does not contain its license file."
     }
 
     if (Test-Path -LiteralPath $MathJaxPath) {
@@ -69,6 +75,7 @@ try {
     }
     New-Item -ItemType Directory -Path $MathJaxPath | Out-Null
     Copy-Item -LiteralPath $sourcePath -Destination $MathJaxPath -Recurse -Force
+    Copy-Item -LiteralPath $sourceLicensePath -Destination $LicenseFile -Force
     Set-Content -LiteralPath $VersionFile -Value $Version -Encoding ASCII
     Write-Host "MathJax $Version restored."
 }

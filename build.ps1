@@ -39,6 +39,7 @@ $StageRoot = Join-Path $ArtifactsRoot "bin"
 $TestResultsRoot = Join-Path $ArtifactsRoot "test-results"
 $DiagnosticsRoot = Join-Path $ArtifactsRoot "diagnostics"
 $PackageRoot = Join-Path $ArtifactsRoot "package"
+$ThirdPartyNoticesPath = Join-Path $RepoRoot "THIRD-PARTY-NOTICES.md"
 $MathJaxSetup = Join-Path $RepoRoot "setup-mathjax.ps1"
 $InstallerScript = Join-Path $RepoRoot "setup\TeXShift.iss"
 
@@ -178,6 +179,7 @@ function Test-StagedPayload {
         "TeXShift.AddIn.dll",
         "TeXShift.AddIn.dll.config",
         "TeXShift.Core.dll",
+        "THIRD-PARTY-NOTICES.md",
         "Office.dll",
         "MaterialDesignThemes.Wpf.dll",
         "Microsoft.Web.WebView2.Core.dll",
@@ -188,6 +190,7 @@ function Test-StagedPayload {
         "runtimes\win-x64\native\WebView2Loader.dll",
         "zh-CN\TeXShift.AddIn.resources.dll",
         "zh-CN\TeXShift.Core.resources.dll",
+        "Lib\mathjax\LICENSE",
         "Lib\mathjax\es5\tex-mml-chtml.js",
         "Lib\mermaid\mermaid.min.js"
     )
@@ -251,6 +254,11 @@ function Invoke-Stage {
     foreach ($directory in @("Lib", "x64", "runtimes\win-x64\native", "zh-CN")) {
         Copy-StageDirectory $outputRoot $directory
     }
+
+    if (-not (Test-Path -LiteralPath $ThirdPartyNoticesPath -PathType Leaf)) {
+        throw "Third-party notices file not found: $ThirdPartyNoticesPath"
+    }
+    Copy-Item -LiteralPath $ThirdPartyNoticesPath -Destination (Join-Path $StageRoot "THIRD-PARTY-NOTICES.md") -Force
 
     Test-StagedPayload
     Write-PayloadManifest

@@ -25,6 +25,6 @@ $Version = Read-Host "Release version (x.y.z)"
 .\build.ps1 -Target Package -Configuration Release -Version $Version
 ```
 
-输出位于 `artifacts/package/`，包含单文件安装器和 SHA-256 文件。打包会检查 Release COM 身份、x64、强名称、依赖文件和资源清单。安装器写入机器级 COM/OneNote 注册，安装和卸载需要管理员权限。卸载时可选择删除安装用户的默认 TeXShift 数据目录；用户配置的外部调试输出目录保留。
+输出位于 `artifacts/package/`，包含单文件安装器和 SHA-256 文件。打包会检查 Release COM 身份、x64、强名称、依赖文件、资源清单和 `THIRD-PARTY-NOTICES.md`。安装器写入机器级 COM/OneNote 注册，安装和卸载需要管理员权限。卸载时可选择删除安装用户的默认 TeXShift 数据目录；用户配置的外部调试输出目录保留。第三方许可证声明随安装文件写入应用目录。
 
 发布正文来自本地忽略的 `.release/release-template.local.md`，仓库不配置自动发布任务。

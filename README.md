@@ -84,6 +84,8 @@ When upgrading from TeXShift 0.2.x or earlier, uninstall the old version first.
 
 The uninstaller installed by the Setup `.exe` can optionally remove the installing user's TeXShift settings, caches, and default-location debug logs.
 
+Third-party license notices are included in `THIRD-PARTY-NOTICES.md` in the installed application directory.
+
 ## Building from Source
 
 For developers who want to build TeXShift from source:

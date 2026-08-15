@@ -84,6 +84,8 @@
 
 Setup `.exe` 安装的卸载程序可选择一并删除安装用户的 TeXShift 设置、缓存和默认位置调试日志。
 
+第三方许可证声明位于安装目录中的 `THIRD-PARTY-NOTICES.md`。
+
 ## 从源码构建
 
 对于想要从源码构建 TeXShift 的开发者：
