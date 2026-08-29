@@ -2,11 +2,14 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.Logging
 {
     /// <summary>
     /// Writes small, always-on runtime diagnostics without affecting application flow.
+    /// Independent of the debug settings on purpose: the failures worth diagnosing happen
+    /// on the ordinary conversion path, where debug artifacts are never produced.
     /// </summary>
     public static class RuntimeLog
     {
@@ -16,15 +19,6 @@ namespace TeXShift.Core.Logging
 
         private static readonly object SyncRoot = new object();
         private static readonly Encoding Utf8NoBom = new UTF8Encoding(false);
-        private static string _customOutputPath;
-
-        public static void Configure(string customOutputPath)
-        {
-            lock (SyncRoot)
-            {
-                _customOutputPath = customOutputPath;
-            }
-        }
 
         public static void Write(string message)
         {
@@ -32,7 +26,9 @@ namespace TeXShift.Core.Logging
             {
                 lock (SyncRoot)
                 {
-                    var outputFolder = DebugLogger.ResolveDebugOutputFolder(_customOutputPath);
+                    var outputFolder = TeXShiftPaths.RuntimeLogFolder;
+                    Directory.CreateDirectory(outputFolder);
+
                     var logPath = Path.Combine(outputFolder, LogFileName);
                     var oldLogPath = Path.Combine(outputFolder, OldLogFileName);
                     var entry = FormatEntry(message);

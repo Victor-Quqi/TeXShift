@@ -112,7 +112,6 @@ namespace TeXShift.AddIn
                 // Load settings from JSON file
                 _settingsManager = new SettingsManager();
                 _appSettings = _settingsManager.Load();
-                RuntimeLog.Configure(_appSettings?.Debug?.DebugOutputPath);
 
                 // Initialize localization based on settings or system culture
                 LocalizationManager.Initialize(_appSettings?.Language);

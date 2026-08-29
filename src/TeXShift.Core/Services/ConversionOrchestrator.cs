@@ -153,6 +153,11 @@ namespace TeXShift.Core.Services
             catch (Exception ex)
             {
                 result.Error = ex;
+
+                // Always-on: the ordinary conversion path produces no debug artifacts, so this is
+                // the only record a user-reported failure ever leaves behind.
+                RuntimeLog.Write($"Conversion failed. {ex}");
+
                 if (options.WriteDebugFiles && logger != null)
                 {
                     await logger.LogErrorAsync(ex).ConfigureAwait(false);

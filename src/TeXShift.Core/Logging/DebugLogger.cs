@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using TeXShift.Core.Localization;
+using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.Logging
 {
@@ -279,9 +280,13 @@ namespace TeXShift.Core.Logging
 
         private string PrepareDebugFolder()
         {
-            return ResolveDebugOutputFolder(_customOutputPath);
+            return EnsureDebugOutputFolder(_customOutputPath);
         }
 
+        /// <summary>
+        /// Resolves the debug output folder without touching the filesystem, so that merely
+        /// displaying the path (e.g. in the settings window) does not create a folder.
+        /// </summary>
         public static string ResolveDebugOutputFolder(string customOutputPath)
         {
             string debugFolder;
@@ -306,17 +311,21 @@ namespace TeXShift.Core.Logging
                 {
                     // Installed environment: use %LOCALAPPDATA%\TeXShift\DebugOutput
                     // to avoid UnauthorizedAccessException in Program Files.
-                    debugFolder = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                        "TeXShift",
-                        "DebugOutput");
+                    debugFolder = Path.Combine(TeXShiftPaths.LocalDataRoot, "DebugOutput");
                 }
             }
 
-            if (!Directory.Exists(debugFolder))
-            {
-                Directory.CreateDirectory(debugFolder);
-            }
+            return debugFolder;
+        }
+
+        /// <summary>
+        /// Resolves the debug output folder and creates it. Use this only when artifacts are
+        /// about to be written there.
+        /// </summary>
+        public static string EnsureDebugOutputFolder(string customOutputPath)
+        {
+            string debugFolder = ResolveDebugOutputFolder(customOutputPath);
+            Directory.CreateDirectory(debugFolder);
             return debugFolder;
         }
 

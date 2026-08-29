@@ -6,7 +6,6 @@ using TeXShift.AddIn.Interop;
 using TeXShift.AddIn.Localization;
 using TeXShift.AddIn.UI.WPF;
 using TeXShift.Core.Localization;
-using TeXShift.Core.Logging;
 using TeXShift.Core.Mermaid;
 
 namespace TeXShift.AddIn
@@ -121,7 +120,6 @@ namespace TeXShift.AddIn
 
                 _settingsManager.Save(updatedSettings);
                 _appSettings = updatedSettings;
-                RuntimeLog.Configure(_appSettings?.Debug?.DebugOutputPath);
                 LocalizationManager.Initialize(_appSettings?.Language);
                 ApplySettingsToStyleConfig();
 

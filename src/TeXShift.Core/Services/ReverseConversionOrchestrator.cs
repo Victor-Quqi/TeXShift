@@ -204,6 +204,10 @@ namespace TeXShift.Core.Services
             catch (Exception ex)
             {
                 result.Error = ex;
+
+                // Always-on: see the note in ConversionOrchestrator.
+                RuntimeLog.Write($"Reverse conversion failed. {ex}");
+
                 if (options.WriteDebugFiles && logger != null)
                 {
                     await logger.LogErrorAsync(ex).ConfigureAwait(false);
