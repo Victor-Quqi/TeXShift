@@ -68,6 +68,7 @@ namespace TeXShift.Core.Services
                 {
                     // Don't wrap read errors in an exception - let Connect.cs handle
                     // ReadResult.ErrorMessage directly for user-friendly display
+                    RuntimeLog.Write($"Conversion aborted while reading. Mode={readResult.Mode}. {readResult.ErrorMessage}");
                     return result;
                 }
 
@@ -92,6 +93,10 @@ namespace TeXShift.Core.Services
                         ? Resources.GetString("Error_NoValidTextContent")
                         : Resources.GetString("Error_EmptyTextBox");
                     result.ReadResult = readResult;
+
+                    // An "empty" read can also mean cursor/selection detection misfired, so it is
+                    // worth recording rather than dismissing as a user mistake.
+                    RuntimeLog.Write($"Conversion aborted: nothing to convert. Mode={readResult.Mode}. {readResult.ErrorMessage}");
                     return result;
                 }
 

@@ -62,6 +62,7 @@ namespace TeXShift.Core.Services
                 if (!readResult.IsSuccess)
                 {
                     // Let the caller handle ReadResult.ErrorMessage (no exception).
+                    RuntimeLog.Write($"Reverse conversion aborted while reading. Mode={readResult.Mode}. {readResult.ErrorMessage}");
                     return result;
                 }
 
