@@ -1,2 +1,3 @@
 - [imageMso 图像列表](https://bert-toolkit.com/imagemso-list.html)：用于为 `Ribbon.xml` 选择 `imageMso` 值。
 - [OneNote 开发人员与 XML 架构文档](https://learn.microsoft.com/en-us/office/client-developer/onenote/onenote-home)：用于查阅 OneNote 开发接口与 XML 架构。
+- [onenote-codex](https://github.com/yesunhuang/onenote-codex)：同类项目（Microsoft Graph + 本地 COM 双通道），其 MathML 归一化与公式排版记录可作排查线索；结论需自行复现后再采信。

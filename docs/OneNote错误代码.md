@@ -67,3 +67,9 @@
 | hrIMConversationTypeInvalid | 0x8004202f | IMConversationType 页面节点属性值无效（需为 0、1、2 或 3） |
 | hrAppInModalUI | 0x80042030 | 模式对话框阻止应用程序 |
 | hrPublishFormatUnsupportedForLabels | 0x80042031 | 发布格式不支持敏感度标记 |
+
+## 实测补充的触发条件
+
+| HRESULT | 触发条件 |
+|---------|---------|
+| hrInvalidSelection (0x8004202c) | 单次 `UpdatePageContent` 载荷中出现多个 `selected` 标记。复制已有 OE 时需一并剥除 `selected` 属性（`objectID` 之外的另一个必剥项）。 |
