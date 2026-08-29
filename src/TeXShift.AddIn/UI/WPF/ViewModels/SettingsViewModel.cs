@@ -279,6 +279,8 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
         public string HorizontalRuleUseImageText => UIResources.GetString("Settings_Checkbox_HorizontalRuleUseImage");
         public string DebugOutputPathDescription => UIResources.GetString("Settings_Description_DebugOutputPath");
         public string DefaultDebugOutputPath => TeXShift.Core.Logging.DebugLogger.ResolveDebugOutputFolder(null);
+        public string RuntimeLogPathDescription => UIResources.GetString("Settings_Description_RuntimeLogPath");
+        public string RuntimeLogPath => TeXShift.Core.Utils.TeXShiftPaths.RuntimeLogFolder;
 
         public string ResetDialogTitle => UIResources.GetString("Dialog_Confirm_ResetTitle");
         public string ResetDialogMessage => UIResources.GetString("Dialog_Confirm_ResetSettings");

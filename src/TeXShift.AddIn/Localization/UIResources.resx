@@ -160,6 +160,9 @@
   <data name="Settings_Description_DebugOutputPath" xml:space="preserve">
     <value>Debug output folder (leave blank for default):</value>
   </data>
+  <data name="Settings_Description_RuntimeLogPath" xml:space="preserve">
+    <value>Runtime log (always written, not affected by the settings above):</value>
+  </data>
   <data name="Dialog_Confirm_ResetSettings" xml:space="preserve">
     <value>Are you sure you want to restore all settings to defaults?</value>
   </data>

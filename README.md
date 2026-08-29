@@ -82,7 +82,7 @@ Download the latest x64 Setup `.exe` from [Releases](https://github.com/Victor-Q
 
 When upgrading from TeXShift 0.2.x or earlier, uninstall the old version first.
 
-The uninstaller installed by the Setup `.exe` can optionally remove the installing user's TeXShift settings, caches, and default-location debug logs.
+The uninstaller installed by the Setup `.exe` can optionally remove the installing user's TeXShift settings, caches, runtime log, and default-location debug output. Debug output written to a custom folder is left untouched.
 
 Third-party license notices are included in `THIRD-PARTY-NOTICES.md` in the installed application directory.
 

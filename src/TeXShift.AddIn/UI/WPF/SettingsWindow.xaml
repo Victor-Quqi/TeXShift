@@ -365,6 +365,9 @@
                                     <Button Grid.Column="1" Content="{Binding BrowseButtonText}" Click="BrowseFolder_Click"
                                             Style="{StaticResource SmallOutlinedButton}"/>
                                 </Grid>
+                                <TextBlock Text="{Binding RuntimeLogPathDescription}" Margin="0,16,0,4"/>
+                                <TextBlock Text="{Binding RuntimeLogPath}" Opacity="0.7" TextWrapping="Wrap"
+                                           IsEnabled="False"/>
                             </StackPanel>
                         </materialDesign:Card>
                     </StackPanel>

@@ -160,6 +160,9 @@
   <data name="Settings_Description_DebugOutputPath" xml:space="preserve">
     <value>调试输出目录 (留空使用默认):</value>
   </data>
+  <data name="Settings_Description_RuntimeLogPath" xml:space="preserve">
+    <value>运行日志 (始终记录，不受上述设置影响):</value>
+  </data>
   <data name="Dialog_Confirm_ResetSettings" xml:space="preserve">
     <value>确定要将所有设置恢复为默认值吗？</value>
   </data>
