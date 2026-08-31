@@ -17,6 +17,8 @@ LaTeX 到 MathML 转换使用 MathJax 实现，但 OneNote 对 MathML 的支持�
 | 间距命令无效 | `<mspace>` 转换为 Unicode 空格字符 | ✅ 有效（精度有限）|
 | 公式首 token 为数字时字体错误（继承正文字体而非 Cambria Math） | 移除前置零宽空格哨兵 span，仅保留尾部哨兵 | ✅ 有效 |
 
+同期实验的两条负面结论：公式后存在任何额外 run（含尾哨兵）时 OneNote 会丢弃 `display='block'`，这是块级公式被渲染成小字的原因；外层 `<mrow>` 包裹会被 OneNote 剥除。
+
 ## 未解决的问题
 
 ### 1. LaTeX 换行符 `\\`
