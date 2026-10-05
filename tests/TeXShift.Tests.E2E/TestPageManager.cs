@@ -13,6 +13,7 @@ using Microsoft.Win32;
 using OneNoteInterop = Microsoft.Office.Interop.OneNote;
 using TeXShift.Core.OneNote;
 using TeXShift.Core.Utils;
+using TeXShift.Tests.E2E.Models;
 
 namespace TeXShift.Tests.E2E
 {
@@ -23,6 +24,7 @@ namespace TeXShift.Tests.E2E
         private const string OneNoteAppPathRegistryKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\onenote.exe";
         private const string DefaultOneNoteExecutablePath = @"C:\Program Files\Microsoft Office\root\Office16\ONENOTE.EXE";
         private const int SwShowMinNoActive = 7;
+        private const int SwRestore = 9;
         private const int OneNoteStartupWindowTimeoutMs = 10000;
         private const int OneNoteStartupWindowPollIntervalMs = 200;
         private const int OneNoteMinimizeTimeoutMs = 3000;
@@ -30,6 +32,19 @@ namespace TeXShift.Tests.E2E
         private const int OneNoteComReadyTimeoutMs = 10000;
         private const int OneNoteComReadyPollIntervalMs = 250;
         private const int OneNoteCloseTimeoutMs = 8000;
+        private const int OneNoteActivateTimeoutMs = 3000;
+        private const int OneNoteActivateRetryIntervalMs = 200;
+        private const uint WmKeyDown = 0x0100;
+        private const uint WmKeyUp = 0x0101;
+        private const int VkEnd = 0x23;
+        private const int VkDown = 0x28;
+        private const int VkShift = 0x10;
+        private const int VkLShift = 0xA0;
+        private const byte KeyDownState = 0x80;
+        private const int MaxSelectionKeySteps = 200;
+        private const int SelectionKeyTimeoutMs = 1000;
+        private const int SelectionPollIntervalMs = 50;
+        private const int HrNotYetSynchronized = unchecked((int)0x8004201D);
         private static readonly XNamespace OneNoteNamespace = OneNoteXml.Namespace;
 
         [DllImport("user32.dll")]
@@ -37,6 +52,36 @@ namespace TeXShift.Tests.E2E
 
         [DllImport("user32.dll")]
         private static extern bool IsIconic(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+        [DllImport("user32.dll")]
+        private static extern bool GetGUIThreadInfo(uint threadId, ref GuiThreadInfo info);
+
+        [DllImport("user32.dll")]
+        private static extern uint MapVirtualKey(uint code, uint mapType);
+
+        [DllImport("user32.dll")]
+        private static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool AttachThreadInput(uint attachThreadId, uint attachToThreadId, bool attach);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetCurrentThreadId();
+
+        [DllImport("user32.dll")]
+        private static extern bool GetKeyboardState(byte[] keyState);
+
+        [DllImport("user32.dll")]
+        private static extern bool SetKeyboardState(byte[] keyState);
 
         private static bool IsBoolAttributeTrue(XElement element, string attributeName)
         {
@@ -62,6 +107,8 @@ namespace TeXShift.Tests.E2E
         private bool _createdNotebook;  // Track if we created the notebook
         private string _notebookPath;   // Path to delete on cleanup
         private string _originalPageId; // Page ID to navigate back to after test
+        private string _importedPageId; // Page reproduced from a section file
+        private string _importedSectionId; // Section file copy holding that page
         private bool _launchedOneNoteProcess; // Track if we launched OneNote
         private bool _shouldCloseOneNote; // Flag to close OneNote on dispose
 
@@ -233,14 +280,28 @@ namespace TeXShift.Tests.E2E
             WaitForOneNoteProcessesToSettle();
         }
 
-        public Task<string> CreateTestPageAsync(string testName, string markdownContent)
+        public Task<string> CreateTestPageAsync(string testName, string markdownContent, PageSelection selection)
         {
             if (string.IsNullOrWhiteSpace(testName))
             {
                 throw new ArgumentException("Test name is required.", nameof(testName));
             }
 
-            return Task.Run(() => _staRunner.Run(() => CreateTestPage(testName, markdownContent ?? string.Empty)));
+            return Task.Run(() => _staRunner.Run(() => CreateTestPage(testName, markdownContent ?? string.Empty, selection ?? PageSelection.Default)));
+        }
+
+        /// <summary>
+        /// Reproduces a captured page in the test notebook from page XML (dump --page) or a section
+        /// file exported from OneNote (.one, the faithful copy) and sets up <paramref name="selection"/>.
+        /// </summary>
+        public Task<string> CreateTestPageFromFileAsync(string pageFilePath, PageSelection selection)
+        {
+            if (string.IsNullOrWhiteSpace(pageFilePath))
+            {
+                throw new ArgumentException("Page file is required.", nameof(pageFilePath));
+            }
+
+            return Task.Run(() => _staRunner.Run(() => CreateTestPageFromFile(pageFilePath, selection ?? PageSelection.Default)));
         }
 
         public Task DeletePageAsync(string pageId)
@@ -550,6 +611,53 @@ namespace TeXShift.Tests.E2E
             return IntPtr.Zero;
         }
 
+        /// <summary>
+        /// Makes OneNote the active window, as when a user clicks a ribbon button, and returns the
+        /// window that had the foreground so it can be given back with <see cref="FocusWindow"/>.
+        /// </summary>
+        public static IntPtr ActivateOneNoteWindow()
+        {
+            IntPtr window = GetOneNoteMainWindowHandleOrThrow();
+            if (IsIconic(window))
+            {
+                ShowWindow(window, SwRestore);
+            }
+
+            IntPtr previous = GetForegroundWindow();
+            var deadline = DateTime.UtcNow.AddMilliseconds(OneNoteActivateTimeoutMs);
+            while (GetForegroundWindow() != window)
+            {
+                if (DateTime.UtcNow >= deadline)
+                {
+                    throw new InvalidOperationException("Could not bring OneNote to the foreground.");
+                }
+
+                FocusWindow(window);
+                Thread.Sleep(OneNoteActivateRetryIntervalMs);
+            }
+
+            return previous;
+        }
+
+        public static void FocusWindow(IntPtr window)
+        {
+            // Windows lets only the foreground thread hand over activation, so share its input state.
+            uint foregroundThread = GetWindowThreadProcessId(GetForegroundWindow(), out _);
+            uint currentThread = GetCurrentThreadId();
+            bool attached = foregroundThread != currentThread && AttachThreadInput(currentThread, foregroundThread, true);
+            try
+            {
+                SetForegroundWindow(window);
+            }
+            finally
+            {
+                if (attached)
+                {
+                    AttachThreadInput(currentThread, foregroundThread, false);
+                }
+            }
+        }
+
         private static void MinimizeOneNoteWindow(IntPtr windowHandle)
         {
             var deadline = DateTime.UtcNow.AddMilliseconds(OneNoteMinimizeTimeoutMs);
@@ -636,7 +744,7 @@ namespace TeXShift.Tests.E2E
             }
         }
 
-        private string CreateTestPage(string testName, string markdownContent)
+        private string CreateTestPage(string testName, string markdownContent, PageSelection selection)
         {
             EnsureNotDisposed();
 
@@ -649,14 +757,12 @@ namespace TeXShift.Tests.E2E
                 throw new InvalidOperationException("Failed to create a new OneNote page.");
             }
 
-            // Update page with title and content in one operation
-            // (UpdatePageContent also handles navigating to the content OE for selection)
-            UpdatePageContent(pageId, testName, markdownContent);
-
+            UpdatePageContent(pageId, testName, markdownContent, addCaretParagraph: selection.IsDefault);
+            PlaceSelectionOrDeletePage(pageId, selection);
             return pageId;
         }
 
-        private void UpdatePageContent(string pageId, string title, string content)
+        private void UpdatePageContent(string pageId, string title, string content, bool addCaretParagraph)
         {
             _oneNoteApp.GetPageContent(pageId, out string pageXml, OneNoteInterop.PageInfo.piAll, OneNoteInterop.XMLSchema.xs2013);
             var doc = XDocument.Parse(pageXml);
@@ -689,11 +795,13 @@ namespace TeXShift.Tests.E2E
             var existingChildren = outline.Element(ns + "OEChildren");
             existingChildren?.Remove();
 
-            // Create OEChildren with one OE per line (mimics normal OneNote structure)
-            // First OE is empty - used as cursor position to trigger cursor mode in reader
+            // Create OEChildren with one OE per line (mimics normal OneNote structure).
+            // An empty first OE takes the default caret, so the whole Markdown is converted.
             var oeChildren = new XElement(ns + "OEChildren");
-            var cursorOE = new XElement(ns + "OE", new XElement(ns + "T", new XCData(string.Empty)));
-            oeChildren.Add(cursorOE);
+            if (addCaretParagraph)
+            {
+                oeChildren.Add(new XElement(ns + "OE", new XElement(ns + "T", new XCData(string.Empty))));
+            }
 
             var lines = (content ?? string.Empty).Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
             foreach (var line in lines)
@@ -706,64 +814,331 @@ namespace TeXShift.Tests.E2E
             outline.Add(oeChildren);
 
             _oneNoteApp.UpdatePageContent(doc.ToString(), DateTime.MinValue, OneNoteInterop.XMLSchema.xs2013, true);
+        }
 
-            // Get the updated page to find the first content OE's objectID
-            _oneNoteApp.GetPageContent(pageId, out string verifyXml, OneNoteInterop.PageInfo.piAll, OneNoteInterop.XMLSchema.xs2013);
-            var verifyDoc = XDocument.Parse(verifyXml);
+        private string CreateTestPageFromFile(string pageFilePath, PageSelection selection)
+        {
+            EnsureNotDisposed();
 
-            // Find the first OE in the content outline (not the title)
-            var outlineOE = verifyDoc.Descendants(OneNoteNamespace + "OE")
-                .FirstOrDefault(node => !node.Ancestors(OneNoteNamespace + "Title").Any());
+            string notebookId = GetOrCreateNotebookId();
+            string pageId = string.Equals(Path.GetExtension(pageFilePath), ".one", StringComparison.OrdinalIgnoreCase)
+                ? ImportSectionPage(notebookId, pageFilePath)
+                : CreatePageFromXml(GetOrCreateSectionId(notebookId), File.ReadAllText(pageFilePath));
 
-            string oeId = outlineOE?.Attribute("objectID")?.Value;
+            PlaceSelectionOrDeletePage(pageId, selection);
+            return pageId;
+        }
 
-            // Navigate to the content OE to select it, then poll until selection is reflected
-            if (!string.IsNullOrWhiteSpace(oeId))
+        private string CreatePageFromXml(string sectionId, string pageXml)
+        {
+            _oneNoteApp.CreateNewPage(sectionId, out string pageId, OneNoteInterop.NewPageStyle.npsDefault);
+            if (string.IsNullOrWhiteSpace(pageId))
             {
-                _oneNoteApp.NavigateTo(pageId, oeId, false);
-                WaitForSelection(pageId, oeId);
+                throw new InvalidOperationException("Failed to create a new OneNote page.");
+            }
+
+            var doc = XDocument.Parse(pageXml);
+
+            // Object identities, view state and selection belong to the source page.
+            doc.Root.SetAttributeValue("ID", pageId);
+            foreach (var element in doc.Root.DescendantsAndSelf())
+            {
+                element.Attribute("objectID")?.Remove();
+                element.Attribute("selected")?.Remove();
+                element.Attribute("isCurrentlyViewed")?.Remove();
+            }
+
+            _oneNoteApp.UpdatePageContent(doc.ToString(), DateTime.MinValue, OneNoteInterop.XMLSchema.xs2013, true);
+            return pageId;
+        }
+
+        /// <summary>
+        /// Opens a copy of the section file in the test notebook and returns its first page.
+        /// </summary>
+        private string ImportSectionPage(string notebookId, string sectionFilePath)
+        {
+            _oneNoteApp.GetHierarchy(notebookId, OneNoteInterop.HierarchyScope.hsSelf, out string notebookXml, OneNoteInterop.XMLSchema.xs2013);
+            string notebookPath = (string)XDocument.Parse(notebookXml).Root?.Attribute("path");
+            if (string.IsNullOrWhiteSpace(notebookPath))
+            {
+                throw new InvalidOperationException("Cannot get notebook path to import the section.");
+            }
+
+            string sectionPath = Path.Combine(
+                notebookPath,
+                $"{Path.GetFileNameWithoutExtension(sectionFilePath)}_{DateTime.Now:yyyyMMdd_HHmmss}.one");
+            File.Copy(sectionFilePath, sectionPath);
+
+            _oneNoteApp.OpenHierarchy(sectionPath, null, out string sectionId, OneNoteInterop.CreateFileType.cftNone);
+            if (string.IsNullOrWhiteSpace(sectionId))
+            {
+                throw new InvalidOperationException($"Failed to open the section file '{sectionPath}'.");
+            }
+
+            _importedSectionId = sectionId;
+            _importedPageId = WaitForSectionPageIds(sectionId).FirstOrDefault()
+                ?? throw new InvalidOperationException("The section file has no page.");
+            return _importedPageId;
+        }
+
+        /// <summary>
+        /// Lists the pages of a just-opened section, waiting while OneNote is still loading it.
+        /// </summary>
+        private List<string> WaitForSectionPageIds(string sectionId)
+        {
+            var deadline = DateTime.UtcNow.AddMilliseconds(OneNoteComReadyTimeoutMs);
+
+            while (true)
+            {
+                try
+                {
+                    var pageIds = GetPageIds(sectionId);
+                    if (pageIds.Count > 0 || DateTime.UtcNow >= deadline)
+                    {
+                        return pageIds;
+                    }
+                }
+                catch (COMException ex) when (ex.HResult == HrNotYetSynchronized && DateTime.UtcNow < deadline)
+                {
+                }
+
+                Thread.Sleep(OneNoteComReadyPollIntervalMs);
             }
         }
 
         /// <summary>
-        /// Polls GetPageContent until the specified OE has a 'selected' attribute, or timeout.
+        /// Leaves no half-prepared page behind when the selection cannot be set up.
         /// </summary>
-        private void WaitForSelection(string pageId, string targetOeId, int timeoutMs = 10000, int pollIntervalMs = 100)
+        private void PlaceSelectionOrDeletePage(string pageId, PageSelection selection)
+        {
+            try
+            {
+                PlaceSelection(pageId, selection);
+            }
+            catch
+            {
+                try
+                {
+                    DeletePage(pageId);
+                }
+                catch
+                {
+                    // Keep the selection failure as the reported error
+                }
+
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Sets up <paramref name="selection"/> with OneNote's own navigation and keyboard handling, so
+        /// the reader sees the selection markup a user's caret or drag would produce.
+        /// </summary>
+        private void PlaceSelection(string pageId, PageSelection selection)
+        {
+            _oneNoteApp.GetPageContent(pageId, out string pageXml, OneNoteInterop.PageInfo.piBasic, OneNoteInterop.XMLSchema.xs2013);
+            var paragraphs = XDocument.Parse(pageXml).Root.Elements(OneNoteNamespace + "Outline")
+                .SelectMany(outline => outline.Descendants(OneNoteNamespace + "OE"))
+                .ToList();
+
+            var first = selection.IsDefault
+                ? paragraphs.FirstOrDefault() ?? throw new InvalidOperationException("The page has no Outline to convert.")
+                : FindParagraph(paragraphs, selection.FromText);
+            string firstId = (string)first.Attribute("objectID");
+
+            // NavigateTo selects the whole paragraph.
+            _oneNoteApp.NavigateTo(pageId, firstId, false);
+            WaitForSelection(pageId, page => FindById(page, firstId)?.DescendantsAndSelf()
+                .Any(node => node.Attribute("selected") != null) == true);
+
+            if (!selection.IsRange)
+            {
+                // End collapses it to a caret, which OneNote reports as an empty selected T.
+                PressKeyInOneNote(VkEnd);
+                WaitForSelection(pageId, page => FindById(page, firstId)?.Elements(OneNoteNamespace + "T")
+                    .Any(text => (string)text.Attribute("selected") == "all" && text.Value.Length == 0) == true);
+                return;
+            }
+
+            var last = FindParagraph(paragraphs, selection.ToText);
+            if (paragraphs.IndexOf(last) < paragraphs.IndexOf(first)
+                || last.Ancestors(OneNoteNamespace + "Outline").First() != first.Ancestors(OneNoteNamespace + "Outline").First())
+            {
+                throw new InvalidOperationException(
+                    $"The paragraph containing \"{selection.ToText}\" must follow \"{selection.FromText}\" in the same Outline.");
+            }
+
+            ExtendSelectionTo(pageId, (string)last.Attribute("objectID"));
+        }
+
+        /// <summary>
+        /// Extends the selection line by line (Shift+Down) until it reaches the last paragraph, then to the
+        /// end of each of its lines (Shift+End) until the paragraph is fully selected.
+        /// </summary>
+        private void ExtendSelectionTo(string pageId, string lastOeId)
+        {
+            HoldShiftInOneNote(() =>
+            {
+                string signature = ReadSelection(pageId, lastOeId, out string lastState);
+                int lastKey = 0;
+                for (int step = 0; lastState != "all"; step++)
+                {
+                    if (step >= MaxSelectionKeySteps)
+                    {
+                        throw new InvalidOperationException("Could not extend the selection to the last paragraph.");
+                    }
+
+                    lastKey = lastState == null || lastKey == VkEnd ? VkDown : VkEnd;
+                    PressKeyInOneNote(lastKey);
+
+                    // End at a line end changes nothing, so an unchanged selection after the wait is expected.
+                    var deadline = DateTime.UtcNow.AddMilliseconds(SelectionKeyTimeoutMs);
+                    string previous = signature;
+                    do
+                    {
+                        Thread.Sleep(SelectionPollIntervalMs);
+                        signature = ReadSelection(pageId, lastOeId, out lastState);
+                    }
+                    while (signature == previous && DateTime.UtcNow < deadline);
+                }
+            });
+        }
+
+        private static XElement FindParagraph(IEnumerable<XElement> paragraphs, string containedText)
+        {
+            return paragraphs.FirstOrDefault(oe => oe.Elements(OneNoteNamespace + "T")
+                    .Any(text => text.Value.IndexOf(containedText, StringComparison.Ordinal) >= 0))
+                ?? throw new InvalidOperationException($"No paragraph on the page contains \"{containedText}\".");
+        }
+
+        private static XElement FindById(XDocument page, string objectId)
+        {
+            return page.Descendants(OneNoteNamespace + "OE")
+                .FirstOrDefault(node => (string)node.Attribute("objectID") == objectId);
+        }
+
+        /// <summary>
+        /// Returns a fingerprint of the page selection and how much of the given OE it covers.
+        /// </summary>
+        private string ReadSelection(string pageId, string oeId, out string oeState)
+        {
+            _oneNoteApp.GetPageContent(pageId, out string xml, OneNoteInterop.PageInfo.piSelection, OneNoteInterop.XMLSchema.xs2013);
+            var page = XDocument.Parse(xml);
+            oeState = (string)FindById(page, oeId)?.Attribute("selected");
+
+            return string.Join("|", page.Descendants()
+                .Where(node => node.Attribute("selected") != null)
+                .Select(node => $"{(string)node.Attribute("objectID") ?? node.Name.LocalName}:{(string)node.Attribute("selected")}:{(node.Name == OneNoteNamespace + "T" ? node.Value.Length : 0)}"));
+        }
+
+        /// <summary>
+        /// Polls GetPageContent until the page selection satisfies <paramref name="isReady"/>, or timeout.
+        /// </summary>
+        private void WaitForSelection(
+            string pageId,
+            Func<XDocument, bool> isReady,
+            int timeoutMs = 10000,
+            int pollIntervalMs = 100)
         {
             var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
 
             while (DateTime.UtcNow < deadline)
             {
-                _oneNoteApp.GetPageContent(pageId, out string xml, OneNoteInterop.PageInfo.piAll, OneNoteInterop.XMLSchema.xs2013);
-                var doc = XDocument.Parse(xml);
-
-                // Check if any descendant of the target OE (or the OE itself) has 'selected' attribute
-                var targetOE = doc.Descendants(OneNoteNamespace + "OE")
-                    .FirstOrDefault(node => (string)node.Attribute("objectID") == targetOeId);
-
-                if (targetOE != null)
+                _oneNoteApp.GetPageContent(pageId, out string xml, OneNoteInterop.PageInfo.piSelection, OneNoteInterop.XMLSchema.xs2013);
+                if (isReady(XDocument.Parse(xml)))
                 {
-                    // Check if target OE or any of its descendants have 'selected' attribute
-                    bool hasSelection = targetOE.DescendantsAndSelf()
-                        .Any(node => node.Attribute("selected") != null);
-
-                    if (hasSelection)
-                    {
-                        return; // Selection is reflected, we're good
-                    }
+                    return;
                 }
 
                 Thread.Sleep(pollIntervalMs);
             }
 
             // Timeout reached - fail fast to avoid flaky follow-up steps
-            throw new TimeoutException($"WaitForSelection: Timeout waiting for selection on OE {targetOeId}");
+            throw new TimeoutException("WaitForSelection: Timeout waiting for the page selection.");
+        }
+
+        /// <summary>
+        /// Posts a key press to the window holding OneNote's keyboard focus, leaving the user's
+        /// foreground window untouched.
+        /// </summary>
+        private static void PressKeyInOneNote(int virtualKey)
+        {
+            IntPtr mainWindow = GetOneNoteMainWindowHandleOrThrow();
+            var info = new GuiThreadInfo { cbSize = Marshal.SizeOf<GuiThreadInfo>() };
+            uint threadId = GetWindowThreadProcessId(mainWindow, out _);
+            IntPtr target = GetGUIThreadInfo(threadId, ref info) && info.hwndFocus != IntPtr.Zero
+                ? info.hwndFocus
+                : mainWindow;
+
+            // lParam: repeat count 1 and scan code; key-up also sets the previous-state and transition bits.
+            int keyData = 1 | ((int)MapVirtualKey((uint)virtualKey, 0) << 16);
+            PostMessage(target, WmKeyDown, (IntPtr)virtualKey, (IntPtr)keyData);
+            PostMessage(target, WmKeyUp, (IntPtr)virtualKey, (IntPtr)(keyData | unchecked((int)0xC0000000)));
+        }
+
+        /// <summary>
+        /// Runs <paramref name="action"/> with Shift down for OneNote. Posted keys carry no modifier state,
+        /// so Shift is set in the keyboard state shared with OneNote's input thread.
+        /// </summary>
+        private static void HoldShiftInOneNote(Action action)
+        {
+            uint oneNoteThread = GetWindowThreadProcessId(GetOneNoteMainWindowHandleOrThrow(), out _);
+            uint currentThread = GetCurrentThreadId();
+            if (!AttachThreadInput(currentThread, oneNoteThread, true))
+            {
+                throw new InvalidOperationException("Could not share keyboard state with OneNote.");
+            }
+
+            try
+            {
+                var state = new byte[256];
+                GetKeyboardState(state);
+                byte shift = state[VkShift];
+                byte leftShift = state[VkLShift];
+                state[VkShift] = KeyDownState;
+                state[VkLShift] = KeyDownState;
+                SetKeyboardState(state);
+
+                try
+                {
+                    action();
+                }
+                finally
+                {
+                    state[VkShift] = shift;
+                    state[VkLShift] = leftShift;
+                    SetKeyboardState(state);
+                }
+            }
+            finally
+            {
+                AttachThreadInput(currentThread, oneNoteThread, false);
+            }
+        }
+
+        private static IntPtr GetOneNoteMainWindowHandleOrThrow()
+        {
+            IntPtr mainWindow = GetOneNoteMainWindowHandle();
+            if (mainWindow == IntPtr.Zero)
+            {
+                throw new InvalidOperationException("OneNote main window not found.");
+            }
+
+            return mainWindow;
         }
 
         private void DeletePage(string pageId)
         {
             EnsureNotDisposed();
-            _oneNoteApp.DeleteHierarchy(pageId, DateTime.MinValue, true);
+
+            // An imported section copy exists only for its page, so it is removed with it.
+            bool imported = pageId == _importedPageId;
+            _oneNoteApp.DeleteHierarchy(imported ? _importedSectionId : pageId, DateTime.MinValue, true);
+            if (imported)
+            {
+                _importedPageId = null;
+                _importedSectionId = null;
+            }
         }
 
         private string GetOrCreateNotebookId()
@@ -908,6 +1283,23 @@ namespace TeXShift.Tests.E2E
             {
                 CloseOneNoteProcess();
             }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct GuiThreadInfo
+        {
+            public int cbSize;
+            public int flags;
+            public IntPtr hwndActive;
+            public IntPtr hwndFocus;
+            public IntPtr hwndCapture;
+            public IntPtr hwndMenuOwner;
+            public IntPtr hwndMoveSize;
+            public IntPtr hwndCaret;
+            public int caretLeft;
+            public int caretTop;
+            public int caretRight;
+            public int caretBottom;
         }
 
         private sealed class StaTaskRunner : IDisposable

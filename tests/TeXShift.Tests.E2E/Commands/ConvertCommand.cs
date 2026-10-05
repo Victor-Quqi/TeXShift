@@ -14,19 +14,42 @@ namespace TeXShift.Tests.E2E.Commands
     {
         private static readonly Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
-        public static async Task<int> RunAsync(FileInfo input, string markdown, DirectoryInfo output, bool cleanup)
+        public static async Task<int> RunAsync(ConvertCommandOptions options)
         {
+            FileInfo input = options.Input;
+            FileInfo page = options.Page;
+            DirectoryInfo output = options.Output;
             if (output == null)
             {
                 return CommandHelpers.EmitArgumentError("输出目录不能为空。", null, null, 0);
             }
 
-            string markdownContent;
-            if (input != null && !string.IsNullOrWhiteSpace(markdown))
+            bool hasMarkdown = !string.IsNullOrWhiteSpace(options.Markdown);
+            int sourceCount = (input != null ? 1 : 0) + (hasMarkdown ? 1 : 0) + (page != null ? 1 : 0);
+            if (sourceCount > 1)
             {
-                return CommandHelpers.EmitArgumentError("请仅提供 --input 或 --markdown 其一。", null, output, 0);
+                return CommandHelpers.EmitArgumentError("请仅提供 --input、--markdown 或 --page 其一。", null, output, 0);
             }
 
+            if (sourceCount == 0)
+            {
+                return CommandHelpers.EmitArgumentError("请提供 --input、--markdown 或 --page。", null, output, 0);
+            }
+
+            bool hasCaret = !string.IsNullOrEmpty(options.Caret);
+            bool hasSelect = options.Select != null && options.Select.Length > 0;
+            if (hasCaret && hasSelect)
+            {
+                return CommandHelpers.EmitArgumentError("请仅提供 --caret 或 --select 其一。", null, output, 0);
+            }
+
+            PageSelection selection = hasCaret
+                ? PageSelection.Caret(options.Caret)
+                : hasSelect
+                    ? PageSelection.Paragraphs(options.Select[0], options.Select[options.Select.Length - 1])
+                    : PageSelection.Default;
+
+            string markdownContent = null;
             if (input != null)
             {
                 if (!input.Exists)
@@ -35,17 +58,21 @@ namespace TeXShift.Tests.E2E.Commands
                 }
                 markdownContent = File.ReadAllText(input.FullName);
             }
+            else if (page != null)
+            {
+                if (!page.Exists)
+                {
+                    return CommandHelpers.EmitArgumentError($"页面文件不存在: {page.FullName}", null, output, 0);
+                }
+            }
             else
             {
-                if (string.IsNullOrWhiteSpace(markdown))
-                {
-                    return CommandHelpers.EmitArgumentError("请提供 --input 或 --markdown。", null, output, 0);
-                }
-                markdownContent = markdown;
+                markdownContent = options.Markdown;
             }
 
-            string testName = input != null
-                ? Path.GetFileNameWithoutExtension(input.Name)
+            FileInfo sourceFile = input ?? page;
+            string testName = sourceFile != null
+                ? Path.GetFileNameWithoutExtension(sourceFile.Name)
                 : $"inline_{DateTime.Now:yyyyMMdd_HHmmss}";
 
             if (!output.Exists)
@@ -60,6 +87,7 @@ namespace TeXShift.Tests.E2E.Commands
             TestPageManager pageManager = null;
             ServiceContainer serviceContainer = null;
             string pageId = null;
+            IntPtr previousForegroundWindow = IntPtr.Zero;
 
             try
             {
@@ -93,15 +121,30 @@ namespace TeXShift.Tests.E2E.Commands
                 stepStopwatch = Stopwatch.StartNew();
                 try
                 {
-                    pageId = await pageManager.CreateTestPageAsync(testName, markdownContent).ConfigureAwait(false);
+                    pageId = page != null
+                        ? await pageManager.CreateTestPageFromFileAsync(page.FullName, selection).ConfigureAwait(false)
+                        : await pageManager.CreateTestPageAsync(testName, markdownContent, selection).ConfigureAwait(false);
                 }
                 finally
                 {
                     AddLifecycleEntry(lifecycleEntries, "E2E.CreateTestPage", stepStopwatch);
                 }
 
+                if (options.Foreground)
+                {
+                    stepStopwatch = Stopwatch.StartNew();
+                    try
+                    {
+                        previousForegroundWindow = TestPageManager.ActivateOneNoteWindow();
+                    }
+                    finally
+                    {
+                        AddLifecycleEntry(lifecycleEntries, "E2E.ActivateOneNote", stepStopwatch);
+                    }
+                }
+
                 var orchestrator = serviceContainer.CreateConversionOrchestrator(pageManager.OneNoteApp);
-                var options = new ConversionOptions
+                var conversionOptions = new ConversionOptions
                 {
                     WriteDebugFiles = true,
                     ExportPdf = true,
@@ -112,7 +155,7 @@ namespace TeXShift.Tests.E2E.Commands
                 stepStopwatch = Stopwatch.StartNew();
                 try
                 {
-                    result = await orchestrator.ExecuteAsync(options).ConfigureAwait(false);
+                    result = await orchestrator.ExecuteAsync(conversionOptions).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -208,20 +251,24 @@ namespace TeXShift.Tests.E2E.Commands
                         }
                     }
 
-                    if (cleanup && pageId != null && pageManager != null)
+                    // A run that failed before its page existed may still have created the notebook.
+                    if (options.Cleanup && pageManager != null)
                     {
                         var stepStopwatch = Stopwatch.StartNew();
-                        try
+                        if (pageId != null)
                         {
-                            await pageManager.DeletePageAsync(pageId).ConfigureAwait(false);
-                        }
-                        catch (Exception ex)
-                        {
-                            CommandHelpers.EmitError("清理测试页面失败。", ex);
-                        }
-                        finally
-                        {
-                            AddLifecycleEntry(lifecycleEntries, "E2E.DeleteTestPage", stepStopwatch);
+                            try
+                            {
+                                await pageManager.DeletePageAsync(pageId).ConfigureAwait(false);
+                            }
+                            catch (Exception ex)
+                            {
+                                CommandHelpers.EmitError("清理测试页面失败。", ex);
+                            }
+                            finally
+                            {
+                                AddLifecycleEntry(lifecycleEntries, "E2E.DeleteTestPage", stepStopwatch);
+                            }
                         }
 
                         stepStopwatch = Stopwatch.StartNew();
@@ -241,6 +288,11 @@ namespace TeXShift.Tests.E2E.Commands
 
                     serviceContainer?.Dispose();
                     pageManager?.Dispose();
+
+                    if (previousForegroundWindow != IntPtr.Zero)
+                    {
+                        TestPageManager.FocusWindow(previousForegroundWindow);
+                    }
                 }
                 finally
                 {

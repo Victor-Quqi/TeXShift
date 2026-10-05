@@ -32,6 +32,28 @@ namespace TeXShift.Tests.E2E
                 Description = "Inline markdown string"
             };
 
+            var pageOption = new Option<FileInfo>("--page")
+            {
+                Description = "Page to reproduce for page-specific failures: page XML (from dump --page) or a section file exported from OneNote (.one, first page)"
+            };
+
+            var caretOption = new Option<string>("--caret")
+            {
+                Description = "Put the caret in the paragraph containing this text; its whole Outline is converted (Cursor mode). Default: the first paragraph, a new empty one on Markdown pages"
+            };
+
+            var selectOption = new Option<string[]>("--select")
+            {
+                Description = "Select from the paragraph containing the first text through the one containing the second (Selection mode); one text selects a single paragraph",
+                Arity = new ArgumentArity(1, 2),
+                AllowMultipleArgumentsPerToken = true
+            };
+
+            var foregroundOption = new Option<bool>("--foreground")
+            {
+                Description = "Make OneNote the active window before converting, as when a user clicks the ribbon (takes keyboard focus during the run)"
+            };
+
             var outputOption = new Option<DirectoryInfo>("--output", "-o")
             {
                 Description = "Output directory (required)",
@@ -47,17 +69,28 @@ namespace TeXShift.Tests.E2E
             var command = new Command("convert", "Convert markdown and export results");
             command.Options.Add(inputOption);
             command.Options.Add(markdownOption);
+            command.Options.Add(pageOption);
+            command.Options.Add(caretOption);
+            command.Options.Add(selectOption);
+            command.Options.Add(foregroundOption);
             command.Options.Add(outputOption);
             command.Options.Add(cleanupOption);
 
             command.SetAction(async (parseResult, cancellationToken) =>
             {
-                var input = parseResult.GetValue(inputOption);
-                var markdown = parseResult.GetValue(markdownOption);
-                var output = parseResult.GetValue(outputOption);
-                var cleanup = parseResult.GetValue(cleanupOption);
+                var options = new ConvertCommandOptions
+                {
+                    Input = parseResult.GetValue(inputOption),
+                    Markdown = parseResult.GetValue(markdownOption),
+                    Page = parseResult.GetValue(pageOption),
+                    Caret = parseResult.GetValue(caretOption),
+                    Select = parseResult.GetValue(selectOption),
+                    Foreground = parseResult.GetValue(foregroundOption),
+                    Output = parseResult.GetValue(outputOption),
+                    Cleanup = parseResult.GetValue(cleanupOption)
+                };
 
-                return await ConvertCommand.RunAsync(input, markdown, output, cleanup).ConfigureAwait(false);
+                return await ConvertCommand.RunAsync(options).ConfigureAwait(false);
             });
 
             return command;
