@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TeXShift demo - round trip</title>
+<link rel="stylesheet" href="stage.css">
+<script>window.MathJax = { startup: { typeset: false } };</script>
+<script src="../../src/TeXShift.AddIn/Lib/mathjax/es5/tex-mml-chtml.js"></script>
+<script src="engine.js"></script>
+<script src="icons.js"></script>
+<script src="chrome.js"></script>
+</head>
+<body>
+<template id="note">
+  <div class="flow note">
+    <div class="blk">
+      <div class="src"><div class="raw">## Fourier Transform</div></div>
+      <h2 class="out">Fourier Transform</h2>
+    </div>
+    <div class="blk">
+      <div class="src"><div class="raw">The **Fourier transform** maps a signal to its *frequency spectrum*:</div></div>
+      <div class="out p">The <b>Fourier transform</b> maps a signal to its <i>frequency spectrum</i>:</div>
+    </div>
+    <div class="blk">
+      <div class="src"><div class="raw">$$F(\omega) = \int_{-\infty}^{\infty} f(t)\, e^{-i\omega t}\, dt$$</div></div>
+      <div class="out math-block" data-tex-block="F(\omega) = \int_{-\infty}^{\infty} f(t)\, e^{-i\omega t}\, dt"></div>
+    </div>
+    <div class="blk">
+      <div class="src"><div class="raw">&gt; Tip: use `numpy.fft` for sampled signals.</div></div>
+      <div class="out quote">Tip: use <span class="c">numpy.fft</span> for sampled signals.</div>
+    </div>
+    <div class="blk">
+      <div class="src">
+        <div class="raw">- [x] Derive the inverse transform</div>
+        <div class="raw">- [ ] Prove Parseval's theorem</div>
+      </div>
+      <ul class="out tasks">
+        <li><span class="todo done"></span>Derive the inverse transform</li>
+        <li><span class="todo"></span>Prove Parseval's theorem</li>
+      </ul>
+    </div>
+    <div class="blk">
+      <div class="src">
+        <div class="raw">| Signal | Transform |</div>
+        <div class="raw">| --- | --- |</div>
+        <div class="raw">| $\delta(t)$ | $1$ |</div>
+        <div class="raw">| $1$ | $2\pi\,\delta(\omega)$ |</div>
+      </div>
+      <table class="out grid">
+        <tr><td>Signal</td><td>Transform</td></tr>
+        <tr><td><span data-tex="\delta(t)"></span></td><td><span data-tex="1"></span></td></tr>
+        <tr><td><span data-tex="1"></span></td><td><span data-tex="2\pi\,\delta(\omega)"></span></td></tr>
+      </table>
+    </div>
+    <div class="blk">
+      <div class="src">
+        <div class="raw">```python</div>
+        <div class="raw">import numpy as np</div>
+        <div class="raw">spectrum = np.fft.fft(signal)</div>
+        <div class="raw">```<span class="caret"></span></div>
+      </div>
+      <div class="out code"><span class="tk-c">import</span> numpy <span class="tk-c">as</span> np
+spectrum = np.fft.<span class="tk-f">fft</span>(signal)</div>
+    </div>
+  </div>
+</template>
+
+<script>
+Demo.start(async () => {
+  const ui = Demo.buildWindow({
+    height: 700,
+    pageTitle: 'Signal Processing',
+    notebook: 'Lab Notebook',
+    sections: [['Signals', '#aed2f5', '#414c55'], ['Reading List', '#fcd13c', '#5b4b13']],
+    pages: ['Signal Processing', 'Sampling Theorem', 'Filter Design', 'Weekly Log'],
+  });
+
+  const note = Demo.mountNote(ui, 'note');
+  await Demo.renderMath(note);
+  return Demo.roundTrip(ui, note, { hold: 2.7 });
+});
+</script>
+</body>
+</html>

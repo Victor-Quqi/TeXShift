@@ -1,0 +1,453 @@
+/* OneNote-like window chrome and TeXShift output styles for the README demo scenes.
+   Sizes and colors follow OneNote for Microsoft 365 (light theme, simplified ribbon). */
+
+:root {
+  --accent: #7719aa;
+  --chrome-bg: #f0f0f0;
+  --line: #d1d1d1;
+  --text: #242424;
+  --ink: #3b3a39;
+  --section: #aed2f5;
+  --ui-font: 'Segoe UI', 'Microsoft YaHei UI', sans-serif;
+  --note-font: Calibri, 'Microsoft YaHei', sans-serif;
+  --code-font: Consolas, 'Courier New', monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.window {
+  position: relative;
+  width: var(--stage-w, 960px);
+  height: var(--stage-h, 700px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--ui-font);
+  color: var(--text);
+  background: var(--chrome-bg);
+}
+
+.window svg { display: block; flex: none; }
+
+/* ---------- Title bar with Quick Access Toolbar ---------- */
+
+.titlebar {
+  height: 48px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding-left: 13px;
+  font-size: 12px;
+}
+
+.app-logo { width: 18px; height: 18px; flex: none; margin: 2px 1px 0; }
+
+.qat { display: flex; align-items: center; gap: 13px; margin: 0 20px 0 18px; }
+.doc-title { white-space: pre; }
+
+.search {
+  position: absolute;
+  left: 360px;
+  top: 10px;
+  width: 290px;
+  height: 28px;
+  border-radius: 4px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 10px;
+  color: #616161;
+}
+
+.win-controls { display: flex; height: 100%; margin-left: auto; }
+.win-controls span { width: 46px; display: flex; align-items: center; justify-content: center; }
+
+/* ---------- Ribbon tabs ---------- */
+
+.tabs {
+  height: 31px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding-left: 20px;
+  font-size: 13px;
+}
+
+.tab { position: relative; padding: 0 10.5px; line-height: 24px; }
+.tab.active { font-weight: 600; }
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  left: 10.5px;
+  right: 10.5px;
+  bottom: -2px;
+  height: 2px;
+  border-radius: 1px;
+  background: #6c179a;
+}
+
+/* ---------- Simplified ribbon ---------- */
+
+.ribbon {
+  height: 48px;
+  flex: none;
+  margin: 0 8px 0 8px;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding-left: 7px;
+}
+
+.rbtn {
+  position: relative;
+  isolation: isolate;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 8px;
+  font-size: 13px;
+  white-space: nowrap;
+  transform-origin: 50% 50%;
+}
+
+/* Hover background, faded in by the timeline; isolation keeps it behind the label. */
+.rbtn-hl { position: absolute; inset: 0; z-index: -1; border-radius: 4px; background: #ebebeb; opacity: 0; }
+.rbtn.pressed .rbtn-hl { background: #e0e0e0; }
+
+.rsep { width: 1px; height: 32px; background: var(--line); margin: 0 5px; flex: none; }
+.ribbon-switch { margin: 0 12px 0 auto; }
+
+/* ---------- Notebook bar and section tabs ---------- */
+
+.nbbar {
+  height: 40px;
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  padding-left: 18px;
+  margin-top: 3px;
+  position: relative;
+}
+
+.nb-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  height: 36px;
+  margin-right: 40px;
+}
+
+.nb-name svg:last-child { margin-left: -4px; }
+
+/* The open section tab stands taller and bold; the others keep their color but sit lower. */
+.stab {
+  height: 25px;
+  min-width: 76px;
+  padding: 0 14px;
+  margin-right: 2px;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.stab.active { height: 30px; font-weight: 600; }
+
+.stab.add {
+  height: 23px;
+  min-width: 40px;
+  padding: 0;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  font: 300 19px/1 var(--ui-font);
+  color: var(--text);
+}
+
+.section-line { height: 3px; flex: none; margin-left: 8px; background: var(--section); }
+
+/* ---------- Page list ---------- */
+
+.body { flex: 1; display: flex; min-height: 0; margin-left: 8px; }
+
+.pages {
+  width: 250px;
+  flex: none;
+  background: #fff;
+  padding: 9px 9px 0;
+  box-shadow: inset -3px 0 3px -2px #e6e6e6;
+  font-size: 13.5px;
+}
+
+.pages-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+
+.add-page {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 13px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.page-item {
+  height: 26px;
+  line-height: 26px;
+  padding-left: 20px;
+  margin-bottom: 2px;
+  border-radius: 4px;
+  color: #424242;
+}
+
+.page-item.active { background: #dddddd; color: var(--text); font-weight: 600; }
+
+/* ---------- Page canvas ---------- */
+
+.canvas {
+  flex: 1;
+  position: relative;
+  background: #fff;
+  overflow: hidden;
+}
+
+.page-head { position: absolute; left: 48px; top: 26px; }
+
+.page-title {
+  font: 300 26.7px/34px 'Calibri Light', Calibri, sans-serif;
+  color: #000;
+  width: 288px;
+  margin-left: -13px;
+  padding-left: 13px;
+  border-bottom: 1px solid #8a8886;
+}
+
+.page-date {
+  font: 13px/18px var(--note-font);
+  color: #767676;
+  margin-top: 6px;
+  display: flex;
+  gap: 40px;
+}
+
+/* Note container as OneNote shows it while the caret is inside. */
+.outline {
+  position: absolute;
+  left: 46px;
+  top: 112px;
+  border: 1px solid #e1e1e1;
+  background: #fff;
+}
+
+.outline-bar {
+  position: relative;
+  height: 9px;
+  background: #e1e1e1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.outline-bar .resize { position: absolute; right: 3px; top: 1.5px; }
+
+.outline-body {
+  position: relative;
+  overflow: hidden;
+}
+
+.flow { padding: 6px 10px 8px; }
+
+/* Each block stacks its Markdown source and converted output in one grid cell, so a
+   conversion swaps them in place while the block height drives the reflow below it. */
+.blk { display: grid; }
+.blk > .src, .blk > .out { grid-area: 1 / 1; align-self: start; }
+
+/* ---------- Note text: raw Markdown and converted output ---------- */
+
+.note {
+  font: 14.67px/1.3 var(--note-font);
+  color: #000;
+}
+
+.note .p { margin: 0 0 4px; white-space: pre; }
+.note .raw { white-space: pre; margin: 0; min-height: 19px; }
+
+.caret {
+  display: inline-block;
+  width: 1px;
+  height: 17px;
+  background: #000;
+  vertical-align: -3px;
+  margin-left: 1px;
+}
+
+.note h1, .note h2, .note h3 {
+  margin: 0 0 6px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.note h1 { font-size: 29.3px; }
+.note h2 { font-size: 26.7px; }
+.note h3 { font-size: 24px; }
+
+.note .c {
+  font-family: var(--code-font);
+  background: #f1f1f1;
+  padding: 0 4px;
+}
+
+.note .math-block {
+  text-align: center;
+  margin: 4px 0 8px;
+}
+
+.note math {
+  font-family: 'Cambria Math', serif;
+  font-size: 15.5px;
+}
+
+.note .math-block math { font-size: 17px; }
+
+.note .quote {
+  background: #e8f5e9;
+  padding: 6px 10px;
+  margin: 2px 0 8px;
+}
+
+.note ul.tasks { list-style: none; padding-left: 4px; margin: 0 0 6px; }
+.note ul.tasks li { display: flex; align-items: center; gap: 11px; height: 23px; }
+
+/* To Do tags: OneNote now draws them as circles, filled purple with a white check when done. */
+.todo {
+  width: 15px;
+  height: 15px;
+  border: 1.3px solid #616161;
+  border-radius: 50%;
+  position: relative;
+  flex: none;
+  background: #fff;
+}
+
+.todo.done { background: #7719aa; border-color: #7719aa; }
+
+.todo.done::after {
+  content: '';
+  position: absolute;
+  left: 4.4px;
+  top: 1.6px;
+  width: 3.4px;
+  height: 7px;
+  border: solid #fff;
+  border-width: 0 1.6px 1.6px 0;
+  transform: rotate(40deg);
+}
+
+.note ul.bullets { padding-left: 22px; margin: 0 0 6px; }
+.note ul.bullets li { margin: 1px 0; }
+.note ol { padding-left: 26px; margin: 0 0 6px; }
+
+.note table.grid {
+  justify-self: start;
+  border-collapse: collapse;
+  margin: 2px 0 10px;
+}
+
+.note table.grid td {
+  border: 1px solid #a6a6a6;
+  padding: 3px 9px;
+  min-width: 96px;
+  vertical-align: middle;
+}
+
+.note table.grid tr:first-child td { font-weight: 700; }
+
+.note .code {
+  background: #0d1117;
+  color: #c9d1d9;
+  font: 14.67px/1.32 var(--code-font);
+  padding: 8px 12px;
+  margin: 2px 0 8px;
+  white-space: pre;
+}
+
+.note .mermaid-img { text-align: center; margin: 6px 0 8px; }
+.note .mermaid-img svg { display: inline-block; }
+
+/* DarkPlus token colors used by the TextMateSharp highlighter. */
+.tk-k { color: #569cd6; }
+.tk-c { color: #c586c0; }
+.tk-s { color: #ce9178; }
+.tk-f { color: #dcdcaa; }
+.tk-t { color: #4ec9b0; }
+.tk-v { color: #9cdcfe; }
+.tk-n { color: #b5cea8; }
+.tk-m { color: #6a9955; }
+
+/* Text selection highlight drawn beneath the note text. */
+.flow { position: relative; z-index: 1; }
+.sel-layer { position: absolute; inset: 0; }
+.sel { position: absolute; background: #c5dcf5; }
+
+/* Covers the note while a looping scene restores its initial state. */
+.veil { position: absolute; inset: 0; background: #fff; opacity: 0; z-index: 2; }
+
+/* ---------- Overlay: pointer and click rings ---------- */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.pointer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 2px 2px;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.28));
+}
+
+.pointer .pointer-ibeam { display: none; position: absolute; left: -6px; top: -11px; }
+.pointer.ibeam .pointer-arrow { display: none; }
+.pointer.ibeam .pointer-ibeam { display: block; }
+
+.click-ring {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border-radius: 50%;
+  border: 2px solid rgba(119, 25, 170, 0.75);
+  background: rgba(119, 25, 170, 0.12);
+  opacity: 0;
+}
+
+.shimmer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 70px;
+  top: -70px;
+  background: linear-gradient(180deg, rgba(119, 25, 170, 0) 0%, rgba(119, 25, 170, 0.10) 50%, rgba(119, 25, 170, 0) 100%);
+  pointer-events: none;
+}

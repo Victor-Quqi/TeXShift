@@ -33,3 +33,7 @@ src/TeXShift.AddIn/Lib/mathjax/
 *.log
 ~$*
 *~
+__pycache__/
+
+# README demo renderer cache (icon extracted from the local OneNote install)
+tools/readme-demo/.cache/

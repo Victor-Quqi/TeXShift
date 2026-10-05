@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TeXShift demo - selection mode</title>
+<link rel="stylesheet" href="stage.css">
+<script>window.MathJax = { startup: { typeset: false } };</script>
+<script src="../../src/TeXShift.AddIn/Lib/mathjax/es5/tex-mml-chtml.js"></script>
+<script src="engine.js"></script>
+<script src="icons.js"></script>
+<script src="chrome.js"></script>
+</head>
+<body>
+<template id="note">
+  <div class="flow note">
+    <div class="blk">
+      <div class="src"><div class="raw">## Basel Problem</div></div>
+    </div>
+    <div class="blk" data-selected>
+      <div class="src"><div class="raw">Euler showed in **1734** that $\zeta(2)$ has a closed form:</div></div>
+      <div class="out p">Euler showed in <b>1734</b> that <span data-tex="\zeta(2)"></span> has a closed form:</div>
+    </div>
+    <div class="blk" data-selected>
+      <div class="src"><div class="raw">$$\zeta(2) = \sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}$$</div></div>
+      <div class="out math-block" data-tex-block="\zeta(2) = \sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}"></div>
+    </div>
+    <div class="blk">
+      <div class="src">
+        <div class="raw">- [ ] Compare with the *Weierstrass* product proof</div>
+        <div class="raw">- [ ] Generalize to $\zeta(2k)$ via Bernoulli numbers</div>
+      </div>
+    </div>
+    <div class="blk">
+      <div class="src">
+        <div class="raw">## Proof Sketch</div>
+        <div class="raw">Write $\sin(x)/x$ as an infinite product and compare the $x^2$ coefficients.</div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+// Horizontal positions of every character boundary in a single-line text element.
+function charEdges(line) {
+  const text = line.firstChild;
+  const range = document.createRange();
+  const edges = [];
+  for (let i = 0; i <= text.length; i++) {
+    range.setStart(text, 0);
+    range.setEnd(text, i);
+    const r = range.getBoundingClientRect();
+    edges.push(i === 0 ? line.getBoundingClientRect().left : r.right);
+  }
+  return edges;
+}
+
+Demo.start(async () => {
+  const ui = Demo.buildWindow({
+    height: 540,
+    pageTitle: 'Number Theory',
+    notebook: 'Lab Notebook',
+    sections: [['Mathematics', '#aed2f5', '#414c55'], ['Reading List', '#fcd13c', '#5b4b13']],
+    pages: ['Number Theory', 'Prime Gaps', 'Analytic Continuation'],
+  });
+
+  const note = Demo.mountNote(ui, 'note');
+  await Demo.renderMath(note);
+
+  const tl = new Demo.Timeline();
+  const selected = [...note.querySelectorAll('[data-selected]')];
+  const rest = ui.restPoint(90);
+  const pointer = new Demo.Pointer(tl, ui.overlay, rest[0], rest[1]).ibeamWithin(ui.rect(ui.canvas));
+
+  // Conversion of only the paragraphs the selection touches.
+  const tc = 4.0;
+  const converted = Demo.morph(tl, ui.body, selected, tc + 0.2);
+
+  // Measure the source lines in their initial layout, then build the drag selection.
+  tl.seek(0);
+  const lines = selected.map(b => b.querySelector('.raw'));
+  const bodyBox = ui.body.getBoundingClientRect();
+  const winBox = ui.root.getBoundingClientRect();
+  const geo = lines.map(line => {
+    const box = line.getBoundingClientRect();
+    return { edges: charEdges(line), top: box.top, height: box.height };
+  });
+
+  const highlights = document.createElement('div');
+  highlights.className = 'sel-layer';
+  ui.body.insertBefore(highlights, note);
+  const rects = geo.map(g => {
+    const r = document.createElement('div');
+    r.className = 'sel';
+    r.style.top = g.top - bodyBox.top + 'px';
+    r.style.height = g.height + 'px';
+    highlights.appendChild(r);
+    return r;
+  });
+
+  const nearest = (edges, x) => edges.reduce((best, e, i) => (Math.abs(e - x) < Math.abs(edges[best] - x) ? i : best), 0);
+  const startChar = geo[0].edges[lines[0].textContent.indexOf('showed')];
+  const endChar = geo[1].edges[lines[1].textContent.indexOf('\\frac{1}') + 13];
+  const from = [startChar - winBox.left, geo[0].top - winBox.top + geo[0].height / 2];
+  const to = [endChar - winBox.left, geo[1].top - winBox.top + geo[1].height / 2];
+
+  const setSpan = (rect, a, b) => {
+    rect.style.left = a - bodyBox.left + 'px';
+    rect.style.width = Math.max(0, b - a) + 'px';
+  };
+  const tDown = 1.45, drag = 0.95;
+  tl.add('selection', tDown, drag, p => {
+    const x = Demo.lerp(from[0], to[0], p) + winBox.left;
+    const y = Demo.lerp(from[1], to[1], p) + winBox.top;
+    const [l0, l1] = geo;
+    if (y < l1.top) {
+      const a = Math.min(startChar, l0.edges[nearest(l0.edges, x)]);
+      const b = Math.max(startChar, l0.edges[nearest(l0.edges, x)]);
+      setSpan(rects[0], a, b);
+      setSpan(rects[1], 0, 0);
+    } else {
+      setSpan(rects[0], startChar, l0.edges[l0.edges.length - 1] + 5);
+      setSpan(rects[1], l1.edges[0], l1.edges[nearest(l1.edges, x)]);
+    }
+  }, 'inOutSine');
+  tl.to(highlights, tc + 0.15, 0.25, { opacity: [1, 0] }, 'outCubic');
+
+  // Pointer moves are chained, so they are registered in chronological order.
+  pointer.move(0.5, 0.85, from[0], from[1], 0.1);
+  pointer.move(tDown, drag, to[0], to[1], 0, 'inOutSine');
+  Demo.pressButton(tl, pointer, ui, ui.buttons.convert, tc);
+  pointer.move(converted - 0.6, 0.9, rest[0], rest[1], 0.1);
+
+  // Loop reset: briefly veil the note and restore the Markdown source.
+  const veil = document.createElement('div');
+  veil.className = 'veil';
+  ui.body.appendChild(veil);
+  const tReset = converted + 3.4;
+  tl.to(veil, tReset - 0.3, 0.3, { opacity: [0, 1] }, 'inOutSine');
+  tl.to(veil, tReset, 0.35, { opacity: [1, 0] }, 'inOutSine');
+  for (const blk of selected) {
+    const src = blk.querySelector(':scope > .src');
+    const out = blk.querySelector(':scope > .out');
+    tl.to(src, tReset, 0, { opacity: [1, 1], blur: [0, 0] }, 'linear');
+    tl.to(out, tReset, 0, { opacity: [0, 0] }, 'linear');
+    tl.to(blk, tReset - 0.3, 0.65, { height: [Demo.outerHeight(out), Demo.outerHeight(src)] }, 'inOutCubic');
+  }
+  tl.to(highlights, tReset, 0, { opacity: [1, 1] }, 'linear');
+  tl.add('selection', tReset, 0, () => rects.forEach(r => setSpan(r, 0, 0)), 'linear');
+  tl.duration = tReset + 0.6;
+  return tl;
+});
+</script>
+</body>
+</html>

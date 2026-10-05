@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TeXShift demo - LaTeX and Mermaid</title>
+<link rel="stylesheet" href="stage.css">
+<script>window.MathJax = { startup: { typeset: false } };</script>
+<script src="../../src/TeXShift.AddIn/Lib/mathjax/es5/tex-mml-chtml.js"></script>
+<script src="../../src/TeXShift.AddIn/Lib/mermaid/mermaid.min.js"></script>
+<script src="engine.js"></script>
+<script src="icons.js"></script>
+<script src="chrome.js"></script>
+</head>
+<body>
+<template id="note">
+  <div class="flow note">
+    <div class="blk">
+      <div class="src"><div class="raw">## Scaled Dot-Product Attention</div></div>
+      <h2 class="out">Scaled Dot-Product Attention</h2>
+    </div>
+    <div class="blk">
+      <div class="src"><div class="raw">Scores are divided by $\sqrt{d_k}$ to keep the softmax well-conditioned:</div></div>
+      <div class="out p">Scores are divided by <span data-tex="\sqrt{d_k}"></span> to keep the softmax well-conditioned:</div>
+    </div>
+    <div class="blk">
+      <div class="src"><div class="raw">$$\mathrm{Attention}(Q,K,V) = \mathrm{softmax}\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V$$</div></div>
+      <div class="out math-block" data-tex-block="\mathrm{Attention}(Q,K,V) = \mathrm{softmax}\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V"></div>
+    </div>
+    <div class="blk">
+      <div class="src">
+        <div class="raw">```mermaid</div>
+        <div class="raw">flowchart LR</div>
+        <div class="raw">    Q[Query] --> S[Scaled scores]</div>
+        <div class="raw">    K[Key] --> S</div>
+        <div class="raw">    S --> W([Softmax weights]) --> O[Output]</div>
+        <div class="raw">    V[Value] --> O</div>
+        <div class="raw">```<span class="caret"></span></div>
+      </div>
+      <div class="out mermaid-img" data-width="500" data-mermaid="flowchart LR
+    Q[Query] --> S[Scaled scores]
+    K[Key] --> S
+    S --> W([Softmax weights]) --> O[Output]
+    V[Value] --> O"></div>
+    </div>
+  </div>
+</template>
+
+<script>
+Demo.start(async () => {
+  const ui = Demo.buildWindow({
+    height: 650,
+    pageTitle: 'Transformer Notes',
+    notebook: 'Lab Notebook',
+    sections: [['Deep Learning', '#aed2f5', '#414c55'], ['Reading List', '#fcd13c', '#5b4b13']],
+    pages: ['Transformer Notes', 'Optimizers', 'Tokenization', 'Paper Queue'],
+  });
+
+  const note = Demo.mountNote(ui, 'note');
+  await Demo.renderMath(note);
+  await Demo.renderMermaid(note);
+  return Demo.roundTrip(ui, note, { hold: 3.4 });
+});
+</script>
+</body>
+</html>
