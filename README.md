@@ -4,7 +4,25 @@ English | [简体中文](README.zh-CN.md)
 
 **TeXShift** is a COM Add-in for Microsoft OneNote designed to address the core pain points that engineers, researchers, and students face when taking technical notes in OneNote: **building a bridge between a powerful rich text editor and efficient plain text markup languages like Markdown and LaTeX.**
 
+![Converting Markdown to OneNote rich text and back](docs/images/roundtrip.gif)
+
 ---
+
+## Demo
+
+<details>
+<summary><b>LaTeX and Mermaid</b></summary>
+
+![Converting LaTeX and Mermaid to native equations and diagrams](docs/images/math-mermaid.gif)
+
+</details>
+
+<details>
+<summary><b>Selection Mode</b></summary>
+
+![Converting only the paragraphs touched by a selection](docs/images/selection.gif)
+
+</details>
 
 ## Features
 

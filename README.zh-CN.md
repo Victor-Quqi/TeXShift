@@ -4,7 +4,25 @@
 
 **TeXShift** 是一个为 Microsoft OneNote 开发的 COM 插件，致力于解决工程师、研究者和学生在 OneNote 中进行技术笔记记录时的核心痛点：**在强大的富文本编辑器与高效的纯文本标记语言（如 Markdown、LaTeX）之间建立一座桥梁。**
 
+![将 Markdown 转换为 OneNote 富文本并反向还原](docs/images/roundtrip.gif)
+
 ---
+
+## 演示
+
+<details>
+<summary><b>LaTeX 与 Mermaid</b></summary>
+
+![将 LaTeX 与 Mermaid 转换为原生公式和图表](docs/images/math-mermaid.gif)
+
+</details>
+
+<details>
+<summary><b>选区模式</b></summary>
+
+![仅转换选区涉及的段落](docs/images/selection.gif)
+
+</details>
 
 ## 核心功能
 
