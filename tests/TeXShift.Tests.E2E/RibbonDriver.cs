@@ -40,7 +40,8 @@ namespace TeXShift.Tests.E2E
             if (tabs.Count != 1)
                 throw new InvalidOperationException($"Expected one TeXShift Ribbon tab; found {tabs.Count}. Check add-in registration and restart OneNote.");
             ((SelectionItemPattern)tabs[0].GetCurrentPattern(SelectionItemPattern.Pattern)).Select();
-            var names = command == "reverse" ? new[] { "Reverse Convert", "反向转换" } : new[] { "Convert", "一键转换" };
+            var names = command == "paste-convert" ? new[] { "Paste and Convert", "粘贴并转换" }
+                : command == "reverse" ? new[] { "Reverse Convert", "反向转换" } : new[] { "Convert", "一键转换" };
             var deadline = DateTime.UtcNow.AddSeconds(10);
             do
             {

@@ -83,6 +83,15 @@ namespace TeXShift.Tests.E2E.Commands
             }
 
             FileInfo sourceFile = input ?? page;
+            string pasteMarkdown = null;
+            if (options.PasteInput != null)
+            {
+                if (!options.PasteInput.Exists)
+                    return CommandHelpers.EmitArgumentError("粘贴文件不存在。", null, output, 0);
+                pasteMarkdown = File.ReadAllText(options.PasteInput.FullName);
+                if (string.IsNullOrWhiteSpace(pasteMarkdown))
+                    return CommandHelpers.EmitArgumentError("粘贴文件为空。", null, output, 0);
+            }
             string changesTemplate = null;
             if (options.Changes != null)
             {
@@ -107,6 +116,8 @@ namespace TeXShift.Tests.E2E.Commands
             TestPageManager pageManager = null;
             RibbonDriver ribbon = null;
             string pdfPath = null;
+            System.Windows.Forms.IDataObject originalClipboard = null;
+            bool clipboardChanged = false;
 
             try
             {
@@ -151,11 +162,28 @@ namespace TeXShift.Tests.E2E.Commands
                     {
                         await run.StepAsync("PrepareRibbon", () => Task.Run(() =>
                             ribbon.Prepare(options.Operation))).ConfigureAwait(false);
+                        if (pasteMarkdown != null)
+                            await run.StepAsync("PrepareClipboard", () => pageManager.OneNoteDispatcher.InvokeAsync(app =>
+                            {
+                                var clipboard = System.Windows.Forms.Clipboard.GetDataObject();
+                                if (clipboard != null)
+                                {
+                                    var snapshot = new System.Windows.Forms.DataObject();
+                                    foreach (string format in clipboard.GetFormats(false))
+                                    {
+                                        object value = clipboard.GetData(format, false);
+                                        if (value != null) snapshot.SetData(format, false, value);
+                                    }
+                                    originalClipboard = snapshot;
+                                }
+                                System.Windows.Forms.Clipboard.SetText(pasteMarkdown);
+                                clipboardChanged = true;
+                            })).ConfigureAwait(false);
                         await run.StepAsync("InvokeRibbon", () => ribbon.InvokeAsync(options.Operation, run.PageId, output.FullName)).ConfigureAwait(false);
                     }
                     else
                         await run.StepAsync("InvokeCore", () => CoreConversionDriver.InvokeAsync(
-                            options.Operation, pageManager.OneNoteDispatcher, output.FullName, settings)).ConfigureAwait(false);
+                            options.Operation, pageManager.OneNoteDispatcher, output.FullName, settings, pasteMarkdown)).ConfigureAwait(false);
                     await run.StepAsync("CaptureResult", async () =>
                     {
                         File.WriteAllText(Path.Combine(output.FullName, $"F04_Final_Page_XML_Basic_{stamp}.xml"),
@@ -192,6 +220,13 @@ namespace TeXShift.Tests.E2E.Commands
             }
             finally
             {
+                if (clipboardChanged && pageManager != null)
+                    await run.CleanupAsync("RestoreClipboard", () => pageManager.OneNoteDispatcher.InvokeAsync(app =>
+                    {
+                        if (System.Windows.Forms.Clipboard.GetText() != pasteMarkdown) return;
+                        if (originalClipboard == null) System.Windows.Forms.Clipboard.Clear();
+                        else System.Windows.Forms.Clipboard.SetDataObject(originalClipboard, true);
+                    })).ConfigureAwait(false);
                 if (pageManager != null && ribbon?.CommandPending != true)
                 {
                     run.PageId = run.PageId ?? pageManager.TestPageId;

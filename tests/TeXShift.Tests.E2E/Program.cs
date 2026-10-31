@@ -15,6 +15,7 @@ namespace TeXShift.Tests.E2E
 
             rootCommand.Subcommands.Add(CreatePageTestCommand());
             rootCommand.Subcommands.Add(CreatePageTestCommand(reverse: true));
+            rootCommand.Subcommands.Add(CreatePageTestCommand(paste: true));
             rootCommand.Subcommands.Add(CreatePageTestCommand(replayWrite: true));
             rootCommand.Subcommands.Add(CreateReverseXmlCommand());
             rootCommand.Subcommands.Add(CreateDumpCommand());
@@ -36,7 +37,7 @@ namespace TeXShift.Tests.E2E
             }
         }
 
-        private static Command CreatePageTestCommand(bool replayWrite = false, bool reverse = false)
+        private static Command CreatePageTestCommand(bool replayWrite = false, bool reverse = false, bool paste = false)
         {
             var inputOption = new Option<FileInfo>("--input", "-i")
             {
@@ -89,7 +90,13 @@ namespace TeXShift.Tests.E2E
             };
             var command = replayWrite
                 ? new Command("write-xml", "Replay an XML update against a disposable test page")
-                : new Command(reverse ? "reverse" : "convert", "Invoke the installed TeXShift Ribbon command and export the resulting page");
+                : new Command(paste ? "paste-convert" : reverse ? "reverse" : "convert", "Invoke the installed TeXShift Ribbon command and export the resulting page");
+            var pasteInputOption = new Option<FileInfo>("--paste-input")
+            {
+                Description = "Markdown to paste into the prepared page; Ribbon mode temporarily uses the clipboard",
+                Required = true
+            };
+            if (paste) command.Options.Add(pasteInputOption);
             var driverOption = new Option<ConversionDriver>("--driver")
             {
                 Description = "ribbon: installed add-in and dialogs (activates Ribbon); core: pipeline with optional --settings, without Ribbon interaction",
@@ -113,7 +120,8 @@ namespace TeXShift.Tests.E2E
             {
                 var options = new PageTestOptions
                 {
-                    Operation = reverse ? "reverse" : "convert",
+                    Operation = paste ? "paste-convert" : reverse ? "reverse" : "convert",
+                    PasteInput = paste ? parseResult.GetValue(pasteInputOption) : null,
                     Driver = replayWrite ? ConversionDriver.Core : parseResult.GetValue(driverOption),
                     Settings = replayWrite ? null : parseResult.GetValue(settingsOption),
                     Input = parseResult.GetValue(inputOption),

@@ -9,6 +9,7 @@ namespace TeXShift.Tests.E2E.Commands
         public FileInfo Settings { get; set; }
 
         public FileInfo Input { get; set; }
+        public FileInfo PasteInput { get; set; }
 
         public string Markdown { get; set; }
 
