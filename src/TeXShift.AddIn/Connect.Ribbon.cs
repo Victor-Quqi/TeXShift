@@ -21,6 +21,7 @@ namespace TeXShift.AddIn
                 ["grpSettings"] = "Ribbon_Group_Settings",
 
                 ["btnSilentConvert"] = "Ribbon_Button_Convert",
+                ["btnPasteConvert"] = "Ribbon_Button_PasteConvert",
                 ["btnReverseConvert"] = "Ribbon_Button_ReverseConvert",
                 ["btnDebugConvert"] = "Ribbon_Button_DebugConvert",
                 ["btnDebugReverseConvert"] = "Ribbon_Button_DebugReverseConvert",
@@ -51,6 +52,10 @@ namespace TeXShift.AddIn
         #endregion
 
         #region Ribbon Visibility Callbacks
+
+        public bool GetPasteConvertVisible(IRibbonControl control) => _appSettings?.ShowPasteConvertButton ?? false;
+
+        public bool GetPasteConvertEnabled(IRibbonControl control) => GetPasteConvertVisible(control);
 
         /// <summary>
         /// Ribbon callback: Returns whether the debug tools group should be visible.

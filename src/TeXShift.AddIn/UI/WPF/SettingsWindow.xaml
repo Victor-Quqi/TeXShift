@@ -62,6 +62,7 @@
                 <Setter Property="materialDesign:TextFieldAssist.TextBoxViewMargin" Value="0"/>
                 <Setter Property="materialDesign:TextFieldAssist.DecorationVisibility" Value="Collapsed"/>
             </Style>
+
         </ResourceDictionary>
     </Window.Resources>
 
@@ -75,6 +76,26 @@
 
             <!-- Tab Control -->
         <TabControl Grid.Row="0" materialDesign:ColorZoneAssist.Mode="PrimaryMid">
+            <TabItem Header="{Binding TabGeneralHeader}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16">
+                        <materialDesign:Card Padding="16" VerticalAlignment="Top">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding LanguageLabel}" Style="{StaticResource SettingsLabel}"/>
+                                    <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding SelectedLanguage}"
+                                              DisplayMemberPath="DisplayName" Width="180" HorizontalAlignment="Left"/>
+                                </Grid>
+                                <CheckBox Content="{Binding ShowPasteConvertButtonText}" IsChecked="{Binding ShowPasteConvertButton}"
+                                          Margin="0,20,0,0"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                </ScrollViewer>
+            </TabItem>
+
             <!-- Style Tab -->
             <TabItem Header="{Binding TabStyleHeader}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16">
@@ -364,21 +385,6 @@
             <TabItem Header="{Binding TabDebugHeader}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16">
                     <StackPanel>
-                        <materialDesign:Card Padding="16" Margin="0,0,0,16">
-                            <StackPanel>
-                                <TextBlock Text="{Binding LanguageSectionTitle}" Style="{StaticResource SectionTitle}"/>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{Binding LanguageLabel}" Style="{StaticResource SettingsLabel}"/>
-                                    <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding SelectedLanguage}"
-                                              DisplayMemberPath="DisplayName" Width="180" HorizontalAlignment="Left"/>
-                                </Grid>
-                            </StackPanel>
-                        </materialDesign:Card>
-
                         <materialDesign:Card Padding="16">
                             <StackPanel>
                                 <CheckBox Content="{Binding TryRecognizeNonTeXShiftFormatsText}" IsChecked="{Binding TryRecognizeNonTeXShiftFormats}" Margin="0,0,0,12"/>

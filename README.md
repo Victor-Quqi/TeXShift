@@ -70,6 +70,8 @@ English | [简体中文](README.zh-CN.md)
   - Mermaid diagrams (restore original source via metadata)
   - Inline styles (bold, italic, strikethrough, highlight, underline, superscript, subscript, code, links)
 
+- **Paste and Convert** - Enable the button under Settings → General (off by default) to insert converted Markdown from the clipboard. Add it to the Quick Access Toolbar for Alt + number access.
+
 - **Localization** - UI available in English and Simplified Chinese
 
 - **Fully Offline** - All core features work locally without network connection

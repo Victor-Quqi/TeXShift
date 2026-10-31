@@ -280,9 +280,6 @@
   <data name="Settings_Checkbox_TryRecognizeNonTeXShiftFormats" xml:space="preserve">
     <value>尝试识别非 TeXShift 生成的格式</value>
   </data>
-  <data name="Settings_Section_Language" xml:space="preserve">
-    <value>语言</value>
-  </data>
   <data name="Settings_Label_Language" xml:space="preserve">
     <value>语言</value>
   </data>
@@ -305,4 +302,8 @@
   <data name="Settings_Math_Image" xml:space="preserve"><value>高保真图片</value></data>
   <data name="Settings_Math_CompactDescription" xml:space="preserve"><value>紧凑模式会缩小大型运算符，并将上下限移到侧边。</value></data>
   <data name="Settings_MathFontSize" xml:space="preserve"><value>独立公式字号</value></data>
+  <data name="Ribbon_Button_PasteConvert" xml:space="preserve"><value>粘贴并转换</value></data>
+  <data name="Settings_Checkbox_ShowPasteConvertButton" xml:space="preserve"><value>显示“粘贴并转换”按钮</value></data>
+  <data name="Message_PasteConvert_EmptyClipboard" xml:space="preserve"><value>请先复制 Markdown 文本。</value></data>
+  <data name="Settings_Tab_General" xml:space="preserve"><value>常规</value></data>
 </root>

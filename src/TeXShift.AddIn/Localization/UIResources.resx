@@ -256,9 +256,6 @@
   <data name="Settings_Checkbox_TryRecognizeNonTeXShiftFormats" xml:space="preserve">
     <value>Try to recognize non-TeXShift formatting</value>
   </data>
-  <data name="Settings_Section_Language" xml:space="preserve">
-    <value>Language</value>
-  </data>
   <data name="Settings_Label_Language" xml:space="preserve">
     <value>Language</value>
   </data>
@@ -281,4 +278,8 @@
   <data name="Settings_Math_Image" xml:space="preserve"><value>High-fidelity image</value></data>
   <data name="Settings_Math_CompactDescription" xml:space="preserve"><value>Compact mode reduces large operators and moves limits to the side.</value></data>
   <data name="Settings_MathFontSize" xml:space="preserve"><value>Display equation size</value></data>
+  <data name="Ribbon_Button_PasteConvert" xml:space="preserve"><value>Paste and Convert</value></data>
+  <data name="Settings_Checkbox_ShowPasteConvertButton" xml:space="preserve"><value>Show Paste and Convert button</value></data>
+  <data name="Message_PasteConvert_EmptyClipboard" xml:space="preserve"><value>Copy Markdown text first.</value></data>
+  <data name="Settings_Tab_General" xml:space="preserve"><value>General</value></data>
 </root>

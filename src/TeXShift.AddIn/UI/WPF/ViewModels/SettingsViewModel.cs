@@ -16,6 +16,15 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
     /// </summary>
     public class SettingsViewModel : ViewModelBase, IDisposable
     {
+        private bool _showPasteConvertButton;
+        public bool ShowPasteConvertButton
+        {
+            get => _showPasteConvertButton;
+            set => SetProperty(ref _showPasteConvertButton, value);
+        }
+
+        public string ShowPasteConvertButtonText => UIResources.GetString("Settings_Checkbox_ShowPasteConvertButton");
+
         #region Debug Settings
 
         private bool _showDebugButtons;
@@ -270,7 +279,6 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
                 new LanguageOption("en-US", UIResources.GetString("Settings_Language_English"))
             };
 
-        public string LanguageSectionTitle { get; } = UIResources.GetString("Settings_Section_Language");
         public string LanguageLabel { get; } = UIResources.GetString("Settings_Label_Language");
 
         #endregion
@@ -282,6 +290,7 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
         public string TabStyleHeader => UIResources.GetString("Settings_Tab_Style");
         public string TabCodeBlockHeader => UIResources.GetString("Settings_Tab_CodeBlock");
         public string TabMermaidHeader => UIResources.GetString("Settings_Tab_Mermaid");
+        public string TabGeneralHeader => UIResources.GetString("Settings_Tab_General");
         public string TabDebugHeader => UIResources.GetString("Settings_Tab_Debug");
 
         public string QuoteBlockSectionTitle => UIResources.GetString("Settings_Section_QuoteBlock");
@@ -416,6 +425,7 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
         /// </summary>
         public void LoadFromSettings(AppSettings settings)
         {
+            ShowPasteConvertButton = settings?.ShowPasteConvertButton ?? false;
             if (settings == null)
                 settings = AppSettings.CreateDefault();
 
@@ -508,6 +518,7 @@ namespace TeXShift.AddIn.UI.WPF.ViewModels
 
             return new AppSettings
             {
+                ShowPasteConvertButton = ShowPasteConvertButton,
                 Debug = new DebugSettings
                 {
                     ShowDebugButtons = ShowDebugButtons,

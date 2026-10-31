@@ -4,6 +4,14 @@
         <tabs>
             <tab id="tabTeXShift" getLabel="GetTabLabel">
                 <group id="grpConvertTools" getLabel="GetGroupLabel">
+                    <button id="btnPasteConvert"
+                            getLabel="GetButtonLabel"
+                            getVisible="GetPasteConvertVisible"
+                            getEnabled="GetPasteConvertEnabled"
+                            keytip="V"
+                            size="large"
+                            onAction="OnPasteConvertButtonClick"
+                            imageMso="Paste" />
                     <button id="btnSilentConvert"
                             getLabel="GetButtonLabel"
                             size="large"
