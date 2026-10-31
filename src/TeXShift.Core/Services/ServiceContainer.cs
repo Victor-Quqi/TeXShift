@@ -193,9 +193,19 @@ namespace TeXShift.Core.Services
         }
 
         /// <summary>
-        /// Creates a new ConversionOrchestrator instance.
+        /// Creates a new paste conversion orchestrator.
         /// Transient lifetime: new instance per call.
         /// </summary>
+        public PasteConversionOrchestrator CreatePasteConversionOrchestrator(OneNoteApp.Application oneNoteApp)
+        {
+            return new PasteConversionOrchestrator(this, GetOneNoteDispatcher(oneNoteApp));
+        }
+
+        public PasteConversionOrchestrator CreatePasteConversionOrchestrator(OneNoteComDispatcher dispatcher)
+        {
+            return new PasteConversionOrchestrator(this, dispatcher ?? throw new ArgumentNullException(nameof(dispatcher)));
+        }
+
         public ConversionOrchestrator CreateConversionOrchestrator(OneNoteApp.Application oneNoteApp)
         {
             if (oneNoteApp == null)

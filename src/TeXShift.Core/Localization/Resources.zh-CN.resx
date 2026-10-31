@@ -235,4 +235,5 @@
   <data name="Markdown_MermaidRenderFailureNote" xml:space="preserve">
     <value>Mermaid 渲染失败，已在下方保留图表源码。</value>
   </data>
+  <data name="Error_PasteConvert_InsertionPoint" xml:space="preserve"><value>请将光标放在页面正文中，或选择同一文本区域内的文字。</value></data>
 </root>

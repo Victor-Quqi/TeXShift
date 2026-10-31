@@ -55,14 +55,27 @@ namespace TeXShift.Core.OneNote
                 (string)outlines[0].Attribute("objectID"), xml)).ConfigureAwait(false);
         }
 
-        private string BuildPageChanges(ReadResult readResult, IReadOnlyList<XElement> outlines)
+        internal Task InsertContentAsync(XElement page, XElement converted)
+        {
+            var outline = OneNotePasteInsertion.CreateOutline(page, converted);
+            var read = new ReadResult
+            {
+                PageId = (string)page.Attribute("ID"),
+                PageQuickStyleDefinitions = page.Elements(_ns + "QuickStyleDef").ToList()
+            };
+            string xml = BuildPageChanges(read, new[] { outline }, insertion: true);
+            return _comDispatcher.InvokeAsync(app => UpdatePageContent(app, read.PageId,
+                (string)outline.Attribute("objectID"), xml, originalPage: page));
+        }
+
+        private string BuildPageChanges(ReadResult readResult, IReadOnlyList<XElement> outlines, bool insertion = false)
         {
             if (readResult == null || string.IsNullOrEmpty(readResult.PageId))
                 throw new ArgumentException("A page ID is required.", nameof(readResult));
             if (outlines == null || outlines.Count == 0)
                 throw new ArgumentException("At least one outline is required.", nameof(outlines));
             foreach (var outline in outlines)
-                if (outline.Name != _ns + "Outline" || string.IsNullOrEmpty((string)outline.Attribute("objectID")))
+                if (outline.Name != _ns + "Outline" || (!insertion && string.IsNullOrEmpty((string)outline.Attribute("objectID"))))
                     throw new ArgumentException("Every outline must have its original identity.", nameof(outlines));
 
             bool needsTodoTagDef = outlines.Any(ContainsTodoTagIndexZero);
@@ -91,7 +104,7 @@ namespace TeXShift.Core.OneNote
 
             page.Add(hyperlinkQuickStyles);
 
-            OneNoteWriteSelection.PlaceCaret(outlines);
+            if (!insertion) OneNoteWriteSelection.PlaceCaret(outlines);
             page.Add(outlines);
 
             string updatedXml;
@@ -104,14 +117,25 @@ namespace TeXShift.Core.OneNote
             return updatedXml;
         }
 
-        private void UpdatePageContent(OneNoteInterop.Application app, string pageId, string outlineId, string updatedXml)
+        private void UpdatePageContent(OneNoteInterop.Application app, string pageId, string outlineId, string updatedXml,
+            XElement originalPage = null)
         {
             try
             {
                 // Detach the live editor from paragraphs that this update may remove. The
                 // outline itself retains its identity; the request supplies the new caret.
                 using (PerformanceTraceContext.Measure("Write.OneNote.SelectOutline"))
-                    app.NavigateTo(pageId, outlineId, false);
+                    if (!string.IsNullOrEmpty(outlineId)) app.NavigateTo(pageId, outlineId, false);
+                if (originalPage != null)
+                {
+                    // NavigateTo commits the editor and changes timestamps even when its text is unchanged.
+                    app.GetPageContent(pageId, out string currentXml, OneNoteInterop.PageInfo.piAll, OneNoteInterop.XMLSchema.xs2013);
+                    var currentPage = XElement.Parse(currentXml);
+                    var original = originalPage.Elements(_ns + "Outline").FirstOrDefault(e => (string)e.Attribute("objectID") == outlineId);
+                    var current = currentPage.Elements(_ns + "Outline").FirstOrDefault(e => (string)e.Attribute("objectID") == outlineId);
+                    if (!OneNotePasteInsertion.ContentEquals(original, current))
+                        throw new System.Runtime.InteropServices.COMException("Paste target changed during rendering.", unchecked((int)0x80042010));
+                }
                 using (PerformanceTraceContext.Measure("Write.OneNote.UpdatePageContent", "xs2013/force=true"))
                 {
                     app.UpdatePageContent(updatedXml, DateTime.MinValue, OneNoteInterop.XMLSchema.xs2013, true);

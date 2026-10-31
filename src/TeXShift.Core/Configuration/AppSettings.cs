@@ -10,6 +10,9 @@ namespace TeXShift.Core.Configuration
     public class AppSettings
     {
         [DataMember]
+        public bool ShowPasteConvertButton { get; set; }
+
+        [DataMember]
         public DebugSettings Debug { get; set; }
 
         [DataMember]
