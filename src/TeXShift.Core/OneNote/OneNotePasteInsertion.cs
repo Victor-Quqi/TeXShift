@@ -74,6 +74,15 @@ namespace TeXShift.Core.OneNote
             return source;
         }
 
+        public static void MaterializeBinaryContent(XElement outline, Func<string, string> readBinary)
+        {
+            if (outline == null) throw new ArgumentNullException(nameof(outline));
+            if (readBinary == null) throw new ArgumentNullException(nameof(readBinary));
+            // UpdatePageContent replaces the whole outline and requires its retained binary data.
+            foreach (var callback in outline.Descendants(Ns + "CallbackID").ToList())
+                callback.ReplaceWith(new XElement(Ns + "Data", readBinary((string)callback.Attribute("callbackID"))));
+        }
+
         private static List<XElement> BoundaryText(XElement paragraph, bool before)
         {
             var texts = paragraph.Elements(Ns + "T").ToList();

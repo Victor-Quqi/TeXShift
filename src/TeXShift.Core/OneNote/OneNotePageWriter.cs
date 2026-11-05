@@ -63,9 +63,16 @@ namespace TeXShift.Core.OneNote
                 PageId = (string)page.Attribute("ID"),
                 PageQuickStyleDefinitions = page.Elements(_ns + "QuickStyleDef").ToList()
             };
-            string xml = BuildPageChanges(read, new[] { outline }, insertion: true);
-            return _comDispatcher.InvokeAsync(app => UpdatePageContent(app, read.PageId,
-                (string)outline.Attribute("objectID"), xml, originalPage: page));
+            return _comDispatcher.InvokeAsync(app =>
+            {
+                OneNotePasteInsertion.MaterializeBinaryContent(outline, callbackId =>
+                {
+                    app.GetBinaryPageContent(read.PageId, callbackId, out string data);
+                    return data;
+                });
+                string xml = BuildPageChanges(read, new[] { outline }, insertion: true);
+                UpdatePageContent(app, read.PageId, (string)outline.Attribute("objectID"), xml, originalPage: page);
+            });
         }
 
         private string BuildPageChanges(ReadResult readResult, IReadOnlyList<XElement> outlines, bool insertion = false)
@@ -129,7 +136,7 @@ namespace TeXShift.Core.OneNote
                 if (originalPage != null)
                 {
                     // NavigateTo commits the editor and changes timestamps even when its text is unchanged.
-                    app.GetPageContent(pageId, out string currentXml, OneNoteInterop.PageInfo.piAll, OneNoteInterop.XMLSchema.xs2013);
+                    app.GetPageContent(pageId, out string currentXml, OneNoteInterop.PageInfo.piSelection, OneNoteInterop.XMLSchema.xs2013);
                     var currentPage = XElement.Parse(currentXml);
                     var original = originalPage.Elements(_ns + "Outline").FirstOrDefault(e => (string)e.Attribute("objectID") == outlineId);
                     var current = currentPage.Elements(_ns + "Outline").FirstOrDefault(e => (string)e.Attribute("objectID") == outlineId);

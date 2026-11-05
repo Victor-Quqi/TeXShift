@@ -38,8 +38,8 @@ namespace TeXShift.Core.Services
                         string pageId = window?.CurrentPageId;
                         if (string.IsNullOrEmpty(pageId))
                             throw new ContentReadException(Resources.GetString("Error_NoPageId"), "No current page for paste.");
-                        // Capture selection and binary data before asynchronous rendering starts.
-                        app.GetPageContent(pageId, out string xml, OneNoteInterop.PageInfo.piAll, OneNoteInterop.XMLSchema.xs2013);
+                        // Ink-heavy pages are expensive to export with binary data.
+                        app.GetPageContent(pageId, out string xml, OneNoteInterop.PageInfo.piSelection, OneNoteInterop.XMLSchema.xs2013);
                         return XElement.Parse(xml);
                     }
                     finally

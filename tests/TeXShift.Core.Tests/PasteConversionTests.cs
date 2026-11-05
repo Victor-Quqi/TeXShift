@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Json;
@@ -58,6 +59,26 @@ namespace TeXShift.Core.Tests
                 new XElement(Ns + "Cell", new XElement(Ns + "OEChildren", Paragraph("cell", Selected("")))))));
             var result = OneNotePasteInsertion.CreateOutline(Page(table), Converted(Paragraph(null, Text("new"))));
             Assert.AreEqual("new", string.Concat(result.Descendants(Ns + "Cell").Single().Descendants(Ns + "T").Select(t => t.Value)));
+        }
+
+        [TestMethod]
+        public void BinaryReadsAreLimitedToRetainedObjectsInTheUpdatedOutline()
+        {
+            var image = new XElement(Ns + "OE", new XElement(Ns + "Image",
+                new XElement(Ns + "CallbackID", new XAttribute("callbackID", "retained"))));
+            var page = Page(Paragraph("target", Selected("")), image);
+            page.Add(new XElement(Ns + "InkDrawing", new XElement(Ns + "CallbackID", new XAttribute("callbackID", "ink"))));
+            page.Add(Converted(new XElement(Ns + "OE", new XElement(Ns + "Image",
+                new XElement(Ns + "CallbackID", new XAttribute("callbackID", "other-outline"))))));
+            string original = page.ToString();
+            var newImage = new XElement(Ns + "OE", new XElement(Ns + "Image", new XElement(Ns + "Data", "new-bytes")));
+            var result = OneNotePasteInsertion.CreateOutline(page, Converted(newImage));
+            var reads = new List<string>();
+            OneNotePasteInsertion.MaterializeBinaryContent(result, id => { reads.Add(id); return "retained-bytes"; });
+            CollectionAssert.AreEqual(new[] { "retained" }, reads);
+            CollectionAssert.AreEqual(new[] { "new-bytes", "retained-bytes" }, result.Descendants(Ns + "Data").Select(e => e.Value).ToArray());
+            Assert.IsFalse(result.Descendants(Ns + "CallbackID").Any());
+            Assert.AreEqual(original, page.ToString());
         }
 
         [TestMethod]
