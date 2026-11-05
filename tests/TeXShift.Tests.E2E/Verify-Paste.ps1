@@ -33,10 +33,12 @@ function Invoke-PasteCase {
     $target = $original.SelectSingleNode('//*[local-name()="Outline" and @selected]')
     if (-not $target) { throw "$Name had no insertion target." }
     $targetAfter = $final.SelectSingleNode("//*[@objectID='$($target.objectID)']")
-    if (-not $targetAfter -and $Name.StartsWith('empty-')) {
-        $targetAfter = $selection.SelectSingleNode('//*[local-name()="Outline" and @selected]')
-    }
     if (-not $targetAfter) { throw "$Name lost the target outline." }
+    $selectedTarget = $selection.SelectSingleNode('//*[local-name()="Outline" and @selected]')
+    if (-not $selectedTarget -or $selectedTarget.objectID -ne $target.objectID -or
+        $selection.SelectSingleNode('//*[local-name()="Title"]//*[@selected]')) {
+        throw "$Name left the caret outside the insertion target."
+    }
     foreach ($axis in @('x', 'y')) {
         if ($target.SelectSingleNode('*[local-name()="Position"]').GetAttribute($axis) -ne
             $targetAfter.SelectSingleNode('*[local-name()="Position"]').GetAttribute($axis)) {
@@ -45,6 +47,17 @@ function Invoke-PasteCase {
     }
     Write-Host "${Name}: PASS"
     return @{ Original = $original; Final = $final; Target = $targetAfter }
+}
+
+function Assert-RetainedLeadingParagraph {
+    param($Result, [string]$Block)
+    $original = $Result.Original.SelectSingleNode('//*[local-name()="Outline" and @selected]/*[local-name()="OEChildren"]/*[1]')
+    $paragraphs = $Result.Target.SelectNodes('*[local-name()="OEChildren"]/*')
+    if ($paragraphs.Count -lt 3 -or $paragraphs[0].objectID -ne $original.objectID -or
+        -not $paragraphs[0].SelectSingleNode('*[local-name()="T"]') -or $paragraphs[0].InnerText -ne '' -or
+        -not $paragraphs[1].SelectSingleNode("*[local-name()='$Block']")) {
+        throw "$Block paste must retain the original empty paragraph immediately before the inserted block."
+    }
 }
 
 $inline = Join-Path $repoRoot 'tests/TestData/paste-inline.md'
@@ -66,24 +79,16 @@ try {
     [IO.File]::WriteAllText($tableInput, "| A | B |`n|---|---|`n| 1 | 2 |")
     [IO.File]::WriteAllText($imageInput, "![sample]($($imagePath.Replace('\', '/')))")
     $table = Invoke-PasteCase 'empty-table-first' @('--markdown', 'Original body', '--empty-outline', '--paste-input', $tableInput)
-    if (-not $table.Target.SelectSingleNode('*[local-name()="OEChildren"]/*[1]/*[local-name()="Table"]')) {
-        throw 'Table paste must start with the table, without a leading empty paragraph.'
-    }
+    Assert-RetainedLeadingParagraph $table 'Table'
     $image = Invoke-PasteCase 'empty-image-first' @('--markdown', 'Original body', '--empty-outline', '--paste-input', $imageInput)
-    if (-not $image.Target.SelectSingleNode('*[local-name()="OEChildren"]/*[1]/*[local-name()="Image"]')) {
-        throw 'Image paste must start with the image, without a leading empty paragraph.'
-    }
+    Assert-RetainedLeadingParagraph $image 'Image'
 
     $selected = Invoke-PasteCase 'selected-table' @('--markdown', 'Replace me', '--select', 'Replace me', '--paste-input', $tableInput)
-    if ($selected.Final.DocumentElement.InnerText.Contains('Replace me') -or
-        -not $selected.Target.SelectSingleNode('*[local-name()="OEChildren"]/*[1]/*[local-name()="Table"]')) {
-        throw 'Replacing text with a table left an extra paragraph.'
-    }
+    Assert-RetainedLeadingParagraph $selected 'Table'
+    if ($selected.Final.DocumentElement.InnerText.Contains('Replace me')) { throw 'Paste did not replace the selected text.' }
     $existing = Invoke-PasteCase 'existing-outline-table' @('--markdown', 'Original body', '--paste-input', $tableInput)
-    if (-not $existing.Final.DocumentElement.InnerText.Contains('Original body') -or
-        -not $existing.Target.SelectSingleNode('*[local-name()="OEChildren"]/*[1]/*[local-name()="Table"]')) {
-        throw 'Pasting into an existing outline added a leading paragraph or lost surrounding text.'
-    }
+    Assert-RetainedLeadingParagraph $existing 'Table'
+    if (-not $existing.Final.DocumentElement.InnerText.Contains('Original body')) { throw 'Paste lost surrounding text.' }
 
     $escapedImage = [System.Security.SecurityElement]::Escape($imagePath)
     [IO.File]::WriteAllText($imagePage, @"

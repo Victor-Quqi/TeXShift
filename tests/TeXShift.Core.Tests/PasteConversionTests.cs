@@ -92,30 +92,35 @@ namespace TeXShift.Core.Tests
         }
 
         [TestMethod]
-        public void StructuralBlockPasteStartsAtTheCaretWithoutALeadingEmptyParagraph()
+        public void StructuralBlockPasteRetainsLeadingParagraphAndFinalCaret()
         {
             foreach (string block in new[] { "Table", "Image" })
+            foreach (string selection in new[] { "", "replace me" })
             {
                 var converted = Converted(new XElement(Ns + "OE", new XElement(Ns + block)));
-                var result = OneNotePasteInsertion.CreateOutline(Page(Paragraph("empty", Selected(""))), converted);
+                var result = OneNotePasteInsertion.CreateOutline(Page(Paragraph("target", Selected(selection), Text("suffix"))), converted);
                 var paragraphs = result.Element(Ns + "OEChildren").Elements(Ns + "OE").ToList();
-                Assert.AreEqual(2, paragraphs.Count);
-                Assert.IsNotNull(paragraphs[0].Element(Ns + block));
-                Assert.IsTrue(paragraphs.All(e => e.Attribute("objectID") == null));
-                Assert.AreEqual("all", (string)paragraphs[1].Element(Ns + "T").Attribute("selected"));
+                Assert.AreEqual(3, paragraphs.Count);
+                Assert.AreEqual("target", (string)paragraphs[0].Attribute("objectID"));
+                Assert.AreEqual("", paragraphs[0].Element(Ns + "T").Value);
+                Assert.IsNotNull(paragraphs[1].Element(Ns + block));
+                Assert.IsTrue(paragraphs.Skip(1).All(e => e.Attribute("objectID") == null));
+                Assert.AreEqual("all", (string)paragraphs[2].Element(Ns + "T").Attribute("selected"));
+                Assert.AreEqual("suffix", string.Concat(paragraphs[2].Elements(Ns + "T").Select(t => t.Value)));
             }
         }
 
         [TestMethod]
-        public void EmptyTextOutlineDetectionExcludesContentAndStructuralParagraphs()
+        public void StructuralBlockPasteUsesExistingPrefixWithoutAddingABlankParagraph()
         {
-            Assert.IsTrue(OneNotePasteInsertion.IsEmptyTextOutline(Converted(Paragraph("a", Selected("")))));
-            Assert.IsFalse(OneNotePasteInsertion.IsEmptyTextOutline(Converted(Paragraph("a", Text(" ")))));
-            Assert.IsFalse(OneNotePasteInsertion.IsEmptyTextOutline(Converted(Paragraph("a", Selected("")), Paragraph("b", Text("keep")))));
-            Assert.IsFalse(OneNotePasteInsertion.IsEmptyTextOutline(Converted(Paragraph("a", new XElement(Ns + "Image")))));
-            var nested = Paragraph("a", Selected(""));
-            nested.Add(new XElement(Ns + "OEChildren", Paragraph("b", Text("nested"))));
-            Assert.IsFalse(OneNotePasteInsertion.IsEmptyTextOutline(Converted(nested)));
+            var result = OneNotePasteInsertion.CreateOutline(Page(Paragraph("target", Text("prefix"), Selected(""), Text("suffix"))),
+                Converted(new XElement(Ns + "OE", new XElement(Ns + "Table"))));
+            var paragraphs = result.Element(Ns + "OEChildren").Elements(Ns + "OE").ToList();
+            Assert.AreEqual(3, paragraphs.Count);
+            Assert.AreEqual("prefix", paragraphs[0].Element(Ns + "T").Value);
+            Assert.IsNotNull(paragraphs[1].Element(Ns + "Table"));
+            Assert.AreEqual("suffix", string.Concat(paragraphs[2].Elements(Ns + "T").Select(t => t.Value)));
+            CollectionAssert.AreEqual(new[] { "target" }, paragraphs.Attributes("objectID").Select(a => a.Value).ToArray());
         }
 
         [TestMethod]

@@ -70,13 +70,13 @@ namespace TeXShift.Core.OneNote
                     app.GetBinaryPageContent(read.PageId, callbackId, out string data);
                     return data;
                 });
-                PreparePasteTarget(app, page, outline);
+                ValidatePasteTarget(app, page, outline);
                 string xml = BuildPageChanges(read, new[] { outline }, insertion: true);
                 UpdatePageContent(app, read.PageId, (string)outline.Attribute("objectID"), xml, selectOutline: false);
             });
         }
 
-        private void PreparePasteTarget(OneNoteInterop.Application app, XElement originalPage, XElement outline)
+        private void ValidatePasteTarget(OneNoteInterop.Application app, XElement originalPage, XElement outline)
         {
             string pageId = (string)originalPage.Attribute("ID");
             string outlineId = (string)outline.Attribute("objectID");
@@ -86,17 +86,6 @@ namespace TeXShift.Core.OneNote
             var current = XElement.Parse(currentXml).Elements(_ns + "Outline").FirstOrDefault(e => (string)e.Attribute("objectID") == outlineId);
             if (!OneNotePasteInsertion.ContentEquals(original, current))
                 throw new System.Runtime.InteropServices.COMException("Paste target changed during rendering.", unchecked((int)0x80042010));
-
-            string titleId = (string)originalPage.Element(_ns + "Title")?.Element(_ns + "OE")?.Attribute("objectID");
-            if (string.IsNullOrEmpty(titleId)) return;
-            // End text editing before replacing paragraphs; an empty outline may be discarded.
-            app.NavigateTo(pageId, titleId, false);
-            app.GetPageContent(pageId, out currentXml, OneNoteInterop.PageInfo.piSelection, OneNoteInterop.XMLSchema.xs2013);
-            current = XElement.Parse(currentXml).Elements(_ns + "Outline").FirstOrDefault(e => (string)e.Attribute("objectID") == outlineId);
-            if (current == null && OneNotePasteInsertion.IsEmptyTextOutline(original))
-                outline.DescendantsAndSelf().Attributes("objectID").Remove();
-            else if (!OneNotePasteInsertion.ContentEquals(original, current))
-                throw new System.Runtime.InteropServices.COMException("Paste target changed while ending text editing.", unchecked((int)0x80042010));
         }
 
         private string BuildPageChanges(ReadResult readResult, IReadOnlyList<XElement> outlines, bool insertion = false)
