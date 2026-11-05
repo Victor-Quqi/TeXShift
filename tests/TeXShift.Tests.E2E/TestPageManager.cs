@@ -780,6 +780,22 @@ namespace TeXShift.Tests.E2E
         /// </summary>
         private void PlaceSelection(OneNoteInterop.Application app, string pageId, PageSelection selection)
         {
+            if (selection.IsEmptyOutline)
+            {
+                app.NavigateTo(pageId, null, false);
+                var changes = new XElement(OneNoteNamespace + "Page", new XAttribute("ID", pageId),
+                    new XElement(OneNoteNamespace + "Outline",
+                        new XElement(OneNoteNamespace + "Position", new XAttribute("x", 700), new XAttribute("y", 100), new XAttribute("z", 0)),
+                        new XElement(OneNoteNamespace + "OEChildren", new XElement(OneNoteNamespace + "OE",
+                            new XElement(OneNoteNamespace + "T", new XAttribute("selected", "all"), new XCData(string.Empty))))));
+                app.UpdatePageContent(changes.ToString(), DateTime.MinValue, OneNoteInterop.XMLSchema.xs2013, true);
+                // A live empty editor survives; an empty outline imported without selection does not.
+                WaitForSelection(app, pageId, page => page.Descendants(OneNoteNamespace + "Outline").Any(outline =>
+                    outline.Descendants(OneNoteNamespace + "T").Any(t => (string)t.Attribute("selected") == "all") &&
+                    outline.Descendants(OneNoteNamespace + "T").All(t => t.Value.Length == 0)));
+                return;
+            }
+
             app.GetPageContent(pageId, out string pageXml, OneNoteInterop.PageInfo.piBasic, OneNoteInterop.XMLSchema.xs2013);
             var paragraphs = XDocument.Parse(pageXml).Root.Elements(OneNoteNamespace + "Outline")
                 .SelectMany(outline => outline.Descendants(OneNoteNamespace + "OE"))

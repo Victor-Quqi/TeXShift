@@ -9,23 +9,26 @@ namespace TeXShift.Tests.E2E.Models
     /// </summary>
     internal sealed class PageSelection
     {
-        private PageSelection(string fromText, string toText, bool wholeOutline = false)
+        private PageSelection(string fromText, string toText, bool wholeOutline = false, bool emptyOutline = false)
         {
             FromText = fromText;
             ToText = toText;
             WholeOutline = wholeOutline;
+            IsEmptyOutline = emptyOutline;
         }
 
         /// <summary>
         /// Caret in the first paragraph of the first Outline: a new empty paragraph on Markdown pages.
         /// </summary>
         public static PageSelection Default { get; } = new PageSelection(null, null);
+        public static PageSelection EmptyOutline { get; } = new PageSelection(null, null, emptyOutline: true);
 
         public string FromText { get; }
 
         public string ToText { get; }
 
-        public bool IsDefault => FromText == null;
+        public bool IsDefault => FromText == null && !IsEmptyOutline;
+        public bool IsEmptyOutline { get; }
 
         public bool IsRange => ToText != null;
         public bool WholeOutline { get; }

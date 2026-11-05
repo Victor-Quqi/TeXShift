@@ -50,12 +50,12 @@ namespace TeXShift.Tests.E2E.Commands
             bool hasCaret = !string.IsNullOrEmpty(options.Caret);
             bool hasSelect = options.Select != null && options.Select.Length > 0;
             bool hasOutline = !string.IsNullOrEmpty(options.Outline);
-            if ((hasCaret ? 1 : 0) + (hasSelect ? 1 : 0) + (hasOutline ? 1 : 0) > 1)
+            if ((hasCaret ? 1 : 0) + (hasSelect ? 1 : 0) + (hasOutline ? 1 : 0) + (options.EmptyOutline ? 1 : 0) > 1)
             {
-                return CommandHelpers.EmitArgumentError("请仅提供 --caret、--select 或 --outline 其一。", null, output, 0);
+                return CommandHelpers.EmitArgumentError("请仅提供 --caret、--select、--outline 或 --empty-outline 其一。", null, output, 0);
             }
 
-            PageSelection selection = hasOutline ? PageSelection.Outline(options.Outline) : hasCaret
+            PageSelection selection = options.EmptyOutline ? PageSelection.EmptyOutline : hasOutline ? PageSelection.Outline(options.Outline) : hasCaret
                 ? PageSelection.Caret(options.Caret)
                 : hasSelect
                     ? PageSelection.Paragraphs(options.Select[0], options.Select[options.Select.Length - 1])

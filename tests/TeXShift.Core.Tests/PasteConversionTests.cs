@@ -23,6 +23,7 @@ namespace TeXShift.Core.Tests
             string original = page.ToString();
             var result = OneNotePasteInsertion.CreateOutline(page, Converted(Paragraph(null, Text("<b>new</b>"))));
             Assert.AreEqual("left<b>new</b>right", string.Concat(result.Descendants(Ns + "OE").First().Elements(Ns + "T").Select(t => t.Value)));
+            Assert.AreEqual("target", (string)result.Descendants(Ns + "OE").First().Attribute("objectID"));
             Assert.AreEqual("**untouched**", result.Descendants(Ns + "OE").Last().Element(Ns + "T").Value);
             Assert.AreEqual("keep", (string)result.Descendants(Ns + "OE").Last().Attribute("objectID"));
             Assert.AreEqual("right", result.Descendants(Ns + "T").Single(t => t.Attribute("selected") != null).ElementsAfterSelf().Single().Value);
@@ -36,6 +37,7 @@ namespace TeXShift.Core.Tests
             var result = OneNotePasteInsertion.CreateOutline(page, Converted(Paragraph(null, Text("new"))));
             Assert.AreEqual("beforenewafter", string.Concat(result.Descendants(Ns + "T").Select(t => t.Value)));
             Assert.AreEqual(1, result.Descendants(Ns + "OE").Count());
+            Assert.AreEqual("a", (string)result.Descendants(Ns + "OE").Single().Attribute("objectID"));
         }
 
         [TestMethod]
@@ -48,17 +50,72 @@ namespace TeXShift.Core.Tests
             CollectionAssert.AreEqual(new[] { "before", "heading", "", "after" }, result.Descendants(Ns + "T").Select(t => t.Value).ToArray());
             Assert.AreEqual(image.ToString(), result.Descendants(Ns + "OE").Last().ToString());
             Assert.AreEqual(1, result.Descendants().Attributes("selected").Count());
+            Assert.AreEqual("a", (string)result.Descendants(Ns + "OE").First().Attribute("objectID"));
+            Assert.AreEqual(1, result.Descendants(Ns + "OE").Count(e => (string)e.Attribute("objectID") == "a"));
         }
 
         [TestMethod]
         public void CanPasteInEmptyOutlineAndTableCell()
         {
             var empty = Page(Paragraph("a", Selected("")));
-            Assert.AreEqual("new", string.Concat(OneNotePasteInsertion.CreateOutline(empty, Converted(Paragraph(null, Text("new")))).Descendants(Ns + "T").Select(t => t.Value)));
+            var emptyResult = OneNotePasteInsertion.CreateOutline(empty, Converted(Paragraph(null, Text("new"))));
+            Assert.AreEqual("new", string.Concat(emptyResult.Descendants(Ns + "T").Select(t => t.Value)));
+            Assert.AreEqual("a", (string)emptyResult.Descendants(Ns + "OE").Single().Attribute("objectID"));
             var table = new XElement(Ns + "OE", new XElement(Ns + "Table", new XElement(Ns + "Row",
                 new XElement(Ns + "Cell", new XElement(Ns + "OEChildren", Paragraph("cell", Selected("")))))));
             var result = OneNotePasteInsertion.CreateOutline(Page(table), Converted(Paragraph(null, Text("new"))));
             Assert.AreEqual("new", string.Concat(result.Descendants(Ns + "Cell").Single().Descendants(Ns + "T").Select(t => t.Value)));
+            Assert.AreEqual("cell", (string)result.Descendants(Ns + "Cell").Single().Descendants(Ns + "OE").Single().Attribute("objectID"));
+        }
+
+        [TestMethod]
+        public void BlockPasteIntoEmptyParagraphRetainsItsIdentityOnTheFirstBlock()
+        {
+            var result = OneNotePasteInsertion.CreateOutline(Page(Paragraph("empty", Selected(""))),
+                Converted(Paragraph(null, Text("first")), Paragraph(null, Text("second"))));
+            var paragraphs = result.Descendants(Ns + "OE").ToList();
+            Assert.AreEqual(3, paragraphs.Count);
+            Assert.AreEqual("empty", (string)paragraphs.First().Attribute("objectID"));
+            Assert.IsTrue(paragraphs.Skip(1).All(e => e.Attribute("objectID") == null));
+            Assert.AreEqual("all", (string)paragraphs.Last().Element(Ns + "T").Attribute("selected"));
+        }
+
+        [TestMethod]
+        public void BlockPasteAcrossParagraphsRetainsBothSurvivingBoundaryIdentities()
+        {
+            var page = Page(Paragraph("a", Text("before"), Selected("remove")),
+                Paragraph("b", Selected("remove too"), Text("after")));
+            var result = OneNotePasteInsertion.CreateOutline(page,
+                Converted(Paragraph(null, Text("first")), Paragraph(null, Text("second"))));
+            CollectionAssert.AreEqual(new[] { "a", "b" }, result.Descendants(Ns + "OE")
+                .Attributes("objectID").Select(a => a.Value).ToArray());
+        }
+
+        [TestMethod]
+        public void StructuralBlockPasteStartsAtTheCaretWithoutALeadingEmptyParagraph()
+        {
+            foreach (string block in new[] { "Table", "Image" })
+            {
+                var converted = Converted(new XElement(Ns + "OE", new XElement(Ns + block)));
+                var result = OneNotePasteInsertion.CreateOutline(Page(Paragraph("empty", Selected(""))), converted);
+                var paragraphs = result.Element(Ns + "OEChildren").Elements(Ns + "OE").ToList();
+                Assert.AreEqual(2, paragraphs.Count);
+                Assert.IsNotNull(paragraphs[0].Element(Ns + block));
+                Assert.IsTrue(paragraphs.All(e => e.Attribute("objectID") == null));
+                Assert.AreEqual("all", (string)paragraphs[1].Element(Ns + "T").Attribute("selected"));
+            }
+        }
+
+        [TestMethod]
+        public void EmptyTextOutlineDetectionExcludesContentAndStructuralParagraphs()
+        {
+            Assert.IsTrue(OneNotePasteInsertion.IsEmptyTextOutline(Converted(Paragraph("a", Selected("")))));
+            Assert.IsFalse(OneNotePasteInsertion.IsEmptyTextOutline(Converted(Paragraph("a", Text(" ")))));
+            Assert.IsFalse(OneNotePasteInsertion.IsEmptyTextOutline(Converted(Paragraph("a", Selected("")), Paragraph("b", Text("keep")))));
+            Assert.IsFalse(OneNotePasteInsertion.IsEmptyTextOutline(Converted(Paragraph("a", new XElement(Ns + "Image")))));
+            var nested = Paragraph("a", Selected(""));
+            nested.Add(new XElement(Ns + "OEChildren", Paragraph("b", Text("nested"))));
+            Assert.IsFalse(OneNotePasteInsertion.IsEmptyTextOutline(Converted(nested)));
         }
 
         [TestMethod]

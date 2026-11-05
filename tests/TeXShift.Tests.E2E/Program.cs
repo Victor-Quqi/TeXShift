@@ -71,6 +71,11 @@ namespace TeXShift.Tests.E2E
                 Description = "Select the whole text box containing this paragraph text"
             };
 
+            var emptyOutlineOption = new Option<bool>("--empty-outline")
+            {
+                Description = "Paste into a new empty text box on the disposable test page"
+            };
+
             var outputOption = new Option<DirectoryInfo>("--output", "-o")
             {
                 Description = "Output directory (required)",
@@ -96,7 +101,11 @@ namespace TeXShift.Tests.E2E
                 Description = "Markdown to paste into the prepared page; Ribbon mode temporarily uses the clipboard",
                 Required = true
             };
-            if (paste) command.Options.Add(pasteInputOption);
+            if (paste)
+            {
+                command.Options.Add(pasteInputOption);
+                command.Options.Add(emptyOutlineOption);
+            }
             var driverOption = new Option<ConversionDriver>("--driver")
             {
                 Description = "ribbon: installed add-in and dialogs (activates Ribbon); core: pipeline with optional --settings, without Ribbon interaction",
@@ -130,6 +139,7 @@ namespace TeXShift.Tests.E2E
                     Changes = replayWrite ? parseResult.GetValue(changesOption) : null,
                     Caret = parseResult.GetValue(caretOption),
                     Outline = parseResult.GetValue(outlineOption),
+                    EmptyOutline = paste && parseResult.GetValue(emptyOutlineOption),
                     Select = parseResult.GetValue(selectOption),
                     Output = parseResult.GetValue(outputOption),
                     Cleanup = parseResult.GetValue(cleanupOption)

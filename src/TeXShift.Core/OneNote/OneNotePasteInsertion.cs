@@ -59,9 +59,13 @@ namespace TeXShift.Core.OneNote
             else
             {
                 if (prefix.Count > 0) replacement.Add(CopyParagraph(first, prefix));
+                else if (inserted[0].Element(Ns + "T") != null)
+                    inserted[0].SetAttributeValue("objectID", (string)first.Attribute("objectID"));
                 replacement.AddRange(inserted);
                 // Keep the caret outside tables, images and lists after a block paste.
                 var tail = CopyParagraph(last, new[] { new XElement(Ns + "T", new XAttribute("selected", "all"), new XCData(string.Empty)) }.Concat(suffix));
+                // A split paragraph keeps its identity on exactly one surviving fragment.
+                if (first == last) tail.Attribute("objectID")?.Remove();
                 replacement.Add(tail);
             }
 
@@ -81,6 +85,14 @@ namespace TeXShift.Core.OneNote
             // UpdatePageContent replaces the whole outline and requires its retained binary data.
             foreach (var callback in outline.Descendants(Ns + "CallbackID").ToList())
                 callback.ReplaceWith(new XElement(Ns + "Data", readBinary((string)callback.Attribute("callbackID"))));
+        }
+
+        public static bool IsEmptyTextOutline(XElement outline)
+        {
+            var paragraphs = outline?.Element(Ns + "OEChildren")?.Elements().ToList();
+            if (paragraphs == null || paragraphs.Count != 1 || paragraphs[0].Name != Ns + "OE") return false;
+            var content = paragraphs[0].Elements().ToList();
+            return content.Count > 0 && content.All(e => e.Name == Ns + "T" && e.Value.Length == 0);
         }
 
         private static List<XElement> BoundaryText(XElement paragraph, bool before)
@@ -118,7 +130,8 @@ namespace TeXShift.Core.OneNote
         private static XElement CopyParagraph(XElement original, IEnumerable<XElement> texts)
         {
             return new XElement(Ns + "OE",
-                original.Attributes().Where(a => a.Name != "objectID" && a.Name != "selected"),
+                // Retain the live editor's paragraph identity, including in an empty outline.
+                original.Attributes().Where(a => a.Name != "selected"),
                 original.Elements().Where(e => e.Name == Ns + "List" || e.Name == Ns + "Tag"), texts);
         }
 

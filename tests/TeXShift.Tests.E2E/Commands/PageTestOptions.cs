@@ -19,6 +19,7 @@ namespace TeXShift.Tests.E2E.Commands
 
         public string Caret { get; set; }
         public string Outline { get; set; }
+        public bool EmptyOutline { get; set; }
 
         public string[] Select { get; set; }
 
