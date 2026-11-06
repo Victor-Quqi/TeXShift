@@ -34,12 +34,12 @@ namespace TeXShift.AddIn
                     var result = await _serviceContainer.CreatePasteConversionOrchestrator(_oneNoteApp).ExecuteAsync(markdown);
                     activity.PageId = result.ReadResult?.PageId;
                     activity.Success = result.Success;
-                    if (result.Error != null) HandleConversionError(result.Error, null);
+                    if (result.Error != null) await HandleConversionErrorAsync(result.Error, null);
                 }
                 catch (Exception ex)
                 {
                     activity.Success = false;
-                    HandleConversionError(ex, null);
+                    await HandleConversionErrorAsync(ex, null);
                 }
                 finally
                 {

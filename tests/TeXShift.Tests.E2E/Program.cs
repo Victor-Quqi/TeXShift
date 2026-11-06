@@ -75,6 +75,10 @@ namespace TeXShift.Tests.E2E
             {
                 Description = "Paste into a new empty text box on the disposable test page"
             };
+            var verifyUndoOption = new Option<bool>("--verify-undo")
+            {
+                Description = "Verify that one native Undo restores the original page after a Ribbon paste"
+            };
 
             var outputOption = new Option<DirectoryInfo>("--output", "-o")
             {
@@ -105,6 +109,7 @@ namespace TeXShift.Tests.E2E
             {
                 command.Options.Add(pasteInputOption);
                 command.Options.Add(emptyOutlineOption);
+                command.Options.Add(verifyUndoOption);
             }
             var driverOption = new Option<ConversionDriver>("--driver")
             {
@@ -140,6 +145,7 @@ namespace TeXShift.Tests.E2E
                     Caret = parseResult.GetValue(caretOption),
                     Outline = parseResult.GetValue(outlineOption),
                     EmptyOutline = paste && parseResult.GetValue(emptyOutlineOption),
+                    VerifyUndo = paste && parseResult.GetValue(verifyUndoOption),
                     Select = parseResult.GetValue(selectOption),
                     Output = parseResult.GetValue(outputOption),
                     Cleanup = parseResult.GetValue(cleanupOption)

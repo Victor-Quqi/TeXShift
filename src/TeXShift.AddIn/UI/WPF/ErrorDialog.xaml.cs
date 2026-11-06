@@ -1,14 +1,45 @@
 ﻿using System;
+using System.Threading;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Threading;
 using TeXShift.AddIn.Interop;
 using TeXShift.AddIn.UI.WPF.ViewModels;
+using TeXShift.Core.Logging;
 
 namespace TeXShift.AddIn.UI.WPF
 {
     public partial class ErrorDialog : Window
     {
         private IntPtr _ownerHandle;
+
+        internal static void WarmUp()
+        {
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    // Load WPF, the theme and control templates before the first error without showing a window.
+                    var dialog = new ErrorDialog(new ErrorDialogViewModel(string.Empty, string.Empty, null));
+                    try
+                    {
+                        var content = (FrameworkElement)dialog.Content;
+                        var size = new Size(dialog.Width, dialog.Height);
+                        content.Measure(size);
+                        content.Arrange(new Rect(size));
+                        content.UpdateLayout();
+                    }
+                    finally { dialog.Close(); }
+                }
+                catch (Exception ex)
+                {
+                    RuntimeLog.Write($"Error dialog warm-up failed: {ex}");
+                }
+                finally { Dispatcher.CurrentDispatcher.InvokeShutdown(); }
+            }) { IsBackground = true, Name = "TeXShift_ErrorDialog_WarmUp_STA" };
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+        }
 
         public ErrorDialog(ErrorDialogViewModel viewModel)
         {

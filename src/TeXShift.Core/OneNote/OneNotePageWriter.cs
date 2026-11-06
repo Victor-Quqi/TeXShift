@@ -86,6 +86,14 @@ namespace TeXShift.Core.OneNote
             string outlineId = (string)outline.Attribute("objectID");
             if (string.IsNullOrEmpty(outlineId)) return;
             var original = originalPage.Elements(_ns + "Outline").First(e => (string)e.Attribute("objectID") == outlineId);
+            if (original.Descendants(_ns + "OE").Any(parent =>
+                parent.Element(_ns + "OEChildren") != null &&
+                parent.Elements(_ns + "T").Any(text => text.Attribute("selected") != null)))
+            {
+                // Commit the live parent editor before inserting siblings ahead of its retained children.
+                using (PerformanceTraceContext.Measure("Write.Paste.CommitParentEditor"))
+                    app.NavigateTo(pageId, outlineId, false);
+            }
             string currentXml;
             using (PerformanceTraceContext.Measure("Write.Paste.GetPageContent", "piSelection"))
                 app.GetPageContent(pageId, out currentXml, OneNoteInterop.PageInfo.piSelection, OneNoteInterop.XMLSchema.xs2013);

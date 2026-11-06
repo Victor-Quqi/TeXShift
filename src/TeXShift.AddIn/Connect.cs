@@ -8,6 +8,7 @@ using Extensibility;
 using Microsoft.Office.Core;
 using TeXShift.AddIn.Interop;
 using TeXShift.AddIn.Localization;
+using TeXShift.AddIn.UI.WPF;
 using TeXShift.Core.Configuration;
 using TeXShift.Core.Localization;
 using TeXShift.Core.Logging;
@@ -121,6 +122,7 @@ namespace TeXShift.AddIn
 
                 // Apply loaded settings to style configuration
                 ApplySettingsToStyleConfig();
+                ErrorDialog.WarmUp();
             }
             catch (Exception ex)
             {

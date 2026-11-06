@@ -100,7 +100,8 @@ try {
   </one:OEChildren></one:Outline>
 </one:Page>
 "@)
-    $nested = Invoke-PasteCase 'nested-list-table' @('--page', $nestedPage, '--caret', 'Parent bullet', '--paste-input', $tableInput)
+    $undoArgs = if ($Driver -eq 'ribbon') { @('--verify-undo') } else { @() }
+    $nested = Invoke-PasteCase 'nested-list-table' (@('--page', $nestedPage, '--caret', 'Parent bullet', '--paste-input', $tableInput) + $undoArgs)
     $childBefore = $nested.Original.SelectSingleNode('//*[local-name()="T" and text()="Child bullet"]/..')
     $childAfter = $nested.Final.SelectSingleNode("//*[@objectID='$($childBefore.objectID)']")
     if (-not $childAfter -or $childBefore.ParentNode.ParentNode.objectID -ne $childAfter.ParentNode.ParentNode.objectID) {

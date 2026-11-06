@@ -1,7 +1,10 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using TeXShift.Core.OneNote;
 using TeXShift.Tests.E2E.Models;
 
 namespace TeXShift.Tests.E2E.Commands
@@ -17,6 +20,8 @@ namespace TeXShift.Tests.E2E.Commands
             {
                 return CommandHelpers.EmitArgumentError("输出目录不能为空。", null, null, 0);
             }
+            if (options.VerifyUndo && options.Driver != ConversionDriver.Ribbon)
+                return CommandHelpers.EmitArgumentError("--verify-undo 只用于 Ribbon。", null, output, 0);
 
             TeXShift.Core.Configuration.AppSettings settings = null;
             if (options.Settings != null)
@@ -89,8 +94,6 @@ namespace TeXShift.Tests.E2E.Commands
                 if (!options.PasteInput.Exists)
                     return CommandHelpers.EmitArgumentError("粘贴文件不存在。", null, output, 0);
                 pasteMarkdown = File.ReadAllText(options.PasteInput.FullName);
-                if (string.IsNullOrWhiteSpace(pasteMarkdown))
-                    return CommandHelpers.EmitArgumentError("粘贴文件为空。", null, output, 0);
             }
             string changesTemplate = null;
             if (options.Changes != null)
@@ -176,7 +179,8 @@ namespace TeXShift.Tests.E2E.Commands
                                     }
                                     originalClipboard = snapshot;
                                 }
-                                System.Windows.Forms.Clipboard.SetText(pasteMarkdown);
+                                if (pasteMarkdown.Length == 0) System.Windows.Forms.Clipboard.Clear();
+                                else System.Windows.Forms.Clipboard.SetText(pasteMarkdown);
                                 clipboardChanged = true;
                             })).ConfigureAwait(false);
                         await run.StepAsync("InvokeRibbon", () => ribbon.InvokeAsync(options.Operation, run.PageId, output.FullName)).ConfigureAwait(false);
@@ -203,6 +207,29 @@ namespace TeXShift.Tests.E2E.Commands
                     }
                     catch { exitCode = CommandHelpers.ExitPdfFailed; throw; }
                 }).ConfigureAwait(false);
+                if (options.VerifyUndo)
+                    await run.StepAsync("VerifySingleUndo", async () =>
+                    {
+                        var before = XElement.Load(Path.Combine(output.FullName, $"F02_Original_XML_{stamp}.xml"));
+                        var ns = before.Name.Namespace;
+                        var outlines = before.Elements(ns + "Outline").ToArray();
+                        await Task.Run(() => ribbon.Undo()).ConfigureAwait(false);
+                        var deadline = DateTime.UtcNow.AddSeconds(5);
+                        do
+                        {
+                            var xml = await pageManager.GetPageSelectionXmlAsync(run.PageId).ConfigureAwait(false);
+                            var after = XElement.Parse(xml);
+                            if (outlines.Length == after.Elements(ns + "Outline").Count() && outlines.All(original =>
+                                OneNotePasteInsertion.ContentEquals(original, after.Elements(ns + "Outline").SingleOrDefault(e =>
+                                    (string)e.Attribute("objectID") == (string)original.Attribute("objectID")))))
+                            {
+                                File.WriteAllText(Path.Combine(output.FullName, "F12_After_Undo.xml"), xml);
+                                return;
+                            }
+                            await Task.Delay(50).ConfigureAwait(false);
+                        } while (DateTime.UtcNow < deadline);
+                        throw new InvalidOperationException("One Undo did not restore the original page content and object identities.");
+                    }).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

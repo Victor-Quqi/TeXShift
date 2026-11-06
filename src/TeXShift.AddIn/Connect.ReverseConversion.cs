@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Office.Core;
 using TeXShift.AddIn.Localization;
@@ -12,31 +13,31 @@ namespace TeXShift.AddIn
     /// </summary>
     public partial class Connect
     {
-        public void OnReverseConvertButtonClick(IRibbonControl control)
+        public async void OnReverseConvertButtonClick(IRibbonControl control)
         {
             try
             {
-                PerformReverseConversionAsync(showSuccessDialog: false, writeDebugFiles: false);
+                await PerformReverseConversionAsync(showSuccessDialog: false, writeDebugFiles: false);
             }
             catch (Exception ex)
             {
-                HandleConversionError(ex, null);
+                await HandleConversionErrorAsync(ex, null);
             }
         }
 
-        public void OnDebugReverseConvertButtonClick(IRibbonControl control)
+        public async void OnDebugReverseConvertButtonClick(IRibbonControl control)
         {
             try
             {
-                PerformReverseConversionAsync(showSuccessDialog: true, writeDebugFiles: true);
+                await PerformReverseConversionAsync(showSuccessDialog: true, writeDebugFiles: true);
             }
             catch (Exception ex)
             {
-                HandleConversionError(ex, null);
+                await HandleConversionErrorAsync(ex, null);
             }
         }
 
-        private async void PerformReverseConversionAsync(bool showSuccessDialog, bool writeDebugFiles)
+        private async Task PerformReverseConversionAsync(bool showSuccessDialog, bool writeDebugFiles)
         {
             using (var activity = new AddInCommandLog("reverse"))
             {
@@ -58,11 +59,11 @@ namespace TeXShift.AddIn
                     {
                         if (result.Error != null)
                         {
-                            HandleConversionError(result.Error, result.DebugOutputFolder);
+                            await HandleConversionErrorAsync(result.Error, result.DebugOutputFolder);
                         }
                         else if (result.ReadResult != null && !result.ReadResult.IsSuccess)
                         {
-                            ShowWpfErrorDialog(
+                            await ShowWpfErrorDialogAsync(
                                 result.ReadResult.ErrorMessage,
                                 string.Empty,
                                 ResolveDebugFolderPath(result.DebugOutputFolder));
@@ -86,7 +87,7 @@ namespace TeXShift.AddIn
                 catch (Exception ex)
                 {
                     activity.Success = false;
-                    HandleConversionError(ex, null);
+                    await HandleConversionErrorAsync(ex, null);
                 }
             }
         }

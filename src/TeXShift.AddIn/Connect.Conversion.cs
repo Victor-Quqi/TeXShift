@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Interop;
 using Microsoft.Office.Core;
@@ -27,27 +28,27 @@ namespace TeXShift.AddIn
         /// Ribbon button click handler for conversion.
         /// Uses async void pattern for event handlers.
         /// </summary>
-        public void OnConvertButtonClick(IRibbonControl control)
+        public async void OnConvertButtonClick(IRibbonControl control)
         {
             try
             {
-                PerformConversionAsync(showSuccessDialog: false, writeDebugFiles: false);
+                await PerformConversionAsync(showSuccessDialog: false, writeDebugFiles: false);
             }
             catch (Exception ex)
             {
-                HandleConversionError(ex, null);
+                await HandleConversionErrorAsync(ex, null);
             }
         }
 
-        public void OnDebugConvertButtonClick(IRibbonControl control)
+        public async void OnDebugConvertButtonClick(IRibbonControl control)
         {
             try
             {
-                PerformConversionAsync(showSuccessDialog: true, writeDebugFiles: true);
+                await PerformConversionAsync(showSuccessDialog: true, writeDebugFiles: true);
             }
             catch (Exception ex)
             {
-                HandleConversionError(ex, null);
+                await HandleConversionErrorAsync(ex, null);
             }
         }
 
@@ -60,7 +61,7 @@ namespace TeXShift.AddIn
         /// </summary>
         /// <param name="showSuccessDialog">If true, shows a detailed message box on success.</param>
         /// <param name="writeDebugFiles">If true, saves conversion artifacts to the DebugOutput folder.</param>
-        private async void PerformConversionAsync(bool showSuccessDialog, bool writeDebugFiles)
+        private async Task PerformConversionAsync(bool showSuccessDialog, bool writeDebugFiles)
         {
             using (var activity = new AddInCommandLog("convert"))
             {
@@ -83,12 +84,12 @@ namespace TeXShift.AddIn
                     {
                         if (result.Error != null)
                         {
-                            HandleConversionError(result.Error, result.DebugOutputFolder);
+                            await HandleConversionErrorAsync(result.Error, result.DebugOutputFolder);
                         }
                         else if (result.ReadResult != null && !result.ReadResult.IsSuccess)
                         {
                             // Show read errors (like "no selection") using the new error dialog
-                            ShowWpfErrorDialog(
+                            await ShowWpfErrorDialogAsync(
                                 result.ReadResult.ErrorMessage,
                                 string.Empty,
                                 ResolveDebugFolderPath(result.DebugOutputFolder));
@@ -104,7 +105,7 @@ namespace TeXShift.AddIn
                 catch (Exception ex)
                 {
                     activity.Success = false;
-                    HandleConversionError(ex, null);
+                    await HandleConversionErrorAsync(ex, null);
                 }
             }
         }
@@ -150,7 +151,7 @@ namespace TeXShift.AddIn
         /// <summary>
         /// Handles and displays conversion errors.
         /// </summary>
-        private void HandleConversionError(Exception ex, string debugFolderPath)
+        private async Task HandleConversionErrorAsync(Exception ex, string debugFolderPath)
         {
             var userMessage = ErrorMessages.GetUserFriendlyMessage(ex);
             var resolvedDebugFolder = ResolveDebugFolderPath(debugFolderPath);
@@ -158,7 +159,7 @@ namespace TeXShift.AddIn
 
             try
             {
-                ShowWpfErrorDialog(userMessage, technicalDetails, resolvedDebugFolder);
+                await ShowWpfErrorDialogAsync(userMessage, technicalDetails, resolvedDebugFolder);
             }
             catch
             {
@@ -229,22 +230,27 @@ namespace TeXShift.AddIn
             return builder.ToString();
         }
 
-        private void ShowWpfErrorDialog(string userMessage, string technicalDetails, string debugFolderPath)
+        private async Task ShowWpfErrorDialogAsync(string userMessage, string technicalDetails, string debugFolderPath)
         {
             IntPtr parentHwnd = IntPtr.Zero;
             try
             {
-                parentHwnd = _serviceContainer.GetOneNoteWindowHandleAsync(_oneNoteApp).GetAwaiter().GetResult();
+                // Release the Ribbon callback while OneNote services the COM request.
+                using (PerformanceTraceContext.Measure("Error.ResolveOwner"))
+                    parentHwnd = await _serviceContainer.GetOneNoteWindowHandleAsync(_oneNoteApp).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 // OneNote itself may have disconnected. Keep the error visible as an unowned window.
                 RuntimeLog.Write($"Could not resolve the OneNote error dialog owner: {ex}");
             }
-            Exception threadException = null;
+            var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             var thread = new System.Threading.Thread(() =>
             {
+                Exception threadException = null;
+                IDisposable presentation = PerformanceTraceContext.Measure("Error.ShowDialog");
+                IDisposable dismissal = null;
                 try
                 {
                     var viewModel = new ErrorDialogViewModel(userMessage, technicalDetails, debugFolderPath);
@@ -252,6 +258,13 @@ namespace TeXShift.AddIn
 
                     var helper = new WindowInteropHelper(dialog);
                     helper.Owner = parentHwnd;
+
+                    dialog.ContentRendered += (sender, args) =>
+                    {
+                        presentation?.Dispose();
+                        presentation = null;
+                        dismissal = dismissal ?? PerformanceTraceContext.Measure("Error.WaitForDismissal");
+                    };
 
                     dialog.ShowDialog();
                 }
@@ -262,24 +275,19 @@ namespace TeXShift.AddIn
                 }
                 finally
                 {
+                    dismissal?.Dispose();
+                    presentation?.Dispose();
                     var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
                     dispatcher.InvokeShutdown();
                 }
-            });
+                if (parentHwnd != IntPtr.Zero) NativeMethods.SetForegroundWindow(parentHwnd);
+                if (threadException != null) completion.TrySetException(threadException);
+                else completion.TrySetResult(true);
+            }) { IsBackground = true, Name = "TeXShift_ErrorDialog_STA" };
 
             thread.SetApartmentState(System.Threading.ApartmentState.STA);
             thread.Start();
-            thread.Join();
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-
-            NativeMethods.SetForegroundWindow(parentHwnd);
-
-            if (threadException != null)
-            {
-                throw threadException;
-            }
+            await completion.Task.ConfigureAwait(false);
         }
 
         #endregion
