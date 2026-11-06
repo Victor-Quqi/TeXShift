@@ -75,7 +75,15 @@ namespace TeXShift.Core.OneNote
             }
 
             var nested = last.Element(Ns + "OEChildren");
-            if (nested != null) replacement.Last().Add(new XElement(nested));
+            if (nested != null)
+            {
+                // Keep existing child IDs attached to their original parent when splitting a paragraph.
+                string parentId = (string)last.Attribute("objectID");
+                foreach (var fragment in replacement.Take(replacement.Count - 1))
+                    if ((string)fragment.Attribute("objectID") == parentId) fragment.Attribute("objectID")?.Remove();
+                replacement.Last().SetAttributeValue("objectID", parentId);
+                replacement.Last().Add(new XElement(nested));
+            }
             foreach (var node in source.DescendantsAndSelf()) node.Attribute("selected")?.Remove();
             first.ReplaceWith(replacement);
             foreach (var node in range.Skip(1)) node.Remove();

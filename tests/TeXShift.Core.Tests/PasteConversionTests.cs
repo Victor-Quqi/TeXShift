@@ -153,6 +153,24 @@ namespace TeXShift.Core.Tests
         }
 
         [TestMethod]
+        public void BlockPasteKeepsNestedObjectsUnderTheirOriginalParentIdentity()
+        {
+            foreach (string prefix in new[] { "", "before" })
+            {
+                var paragraph = Paragraph("parent", Text(prefix), Selected(""), Text("after"));
+                paragraph.Add(new XElement(Ns + "OEChildren", Paragraph("child", Text("nested"))));
+                var result = OneNotePasteInsertion.CreateOutline(Page(paragraph),
+                    Converted(new XElement(Ns + "OE", new XElement(Ns + "Table"))));
+                var child = result.Descendants(Ns + "OE").Single(e => (string)e.Attribute("objectID") == "child");
+                var parent = child.Ancestors(Ns + "OE").First();
+                Assert.AreEqual("parent", (string)parent.Attribute("objectID"));
+                Assert.AreEqual("after", string.Concat(parent.Elements(Ns + "T").Select(t => t.Value)));
+                Assert.AreEqual("all", (string)parent.Elements(Ns + "T").First().Attribute("selected"));
+                Assert.AreEqual(1, result.Descendants(Ns + "OE").Count(e => (string)e.Attribute("objectID") == "parent"));
+            }
+        }
+
+        [TestMethod]
         public void MissingBodySelectionDoesNotOverwriteExistingContent()
         {
             var page = Page(Paragraph("a", Text("keep")));

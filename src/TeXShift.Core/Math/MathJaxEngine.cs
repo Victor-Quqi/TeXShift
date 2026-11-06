@@ -9,6 +9,7 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 using TeXShift.Core.Errors;
 using TeXShift.Core.Localization;
+using TeXShift.Core.Logging;
 using TeXShift.Core.Utils;
 
 namespace TeXShift.Core.Math
@@ -93,8 +94,10 @@ namespace TeXShift.Core.Math
             CoreWebView2Environment env;
             try
             {
-                env = await CoreWebView2Environment.CreateAsync(null, userDataFolder);
-                await _webView.EnsureCoreWebView2Async(env);
+                using (PerformanceTraceContext.Measure("Math.WebView2.CreateEnvironment"))
+                    env = await CoreWebView2Environment.CreateAsync(null, userDataFolder);
+                using (PerformanceTraceContext.Measure("Math.WebView2.EnsureControl"))
+                    await _webView.EnsureCoreWebView2Async(env);
             }
             catch (WebView2RuntimeNotFoundException ex)
             {
@@ -133,11 +136,15 @@ namespace TeXShift.Core.Math
                     navTcs.SetException(new Exception($"Navigation failed: {e.WebErrorStatus}"));
             }
             _webView.CoreWebView2.NavigationCompleted += OnNavigationCompleted;
-            _webView.CoreWebView2.Navigate("file:///" + loaderPath.Replace('\\', '/'));
-            await navTcs.Task;
+            using (PerformanceTraceContext.Measure("Math.WebView2.Navigate"))
+            {
+                _webView.CoreWebView2.Navigate("file:///" + loaderPath.Replace('\\', '/'));
+                await navTcs.Task;
+            }
 
             // Wait for MathJax to be ready
-            await WaitForMathJaxReady();
+            using (PerformanceTraceContext.Measure("Math.WaitForReady"))
+                await WaitForMathJaxReady();
         }
 
         public async Task<MathExpression> ParseAsync(string latex, bool displayMode)
@@ -155,9 +162,11 @@ namespace TeXShift.Core.Math
 
         private async Task<T> InvokeAsync<T>(string operation, object arguments)
         {
-            await InitializeAsync().ConfigureAwait(false);
+            using (PerformanceTraceContext.Measure("Math.Initialize"))
+                await InitializeAsync().ConfigureAwait(false);
             try
             {
+                using (PerformanceTraceContext.Measure("Math.Request", operation))
                 return await _worker.InvokeAsync(async () =>
                 {
                     var completion = new TaskCompletionSource<T>();

@@ -12,6 +12,7 @@ namespace TeXShift.AddIn
         private readonly string _id = Guid.NewGuid().ToString("N");
         private readonly string _command;
         private readonly Stopwatch _timer = Stopwatch.StartNew();
+        private readonly IDisposable _performance;
         public string PageId { get; set; }
         public bool Success { get; set; }
 
@@ -19,9 +20,14 @@ namespace TeXShift.AddIn
         {
             _command = command;
             Write("started");
+            _performance = PerformanceTraceContext.BeginCommand(command, _id);
         }
 
-        public void Dispose() => Write(Success ? "succeeded" : "failed");
+        public void Dispose()
+        {
+            _performance.Dispose();
+            Write(Success ? "succeeded" : "failed");
+        }
 
         private void Write(string status)
         {

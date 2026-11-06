@@ -57,7 +57,9 @@ namespace TeXShift.Core.OneNote
 
         internal Task InsertContentAsync(XElement page, XElement converted)
         {
-            var outline = OneNotePasteInsertion.CreateOutline(page, converted);
+            XElement outline;
+            using (PerformanceTraceContext.Measure("Write.Paste.CreateOutline"))
+                outline = OneNotePasteInsertion.CreateOutline(page, converted);
             var read = new ReadResult
             {
                 PageId = (string)page.Attribute("ID"),
@@ -65,12 +67,14 @@ namespace TeXShift.Core.OneNote
             };
             return _comDispatcher.InvokeAsync(app =>
             {
-                OneNotePasteInsertion.MaterializeBinaryContent(outline, callbackId =>
-                {
-                    app.GetBinaryPageContent(read.PageId, callbackId, out string data);
-                    return data;
-                });
-                ValidatePasteTarget(app, page, outline);
+                using (PerformanceTraceContext.Measure("Write.Paste.MaterializeBinary"))
+                    OneNotePasteInsertion.MaterializeBinaryContent(outline, callbackId =>
+                    {
+                        app.GetBinaryPageContent(read.PageId, callbackId, out string data);
+                        return data;
+                    });
+                using (PerformanceTraceContext.Measure("Write.Paste.ValidateTarget"))
+                    ValidatePasteTarget(app, page, outline);
                 string xml = BuildPageChanges(read, new[] { outline }, insertion: true);
                 UpdatePageContent(app, read.PageId, (string)outline.Attribute("objectID"), xml, selectOutline: false);
             });
@@ -82,7 +86,9 @@ namespace TeXShift.Core.OneNote
             string outlineId = (string)outline.Attribute("objectID");
             if (string.IsNullOrEmpty(outlineId)) return;
             var original = originalPage.Elements(_ns + "Outline").First(e => (string)e.Attribute("objectID") == outlineId);
-            app.GetPageContent(pageId, out string currentXml, OneNoteInterop.PageInfo.piSelection, OneNoteInterop.XMLSchema.xs2013);
+            string currentXml;
+            using (PerformanceTraceContext.Measure("Write.Paste.GetPageContent", "piSelection"))
+                app.GetPageContent(pageId, out currentXml, OneNoteInterop.PageInfo.piSelection, OneNoteInterop.XMLSchema.xs2013);
             var current = XElement.Parse(currentXml).Elements(_ns + "Outline").FirstOrDefault(e => (string)e.Attribute("objectID") == outlineId);
             if (!OneNotePasteInsertion.ContentEquals(original, current))
                 throw new System.Runtime.InteropServices.COMException("Paste target changed during rendering.", unchecked((int)0x80042010));

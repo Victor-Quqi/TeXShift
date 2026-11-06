@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TeXShift.Core.Services;
+using TeXShift.Core.Logging;
 
 namespace TeXShift.Core.Tests
 {
@@ -17,6 +18,34 @@ namespace TeXShift.Core.Tests
 
         private static Task<T> Run<T>(IDisposable worker, Func<Task<T>> action) =>
             (Task<T>)WorkerType.GetMethod("InvokeAsync").MakeGenericMethod(typeof(T)).Invoke(worker, new object[] { action });
+
+        [TestMethod]
+        public async Task PerformanceTraceFlowsToStaAndRestoresNestedSession()
+        {
+            var current = typeof(PerformanceTraceContext).GetMethod("GetCurrent", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.IsNull(current.Invoke(null, null));
+            using (var worker = Create(() => { }))
+            using (PerformanceTraceContext.BeginCommand("test", "outer"))
+            {
+                var outer = current.Invoke(null, null);
+                await Run(worker, async () =>
+                {
+                    Assert.AreSame(outer, current.Invoke(null, null));
+                    using (PerformanceTraceContext.Measure("STA work"))
+                    {
+                        await Task.Yield();
+                        Assert.AreSame(outer, current.Invoke(null, null));
+                    }
+                    return true;
+                });
+                using (PerformanceTraceContext.BeginCommand("test", "inner"))
+                    Assert.AreNotSame(outer, current.Invoke(null, null));
+                Assert.AreSame(outer, current.Invoke(null, null));
+                string report = (string)outer.GetType().GetMethod("FormatReport").Invoke(outer, null);
+                StringAssert.Contains(report, "STA work");
+            }
+            Assert.IsNull(current.Invoke(null, null));
+        }
 
         [TestMethod]
         public async Task DisposeWaitsForCleanupOnOwningSta()

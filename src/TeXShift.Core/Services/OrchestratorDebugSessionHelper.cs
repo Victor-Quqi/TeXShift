@@ -33,7 +33,7 @@ namespace TeXShift.Core.Services
             logger.StartSession(sessionKind);
             setDebugOutputFolder(logger.DebugSessionFolder);
 
-            perfTrace = new PerformanceTrace();
+            perfTrace = PerformanceTraceContext.GetCurrent() ?? new PerformanceTrace();
             perfSession = PerformanceTraceContext.BeginSession(perfTrace);
             PerformanceTraceContext.AddMetric("SessionKind", sessionKind.ToString());
             addSessionMetrics?.Invoke();

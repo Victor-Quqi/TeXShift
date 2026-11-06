@@ -66,6 +66,7 @@ $imagePath = Join-Path $repoRoot 'tests/TestData/Assets/TeXShift_512.png'
 $imagePage = Join-Path $OutputDirectory 'image-page.xml'
 $tableInput = Join-Path $OutputDirectory 'table.md'
 $imageInput = Join-Path $OutputDirectory 'image.md'
+$nestedPage = Join-Path $OutputDirectory 'nested-page.xml'
 try {
     foreach ($case in @(@{ Name = 'empty-inline'; Input = $inline }, @{ Name = 'empty-block'; Input = $blocks })) {
         $result = Invoke-PasteCase $case.Name @('--markdown', 'Original body', '--empty-outline', '--paste-input', $case.Input)
@@ -90,6 +91,24 @@ try {
     Assert-RetainedLeadingParagraph $existing 'Table'
     if (-not $existing.Final.DocumentElement.InnerText.Contains('Original body')) { throw 'Paste lost surrounding text.' }
 
+    [IO.File]::WriteAllText($nestedPage, @"
+<one:Page xmlns:one="http://schemas.microsoft.com/office/onenote/2013/onenote">
+  <one:Outline><one:Position x="36" y="90" z="0"/><one:OEChildren>
+    <one:OE><one:List><one:Bullet bullet="2"/></one:List><one:T><![CDATA[Parent bullet]]></one:T>
+      <one:OEChildren><one:OE><one:List><one:Bullet bullet="2"/></one:List><one:T><![CDATA[Child bullet]]></one:T></one:OE></one:OEChildren>
+    </one:OE>
+  </one:OEChildren></one:Outline>
+</one:Page>
+"@)
+    $nested = Invoke-PasteCase 'nested-list-table' @('--page', $nestedPage, '--caret', 'Parent bullet', '--paste-input', $tableInput)
+    $childBefore = $nested.Original.SelectSingleNode('//*[local-name()="T" and text()="Child bullet"]/..')
+    $childAfter = $nested.Final.SelectSingleNode("//*[@objectID='$($childBefore.objectID)']")
+    if (-not $childAfter -or $childBefore.ParentNode.ParentNode.objectID -ne $childAfter.ParentNode.ParentNode.objectID) {
+        throw 'Paste moved an existing child to a different parent identity.'
+    }
+    if (-not $nested.Target.InnerText.Contains('Parent bullet') -or -not $nested.Target.InnerText.Contains('Child bullet') -or
+        -not $nested.Target.SelectSingleNode('.//*[local-name()="Table"]')) { throw 'Paste lost nested list content.' }
+
     $escapedImage = [System.Security.SecurityElement]::Escape($imagePath)
     [IO.File]::WriteAllText($imagePage, @"
 <one:Page xmlns:one="http://schemas.microsoft.com/office/onenote/2013/onenote">
@@ -112,7 +131,7 @@ try {
     if (-not $result.Final.DocumentElement.InnerText.Contains('Other outline')) { throw 'Paste changed the other outline.' }
 }
 finally {
-    foreach ($path in @($imagePage, $tableInput, $imageInput)) {
+    foreach ($path in @($imagePage, $tableInput, $imageInput, $nestedPage)) {
         if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path }
     }
 }

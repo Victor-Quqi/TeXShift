@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
+using System.Xml.Linq;
 
 namespace TeXShift.Core.Logging
 {
@@ -66,10 +67,45 @@ namespace TeXShift.Core.Logging
 
             return builder.ToString();
         }
+
+        public string FormatRuntimeReport(string command, string id)
+        {
+            lock (_gate)
+            {
+                return new XElement("Performance", new XAttribute("id", id),
+                    new XAttribute("command", command), new XAttribute("durationMs", GetTotalMs()),
+                    _entries.ConvertAll(entry => new XElement("Step",
+                        new XAttribute("depth", entry.Depth), new XAttribute("name", entry.Name ?? string.Empty),
+                        new XAttribute("ms", entry.DurationMs), new XAttribute("detail", entry.Detail ?? string.Empty))))
+                    .ToString(SaveOptions.DisableFormatting);
+            }
+        }
     }
 
-    internal static class PerformanceTraceContext
+    public static class PerformanceTraceContext
     {
+        private sealed class CommandSession : IDisposable
+        {
+            private readonly PerformanceTrace _trace = new PerformanceTrace();
+            private readonly IDisposable _session;
+            private readonly string _command;
+            private readonly string _id;
+
+            public CommandSession(string command, string id)
+            {
+                _command = command;
+                _id = id;
+                _session = BeginSession(_trace);
+            }
+
+            public void Dispose()
+            {
+                _session.Dispose();
+                try { RuntimeLog.Write(_trace.FormatRuntimeReport(_command, _id)); }
+                catch { /* Diagnostics must not change the command outcome. */ }
+            }
+        }
+
         private sealed class NoOpScope : IDisposable
         {
             public static readonly NoOpScope Instance = new NoOpScope();
@@ -130,9 +166,11 @@ namespace TeXShift.Core.Logging
         private static readonly AsyncLocal<PerformanceTrace> Current = new AsyncLocal<PerformanceTrace>();
         private static readonly AsyncLocal<int> Depth = new AsyncLocal<int>();
 
-        public static PerformanceTrace GetCurrent() => Current.Value;
+        internal static PerformanceTrace GetCurrent() => Current.Value;
 
-        public static IDisposable BeginSession(PerformanceTrace trace)
+        public static IDisposable BeginCommand(string command, string id) => new CommandSession(command, id);
+
+        internal static IDisposable BeginSession(PerformanceTrace trace)
         {
             var previous = Current.Value;
             var previousDepth = Depth.Value;

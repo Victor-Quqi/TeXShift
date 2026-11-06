@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using Microsoft.Office.Core;
 using TeXShift.AddIn.Localization;
 using TeXShift.Core.Errors;
+using TeXShift.Core.Logging;
 
 namespace TeXShift.AddIn
 {
@@ -21,7 +22,9 @@ namespace TeXShift.AddIn
                 {
                     if (TryShowInitializationError()) return;
                     _pasteConversionInProgress = true;
-                    string markdown = ReadClipboardText();
+                    string markdown;
+                    using (PerformanceTraceContext.Measure("Paste.ReadClipboard"))
+                        markdown = ReadClipboardText();
                     if (string.IsNullOrWhiteSpace(markdown))
                     {
                         throw new ContentReadException(UIResources.GetString("Message_PasteConvert_EmptyClipboard"),
